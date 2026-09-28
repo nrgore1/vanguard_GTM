@@ -1,9 +1,9 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.6.0 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.7.0 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
-> **Rule for every change:** update this manual, `DESIGN.md` (including its §17 change log) and
+> **Rule for every change:** update this manual, `DESIGN.md` (including its §18 change log) and
 > `CHANGELOG.md` in the same commit. `pytest` includes `tests/test_docs_sync.py`, which fails
 > when a CLI command, environment variable, registry field or test ID isn't documented.
 
@@ -186,6 +186,25 @@ validates the file.
 - Patterns are Python regexes, matched case-insensitively. The exception is `source_pattern`:
   its keywords are wrapped in `(?i:…)` so that "per X" still needs a capitalised name.
 
+### 3.5 `config/failproof.yaml`
+
+The fail-proof plan (DESIGN §17). Top-level keys:
+
+- `program`: `start` (a Monday; week 1), `weeks` (default 26), `meta_tripwire` (`week`, `max_tripped`).
+- `focus`: `founder` (property ids on the founder's calendar), `primary`, `founder_name`.
+- `task_classes`: name → regex. Gates block these classes; the default set is `investor_outreach`,
+  `cold_investor_outreach`, `paid_acquisition`, `public_launch`.
+- `properties.<id>`: `owner` (null until delegated), `focus` (`primary`, `founder` or `delegated`),
+  `one_sentence`, `failure_modes` (`id`, `name`, `cause`, `assumption`, `first_warning`),
+  `gates` (`id`, `name`, `verify`, `walk_away_if`, `deadline_week`, `blocks`),
+  `tripwires` (`id`, `failure_mode`, `signal`, `unit`, `checks: [{week, trips_if}]` and/or
+  `every_week_from` + `trips_if`, `basis` = `premortem`/`prd`/`proposed`, `action`).
+- Rules are `"<op> <number>"` with op `<`, `<=`, `>`, `>=`, `==`, `!=`.
+
+To delegate a property, set its `owner`. To change a threshold, edit the tripwire and set
+`basis: proposed` unless it came from the premortem or a PRD. Readings and gate results are in
+the database, not this file.
+
 ## 4. CLI reference
 
 | Command | What it does | Spends money? |
@@ -213,6 +232,10 @@ validates the file.
 | `vanguard outreach postmark-check` | Lists the server's streams, flags missing or non-transactional ones, and shows this month's usage against the cap | No |
 | `vanguard outreach postmark-sync` | Two-way suppression sync with the outreach stream | No |
 | `vanguard create-user --email E --name N [--role admin\|user] [--password P]` | Adds a web user (prompts for the password if omitted) | No |
+| `vanguard tripwires [--property a,b] [--as-of YYYY-MM-DD] [--json] [--out FILE]` | Prints the tripwire tracker and gates per property. Exits 2 when any property is at HALT (3+ tripped), so cron can alert. | No |
+| `vanguard record <property> <tripwire> <value> [--date D] [--note N] [--by NAME]` | Records a tripwire reading (default date today) | No |
+| `vanguard gate <property> <gate> pass\|fail\|open [--by NAME] [--note N]` | Sets a readiness gate. `pass` needs `--by`. `fail` prints the walk-away condition. | No |
+| `vanguard premortem <property> [--plan FILE] [--dry-run] [--provider local\|claude] [--out FILE]` | Engine 0: writes a forensic premortem (7 causes, verdict, adversary, tripwires) and stores it. `--dry-run` is $0 from the failure modes on file. | Only through the capped Claude fallback |
 | `vanguard demo-data [--purge]` | Loads, or removes, clearly labelled `[DEMO]` campaigns, partners, results and a demo run | No |
 
 `--run` defaults to the latest run.
@@ -235,6 +258,7 @@ Sign in with `POST /api/auth/login {email, password}`, which returns `{token, us
 | Partner outreach | admin: `POST /partners/import-research` (load `config/partner_targets.yaml`; returns per-property created/updated, errors, without_email) · admin: `POST /partners/recommend {property_id, mode: offline\|model, provider}` · all users: `POST /partners/{segment}/targets` (add a named organisation under a segment), `POST /partners/{id}/reply {date, summary, outcome?, kind}`, `GET /outreach?status&property_id&partner_id` (segments excluded unless partner_id), `GET /outreach/stats`, `PATCH /outreach/{id}` (edit; resets to draft; re-lints) · admin: `POST /outreach/approve {ids}`, `POST /outreach/{id}/cancel`, `POST /outreach/send-due`, `POST /outreach/sync-replies`, `POST /outreach/digest`, `POST /outreach/postmark-sync`, `GET /email/postmark` (stream check + usage; 409 without a token). Partner `PATCH` also takes `agreement_status`, `agreement_signed_date`, `agreement_notes`, `website`, `email_consent` (`opted_out` also suppresses the address and cancels queued messages). `GET /outreach/stats` → `email.postmark` includes `used_this_month`. |
 | Tasks | `GET /tasks?property_id&status&mine`, `PATCH /tasks/{id}` (a user may change only status and notes, and only when assigned) · admin: `POST /tasks`, `DELETE /tasks/{id}` |
 | Agent (admin) | `GET /agent/status`, `GET /runs`, `POST /runs {properties, dry_run, provider}` (409 if it can't run at $0), `GET /runs/{id}`, `GET /runs/{id}/playbooks/{pid}`, `POST /runs/{id}/approve/{pid}`, `POST /runs/{id}/import`, `POST /runs/{id}/sync` |
+| Fail-proof | `GET /failproof?as_of&property_id` (tracker), `POST /failproof/{pid}/readings {tripwire_id, value, date?, note?}` (any user), `GET /failproof/{pid}/premortem` (latest; 404 if none) · admin: `PUT /failproof/{pid}/gates/{gid} {status: open\|passed\|failed, note?}` (returns `walk_away_if` when failed) |
 | Audit (admin) | `GET /audit?limit=100` |
 
 Validation errors return 422 with field paths. Conflicts return 409, and missing records 404.
@@ -258,6 +282,7 @@ it's served through `vanguard serve`, prefix these paths with `/machine`.
 | `GET /runs/{id}/playbooks/{pid}` | — | Full playbook |
 | `POST /runs/{id}/playbooks/{pid}/approve` | `{"approved_by":"narendra"}` | 409 if blocked |
 | `POST /runs/{id}/sync` | — | `{"playbooks": n, "tasks": n}` |
+| `GET /failproof?as_of=YYYY-MM-DD` | — | Tripwire + gate tracker for every property; `halt: true` when 3+ are tripped |
 
 The API does not ask for cost confirmation. It relies on `VANGUARD_MAX_COST_USD`.
 

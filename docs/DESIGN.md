@@ -3,14 +3,14 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.6.0 |
+| **Version** | 0.7.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
-| **Last updated** | 2026-09-27 |
+| **Last updated** | 2026-09-28 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
 
 > **Keeping this current.** Every change to behaviour, configuration, the CLI, the API or the
 > data model updates this document and the Programmer's Manual in the same change, and adds a
-> line to the change log (§17). `tests/test_docs_sync.py` fails the build if a CLI command,
+> line to the change log (§18). `tests/test_docs_sync.py` fails the build if a CLI command,
 > environment variable, config field or test ID is missing from the docs.
 
 ---
@@ -110,7 +110,8 @@ flowchart TB
 | `engines.py` | Prompts and the four-engine pipeline, the lint repair loop, assembly, the manual prompt and import | `run_property`, `assemble`, `manual_prompt`, `import_playbook` |
 | `lint_gate.py` | Rule engine over outward-facing copy | `LintGate`, `copy_fields` |
 | `cost.py` | Price table, usage meter, spend cap, estimate | `Meter`, `BudgetExceeded`, `estimate` |
-| `orchestrator.py` | Parallel fan-out, per-property error isolation, run bookkeeping | `run_portfolio` |
+| `orchestrator.py` | Parallel fan-out, per-property error isolation, run bookkeeping, then the fail-proof layer | `run_portfolio` |
+| `failproof.py` | Engine 0 premortem, Engine 5 readiness gates, Engine 6 tripwire monitor, focus lock (§17) | `load_failproof`, `evaluate_tripwire`, `tracker`, `apply_to_playbook`, `run_premortem`, `FailproofStore` |
 | `store.py` | SQLite persistence: runs (with usage), playbooks, tasks, approvals, Notion ids | `Store` |
 | `notion_sync.py` | Database setup, idempotent upsert, rate limiting, playbook page body | `Notion`, `playbook_blocks` |
 | `exporters.py` | Approval-gated sequence CSVs; task backlog CSV/JSON | `export_sequences`, `export_tasks` |
@@ -764,10 +765,54 @@ sync (§15.5) remains the free option, and both can run.
 | `outreach_messages` | + `transport`, `pm_message_id`, `delivered_at`, `opened_at` |
 | `notification_log` (new) | at, transport, to_addr, subject, kind (reply/digest) |
 
-## 17. Change log
+## 17. Fail-proof layer (v0.7.0)
+
+Added after a forensic premortem of the Vireoka / LiqMint $3M raise (Sep 28, 2026). The
+premortem found that the plan failed on evidence, channel, focus and structure long before it
+failed on reach, so the agent now checks those first and keeps checking them every week.
+
+### 17.1 What it adds
+
+| Part | What it does | Where |
+|---|---|---|
+| Engine 0: forensic premortem | Assumes a plan failed at the horizon and writes the autopsy: 7 ranked causes of death (each traced to a stated fact), month-by-month unfolding, enabling assumption, first warning sign; the verdict (most likely vs most dangerous, the hidden assumption, fatal flaw); the adversary; one tripwire per cause. `--dry-run` builds a $0 premortem from the failure modes on file. | `failproof.run_premortem`, `vanguard premortem` |
+| Engine 5: readiness gates | Each property has pre-launch gates with a verification test and a walk-away condition. A gate lists the task classes it blocks; while it is not passed, the agent removes tasks of those classes from every plan and says so (`GATE_BLOCKED` note). | `failproof.apply_to_playbook`, `vanguard gate` |
+| Engine 6: tripwire monitor | One measurable signal per failure mode, checked on the Friday of a set week (or every week). Missing evidence is amber, never green. Three tripped tripwires on one property raise HALT: stop, do not adjust the plan, rerun the walk-away gates. | `failproof.evaluate_tripwire`, `tracker`, `vanguard tripwires`, UI Tripwires page |
+| Focus lock | The founder's calendar holds LiqMint Institutional (primary), LiqMint retail and Vireoka. Every other property is delegated and must name an owner; a delegated property with no owner (or owned by the founder) carries a `FOCUS_LOCK` note on every playbook. | `failproof.focus_issues` |
+| Claim discipline | Unchanged lint gate (§7); the website messaging and premortem both rely on it. | `lint_gate.py` |
+
+### 17.2 Configuration and state
+
+`config/failproof.yaml` is the plan: program start (a Monday, week 1), the 26-week horizon, the
+meta tripwire, the focus list, task-class regexes (`investor_outreach`, `cold_investor_outreach`,
+`paid_acquisition`, `public_launch`), and per property: owner, focus, one sentence, failure modes,
+gates, tripwires. It must cover every registry property; the loader refuses unknown task classes,
+tripwires pointing at unknown failure modes, check weeks past the horizon and a non-Monday start.
+
+The evidence lives in SQLite (§10): `tripwire_readings` (value, reading date, note, who),
+`gate_status` (open / passed / failed, note, who) and `premortems` (plan text + JSON body).
+
+### 17.3 Evaluation rules
+
+- A fixed check uses the latest reading dated on or before that check's Friday.
+- A weekly check needs a reading dated inside that week (Saturday to Friday); last week's value does not carry over.
+- Status is `tripped` if any due check breaks its rule, else `amber` if any due check has no reading, else `green`; `not_yet_due` before the first check.
+- Passing a gate needs a named verifier (`--by`, or the admin's account in the UI). Failing a gate prints its walk-away condition.
+- The gate filter runs after Engine 4 in live runs and on `vanguard import`, and strips removed task ids from dependants.
+
+### 17.4 Where it shows
+
+CLI (`tripwires`, `record`, `gate`, `premortem`), web API (`/api/failproof…`), machine API
+(`GET /failproof`, `halt` per property for cron), and the UI Tripwires page (everyone records
+readings; only admins pass or fail gates).
+
+---
+
+## 18. Change log
 
 | Version | Date | Change |
 |---|---|---|
+| 0.7.0 | 2026-09-28 | **Fail-proof layer** (§17): Engine 0 forensic premortem (`vanguard premortem`, `--dry-run` at $0), Engine 5 readiness gates that remove blocked task classes (investor outreach, cold investor outreach, paid acquisition, public launch) from plans until passed, Engine 6 tripwire monitor with Friday checks and HALT at 3 tripped, and the focus lock for delegated properties. `config/failproof.yaml` covers all 8 properties; new tables `tripwire_readings`, `gate_status`, `premortems`; CLI `tripwires`, `record`, `gate`, `premortem`; `/api/failproof…` and machine `GET /failproof`; UI Tripwires page. Tests E2E-29–31, WEB-28 and `tests/test_failproof.py`. |
 | 0.6.0 | 2026-09-28 | **Researched partners** (§15.7): `config/partner_targets.yaml` lists 117 real, source-cited organisations across all 8 properties. `targets.py` imports them idempotently as named partners with inherited 3-step drafts, enriching playbook examples rather than duplicating them, and clamps each score into its priority band. Adds `vanguard partners import`, `POST /api/partners/import-research`, the "Load researched partners" button, researched badges, and clickable source, contact and website links. Tests WEB-26, WEB-27 and UI-15. |
 | 0.5.1 | 2026-09-28 | **Windows fix:** every text file is read and written as UTF-8 explicitly. Windows' default cp1252 crashed on the config files (`UnicodeDecodeError` in `demo-data`, `run`, `serve`). The CLI console is set to UTF-8 with replacement. Adds `start.ps1` (one-command Windows start) and a flat install layout in the setup guide. |
 | 0.5.0 | 2026-09-27 | **Postmark message streams** (§16): `postmark` email mode sending through a transactional outreach stream with Tag, Metadata, a `+o<id>` Reply-To and List-Unsubscribe; per-partner `email_consent` with the permission-based policy (cold first touch via your own SMTP or held; `VANGUARD_POSTMARK_ALLOW_COLD` override); monthly cap (default 100); Basic-Auth webhook for Delivery, Open, Bounce, SpamComplaint, SubscriptionChange and Inbound replies; two-way suppression sync; stream check; reply alerts and approval digest on a notify stream (`notification_log`); UI Postmark banner, transport badges, consent select, digest button; CLI `outreach digest\|postmark-sync\|postmark-check`; `doctor` checks Postmark. Docs-sync now also catches env vars read through `g = os.getenv`. |

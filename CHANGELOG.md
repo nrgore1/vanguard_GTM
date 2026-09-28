@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0 — 2026-09-28
+
+### Added: fail-proof layer (premortem, gates, tripwires, focus lock)
+- **Engine 0, forensic premortem:** `vanguard premortem <property> [--plan FILE]` writes the
+  autopsy of a failed plan: 7 ranked causes, verdict, adversary and tripwires. `--dry-run` is $0.
+- **Engine 5, readiness gates:** each property has gates with a verification test and a
+  walk-away condition. Open gates remove the task classes they block (investor outreach, cold
+  investor outreach, paid acquisition, public launch) from every plan, with a `GATE_BLOCKED` note.
+- **Engine 6, tripwire monitor:** one measurable signal per failure mode, checked on Fridays.
+  Missing evidence is amber. Three tripped on a property raises HALT (`vanguard tripwires` exits 2).
+- **Focus lock:** delegated properties must name an owner; otherwise every playbook carries a
+  `FOCUS_LOCK` note.
+- **`config/failproof.yaml`:** all 8 properties. LiqMint Institutional carries the full
+  seven-cause premortem of the $3M raise.
+- **Where:** CLI `tripwires`, `record`, `gate`, `premortem`; web API `/api/failproof…`; machine
+  API `GET /failproof`; UI **Tripwires** page.
+- **Tests:** E2E-29–31, WEB-28, `tests/test_failproof.py`.
+
 ## 0.6.0 — 2026-09-28
 
 ### Added: researched partners (real organisations)

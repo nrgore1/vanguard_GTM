@@ -281,7 +281,9 @@ def cmd_import(a, store: Store):
     rid = a.run or new_run_id()
     if not store.run(rid):
         store.create_run(rid, [p.id for p, _ in jobs])
+    from .failproof import FailproofStore, apply_to_playbook, load_failproof
     gate, errors = LintGate(), {}
+    fp_cfg, fp_store = load_failproof(), FailproofStore(store)
     for p, f in jobs:
         try:
             pb = import_playbook(p, rid, _read_reply(f), gate)
@@ -289,6 +291,8 @@ def cmd_import(a, store: Store):
             errors[p.id] = f"{type(e).__name__}: {str(e)[:300]}"
             print(f"FAILED {p.id}: {errors[p.id]}")
             continue
+        for tid in apply_to_playbook(pb, fp_cfg, fp_store):
+            print(f"  gate-blocked task removed: {tid}")
         store.save_playbook(pb)
         print(f"imported {p.id} into run {rid}: lint={pb.lint_status}, tasks={len(pb.daily_task_registry)}")
         for fd in pb.lint_findings:
@@ -449,6 +453,75 @@ def cmd_demo_data(a, store: Store):
     print(purge_demo(ws) if a.purge else load_demo(ws))
 
 
+# ---------------------------------------------------------------- fail-proof layer (Engines 0, 5, 6)
+def _as_of(value: str | None):
+    from datetime import date
+    from .failproof import today
+    return date.fromisoformat(value) if value else today()
+
+
+def cmd_tripwires(a, store: Store):
+    from .failproof import FailproofStore, load_failproof, tracker, tracker_markdown
+    cfg = load_failproof()
+    ids = a.property.split(",") if a.property else None
+    if ids:
+        get_properties(ids)  # validates the ids
+    t = tracker(cfg, FailproofStore(store), _as_of(a.as_of), ids)
+    text = json.dumps(t, indent=1) if a.json else tracker_markdown(t)
+    if a.out:
+        Path(a.out).write_text(text, encoding="utf-8")
+        print(f"wrote {a.out}")
+    else:
+        print(text)
+    if any(p["halt"] for p in t["properties"]):
+        sys.exit(2)
+
+
+def cmd_record(a, store: Store):
+    from .failproof import FailproofStore, load_failproof
+    cfg = load_failproof()
+    pf = cfg.properties.get(a.property) or sys.exit(f"unknown property {a.property!r}")
+    if a.tripwire not in {t.id for t in pf.tripwires}:
+        sys.exit(f"unknown tripwire {a.tripwire!r} for {a.property}: {[t.id for t in pf.tripwires]}")
+    d = _as_of(a.date)
+    FailproofStore(store).record(a.property, a.tripwire, a.value, d, a.note or "", a.by or "")
+    print(f"recorded {a.property} {a.tripwire} = {a.value:g} on {d.isoformat()}")
+
+
+def cmd_gate(a, store: Store):
+    from .failproof import FailproofStore, load_failproof
+    cfg = load_failproof()
+    pf = cfg.properties.get(a.property) or sys.exit(f"unknown property {a.property!r}")
+    gate = next((g for g in pf.gates if g.id == a.gate), None) or \
+        sys.exit(f"unknown gate {a.gate!r} for {a.property}: {[g.id for g in pf.gates]}")
+    status = {"pass": "passed", "fail": "failed", "open": "open"}[a.status]
+    if status == "passed" and not a.by:
+        sys.exit("passing a gate needs --by NAME (who verified it)")
+    FailproofStore(store).set_gate(a.property, gate.id, status, a.note or "", a.by or "")
+    print(f"{a.property} {gate.id} {gate.name}: {status.upper()}")
+    if status == "failed":
+        print(f"WALK-AWAY CONDITION: {gate.walk_away_if}")
+
+
+def cmd_premortem(a, store: Store):
+    from .failproof import FailproofStore, load_failproof, premortem_markdown, run_premortem
+    cfg = load_failproof()
+    p = get_properties([a.property])[0]
+    plan = Path(a.plan).read_text(encoding="utf-8") if a.plan else ""
+    llm = make_llm(a.dry_run, provider=a.provider)
+    try:
+        pm = asyncio.run(run_premortem(llm, p, cfg.properties[p.id], plan))
+    except Exception as e:  # e.g. local model down and paid fallback off - nothing was spent
+        sys.exit(f"premortem not produced ({type(e).__name__}: {e}). $0 option: add --dry-run.")
+    FailproofStore(store).save_premortem(p.id, plan, pm.model_dump(mode="json"))
+    md = premortem_markdown(p.id, pm)
+    if a.out:
+        Path(a.out).write_text(md, encoding="utf-8")
+        print(f"wrote {a.out}")
+    else:
+        print(md)
+
+
 def _utf8_console() -> None:
     """Windows consoles and pipes may default to cp1252; never crash printing names like 'Mandap & Co · P0'."""
     for stream in (sys.stdout, sys.stderr):
@@ -515,6 +588,20 @@ def main(argv=None):
     s.add_argument("action", choices=["status", "approve", "send", "sync-replies", "digest", "postmark-sync", "postmark-check"])
     s.add_argument("ids", nargs="*", help="message ids (approve)"); s.add_argument("--by")
     s.set_defaults(fn=cmd_outreach)
+    s = sub.add_parser("tripwires", help="fail-proof tracker: tripwire status + gates per property (exit 2 on HALT)")
+    s.add_argument("--property", help="id or comma list (default all)"); s.add_argument("--as-of", help="YYYY-MM-DD")
+    s.add_argument("--json", action="store_true"); s.add_argument("--out"); s.set_defaults(fn=cmd_tripwires)
+    s = sub.add_parser("record", help="record a tripwire reading: record <property> <tripwire> <value>")
+    s.add_argument("property"); s.add_argument("tripwire"); s.add_argument("value", type=float)
+    s.add_argument("--date", help="reading date YYYY-MM-DD (default today)"); s.add_argument("--note"); s.add_argument("--by")
+    s.set_defaults(fn=cmd_record)
+    s = sub.add_parser("gate", help="set a readiness gate: gate <property> <gate> pass|fail|open --by NAME")
+    s.add_argument("property"); s.add_argument("gate"); s.add_argument("status", choices=["pass", "fail", "open"])
+    s.add_argument("--note"); s.add_argument("--by"); s.set_defaults(fn=cmd_gate)
+    s = sub.add_parser("premortem", help="Engine 0: forensic premortem of a plan (7 causes, verdict, adversary, tripwires)")
+    s.add_argument("property"); s.add_argument("--plan", help="text/markdown file with the plan to test")
+    s.add_argument("--dry-run", action="store_true", help="$0 offline premortem from config/failproof.yaml")
+    s.add_argument("--provider", choices=["local", "claude"]); s.add_argument("--out"); s.set_defaults(fn=cmd_premortem)
     s = sub.add_parser("serve"); s.add_argument("--host", default="0.0.0.0"); s.add_argument("--port", type=int, default=8080)
     s.set_defaults(fn=cmd_serve)
 

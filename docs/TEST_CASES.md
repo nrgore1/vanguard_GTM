@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.6.0 · updated 2026-09-28
+Version 0.7.0 · updated 2026-09-28
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -39,6 +39,9 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | E2E-26 | OpenAI-compatible servers | `api=openai` (LM Studio / llama.cpp / vLLM) | `/v1/models` check passes. The request carries `response_format.json_schema`. Design partner and co-sell are present. |
 | E2E-27 | Model not pulled | Server up with a different model; server down | The message names the exact `ollama pull qwen3.6:27b`; the down case says "not reachable" |
 | E2E-28 | Works on a non-UTF-8 (Windows cp1252-style) locale | `demo-data`, `partners recommend jodibana`, a dry run and `outreach status` all exit 0 with `LC_ALL=C`/`PYTHONUTF8=0`. A static check fails if any `read_text`/`write_text`/`open("w…")` in `vanguard/` lacks `encoding=`. |
+| E2E-29 | Fail-proof CLI flow | `record`, `gate` and `tripwires` from the CLI | A reading shows GREEN; `gate pass` without `--by` is refused; `gate fail` prints the walk-away condition; three tripped tripwires make `tripwires` exit 2 with HALT; `--json` covers all 8 properties; an unknown tripwire is refused. |
+| E2E-30 | Gates remove blocked tasks from a run | Dry run where one institutional task emails seed investors | That task is gone, dependants no longer point at it, a `GATE_BLOCKED` note names it, and the delegated WeddingOS playbook carries a `FOCUS_LOCK` note. |
+| E2E-31 | Premortem at $0 | `premortem liqmint-institutional --dry-run --plan plan.md --out pm.md` | The markdown has 7 ranked causes, a verdict, an adversary and a tripwire table. |
 
 ## Live smoke cases (opt-in)
 
@@ -79,6 +82,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-25 | Postmark admin: streams, suppression sync, digest | Users get 403. The stream check is OK, and flags a Broadcasts notify stream. A manual opted_out consent cancels all steps. Sync pulls 1 remote suppression (`postmark:HardBounce`) and pushes 1 local one. The digest emails the admin on the notify stream (3 awaiting, top partner listed, Metadata kind) and counts toward monthly usage. Without a token: stream check 409, and the digest falls back to the outbox. |
 | WEB-26 | Import researched partners | Users get 403. The admin import has no errors and creates or updates every organisation in the YAML (`source=research`). Fireblocks and KPMG enrich the playbook examples with no duplicates. India Association of Minnesota sits under the community_orgs segment as a P0 design partner with website, contact URL and 3 draft emails (merge tags kept). No message leaves draft. A re-run creates nothing and keeps a hand-entered email. |
 | WEB-27 | Targets file quality | Every item has a known property and category, https evidence, contact and website links, a valid inbox format, a why, a priority hint and a confidence. No duplicate names; at least 10 per property. `vanguard partners import` runs at $0 with no problems. |
+| WEB-28 | Tripwires and gates in the web API | Users see the tracker for all 8 properties (week 3 on Oct 16) and record readings; unknown tripwires get 422; users get 403 on gates; admins fail G1 and get its walk-away condition; unknown gates 404; no premortem yet 404. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
@@ -103,6 +107,10 @@ Atmakosh.
 | UI-14 | Email permission + digest | Uma opens Shaadi Squad Events: permission "none" with the cold-routing note. She sets "Opted out", sees the toast, and all 3 messages show cancelled. The admin clicks "Email approval digest" and gets "Digest emailed to 1 admin (outbox)". |
 | UI-15 | Load researched partners | The admin clicks "Load researched partners" and gets a toast. India Association of Minnesota opens with the "researched organisation" badge, a clickable iamn.org website and contact link, and 3 drafts titled "… + Jodibana: a small pilot idea". |
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
+
+## Fail-proof unit tests (`tests/test_failproof.py`)
+
+Config covers every property and refuses unknown task classes or a non-Monday start; the calendar maps weeks to Fridays; rules are validated; tripwire states (not yet due, amber with no reading, green, tripped); weekly checks need a reading inside their own week; open gates remove blocked tasks and passing them restores them; the task classifier and focus lock; HALT at 3 tripped; the offline premortem has 7 ranked causes.
 
 ## Component tests (`tests/test_vanguard.py`)
 

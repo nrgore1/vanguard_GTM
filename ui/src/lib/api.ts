@@ -94,6 +94,24 @@ export interface Run {
   playbooks?: { property_id: string; lint_status: string; approved_by: string | null }[];
 }
 
+export type TripStatus = "not_yet_due" | "green" | "amber" | "tripped";
+export interface TripwireRow {
+  id: string; failure_mode: string; signal: string; unit: string; basis: string; action: string; status: TripStatus;
+  latest_value: number | null; latest_date: string | null; next_check: string | null; next_check_week: number | null;
+  schedule: string; due_checks: { week: number; date: string; rule: string; value: number | null; result: string }[];
+}
+export interface GateRow {
+  id: string; name: string; verify: string; walk_away_if: string; deadline: string; deadline_week: number;
+  blocks: string[]; status: "open" | "passed" | "failed"; overdue: boolean; note: string; updated_by: string;
+}
+export interface FailproofProperty {
+  property_id: string; owner: string | null; focus: "primary" | "founder" | "delegated"; one_sentence: string;
+  tripwires: TripwireRow[]; gates: GateRow[]; tripped: number; amber: number; gates_passed: number; gates_overdue: number;
+  halt: boolean; focus_issues: string[]; blocked_classes: Record<string, string[]>;
+  failure_modes: { id: string; name: string; cause: string; assumption: string; first_warning: string }[];
+}
+export interface Failproof { as_of: string; week: number; program_start: string; properties: FailproofProperty[] }
+
 const TOKEN = "vanguard.token";
 export const session = {
   get token() { try { return localStorage.getItem(TOKEN); } catch { return null; } },
@@ -197,5 +215,10 @@ export const api = {
   approve: (run: string, pid: string) => req("POST", `/runs/${run}/approve/${pid}`),
   importRun: (run: string) => req<{ campaigns: number; partners: number; messages: number; skipped: number }>("POST", `/runs/${run}/import`),
   syncRun: (run: string) => req<{ playbooks: number; tasks: number }>("POST", `/runs/${run}/sync`),
+  failproof: (f: { as_of?: string; property_id?: string } = {}) => req<Failproof>("GET", `/failproof${qs(f)}`),
+  recordReading: (pid: string, b: { tripwire_id: string; value: number; date?: string; note?: string }) =>
+    req("POST", `/failproof/${pid}/readings`, b),
+  setGate: (pid: string, gid: string, b: { status: "open" | "passed" | "failed"; note?: string }) =>
+    req<{ ok: boolean; walk_away_if: string | null }>("PUT", `/failproof/${pid}/gates/${gid}`, b),
   audit: () => req<{ id: number; at: string; user_name: string | null; action: string; entity: string; entity_id: string; detail: string | null }[]>("GET", "/audit"),
 };

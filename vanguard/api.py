@@ -92,6 +92,14 @@ def approve(run_id: str, property_id: str, body: Approval):
     return {"approved": True}
 
 
+@app.get("/failproof", dependencies=[Depends(auth)])
+def failproof(as_of: str | None = None):
+    """Tripwire + gate tracker for cron/n8n; `halt` is true for any property with 3+ tripped tripwires."""
+    from datetime import date
+    from .failproof import FailproofStore, load_failproof, today, tracker
+    return tracker(load_failproof(), FailproofStore(store), date.fromisoformat(as_of) if as_of else today())
+
+
 @app.post("/runs/{run_id}/sync", dependencies=[Depends(auth)])
 async def sync(run_id: str):
     from .notion_sync import Notion

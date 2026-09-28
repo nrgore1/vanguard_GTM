@@ -800,3 +800,24 @@ def test_web_27_researched_targets_file_quality(tmp_path):
     e = {k: v for k, v in os.environ.items()} | {"VANGUARD_DB": str(tmp_path / "c.db"), "PYTHONPATH": str(ROOT)}
     r = subprocess.run([sys.executable, "-m", "vanguard", "partners", "import"], cwd=ROOT, env=e, capture_output=True, text=True)
     assert r.returncode == 0 and "researched organisations added" in r.stdout and "problem" not in r.stdout, r.stdout + r.stderr
+
+
+def test_failproof_tracker_readings_and_gates(env):
+    """WEB-28: everyone sees the tripwire tracker and can record readings; only admins pass or fail gates; unknown
+    tripwires and gates are refused; a failed gate returns its walk-away condition."""
+    c, A, U = env["c"], env["A"], env["U"]
+    t = c.get("/api/failproof", params={"as_of": "2026-10-16"}, headers=U).json()
+    assert t["week"] == 3 and len(t["properties"]) == 8
+    r = c.post("/api/failproof/liqmint-institutional/readings",
+               json={"tripwire_id": "TW-3", "value": 8, "date": "2026-10-15"}, headers=U)
+    assert r.status_code == 201
+    assert c.post("/api/failproof/liqmint-institutional/readings", json={"tripwire_id": "nope", "value": 1},
+                  headers=U).status_code == 422
+    p = c.get("/api/failproof", params={"as_of": "2026-10-16", "property_id": "liqmint-institutional"},
+              headers=U).json()["properties"][0]
+    assert next(w for w in p["tripwires"] if w["id"] == "TW-3")["status"] == "green"
+    assert c.put("/api/failproof/liqmint-institutional/gates/G1", json={"status": "passed"}, headers=U).status_code == 403
+    r = c.put("/api/failproof/liqmint-institutional/gates/G1", json={"status": "failed"}, headers=A)
+    assert r.status_code == 200 and "consulting" in r.json()["walk_away_if"]
+    assert c.put("/api/failproof/liqmint-institutional/gates/G9", json={"status": "passed"}, headers=A).status_code == 404
+    assert c.get("/api/failproof/liqmint-institutional/premortem", headers=U).status_code == 404

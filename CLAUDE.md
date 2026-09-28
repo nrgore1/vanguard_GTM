@@ -1,7 +1,7 @@
 # Working on Vanguard-GTM
 
 - Every behaviour, config, CLI, API or schema change also updates, in the same change:
-  - `docs/DESIGN.md`, including its §17 change-log row
+  - `docs/DESIGN.md`, including its §18 change-log row
   - `docs/PROGRAMMERS_MANUAL.md`
   - `CHANGELOG.md`
   - `docs/TEST_CASES.md` for new tests

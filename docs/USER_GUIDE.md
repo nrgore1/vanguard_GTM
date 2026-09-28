@@ -1,6 +1,6 @@
 # Vanguard-GTM — User Guide
 
-Version 0.6.0 · updated 2026-09-28 · for the team (general users) and admins
+Version 0.7.0 · updated 2026-09-28 · for the team (general users) and admins
 
 Vanguard turns the agent's go-to-market plans into day-to-day work: campaigns you run and
 measure, partners you work through a pipeline, and tasks you tick off. Everyone shares one
@@ -201,3 +201,17 @@ An admin can load a labelled sample to show the app around:
 - `vanguard demo-data --purge` removes it.
 
 Every sample record is named `[DEMO]`, and none of its numbers are real.
+
+
+## Tripwires and gates (v0.7.0)
+
+Open **Tripwires** in the sidebar and pick a property. Each row is one warning signal with the
+week it is checked (always a Friday) and what to do if it trips.
+
+- **Record a reading** every time the signal changes, and every week for the weekly ones. A check
+  with no reading shows amber: missing evidence is never green.
+- **Gates** are the things that must be true before launch. Only an admin can pass or fail one.
+  While a gate is open, the agent will not plan the tasks it blocks (for example investor outreach
+  or paid ads).
+- **HALT** appears when three signals have tripped. Stop, don't adjust the plan, and talk to the
+  property owner about the walk-away conditions.

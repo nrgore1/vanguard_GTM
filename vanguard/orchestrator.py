@@ -1,4 +1,5 @@
-"""Runs all selected properties in parallel, each through engines 1->4."""
+"""Runs all selected properties in parallel, each through engines 1->4, then the fail-proof layer
+(open gates remove the task classes they block; the focus lock flags delegated properties with no owner)."""
 from __future__ import annotations
 
 import asyncio
@@ -9,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .engines import run_property
+from .failproof import FailproofStore, apply_to_playbook, load_failproof
 from .lint_gate import LintGate
 from .llm import LLM
 from .registry import Property
@@ -28,6 +30,8 @@ async def run_portfolio(llm: LLM, properties: list[Property], store: Store, *,
     concurrency = concurrency or int(os.getenv("VANGUARD_CONCURRENCY", "4"))
     store.create_run(run_id, [p.id for p in properties])
     gate = LintGate()
+    fp_cfg = load_failproof(registry=None)
+    fp_store = FailproofStore(store)
     sem = asyncio.Semaphore(concurrency)
     out_dir = OUTPUT_DIR / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -37,6 +41,7 @@ async def run_portfolio(llm: LLM, properties: list[Property], store: Store, *,
         async with sem:
             try:
                 pb = await run_property(llm, p, run_id, gate)
+                apply_to_playbook(pb, fp_cfg, fp_store)
                 store.save_playbook(pb)
                 (out_dir / f"{p.id}.json").write_text(pb.model_dump_json(indent=2), encoding="utf-8")
                 log.info("[%s] done: lint=%s tasks=%d", p.id, pb.lint_status, len(pb.daily_task_registry))

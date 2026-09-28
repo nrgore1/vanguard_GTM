@@ -1,0 +1,345 @@
+# Fail-proof layer: premortem failure modes, pre-launch gates and tripwires
+# ------------------------------------------------------------------------
+# One file for all eight properties. Read by vanguard/failproof.py (Engines 0, 5, 6
+# and the focus lock). Status (gate results, tripwire readings) lives in the SQLite
+# store, never here - this file is the plan, the store is the evidence.
+#
+# Weeks count from program.start (a Monday = week 1). A check runs on the Friday of
+# its week. Tripwire rules: "<op> <number>" with op one of < <= > >= == !=.
+#
+# basis on a tripwire says where its threshold came from:
+#   premortem - the Sep 28, 2026 forensic premortem (founder-reviewed)
+#   prd       - the property's own PRD targets
+#   proposed  - a starting threshold; the owner tunes it and records why
+#
+# gate.blocks names task classes (task_classes below) that Engine 4 may not plan
+# while the gate is open. A gate with no blocks is advisory.
+
+program:
+  start: 2026-09-28
+  weeks: 26
+  meta_tripwire: {week: 10, max_tripped: 3}
+
+focus:
+  # The founder's calendar. Every other property must name a delegated owner.
+  founder: [liqmint-institutional, liqmint, vireoka]
+  primary: liqmint-institutional
+  founder_name: Narendra Gore
+
+task_classes:
+  investor_outreach: '\b(investors?|VCs?|venture|fundrais\w*|seed round|pre-?seed|SAFE|term sheet|pitch deck|angels?)\b'
+  cold_investor_outreach: '\b(cold|connection request|mass|bulk)\b.*\b(investors?|VCs?|venture)\b|\b(investors?|VCs?)\b.*\b(cold|connection requests?|bulk)\b'
+  paid_acquisition: '\b(paid (ads?|social|campaign|acquisition|media)|ad spend|boost(ed)? posts?|sponsored|PPC|CPC|CPM)\b'
+  public_launch: '\b(launch (announcement|post|day)|product hunt|press release|go live publicly)\b'
+
+properties:
+
+  # ================================================================ founder focus
+  liqmint-institutional:
+    owner: Narendra Gore
+    focus: primary
+    one_sentence: >-
+      LiqMint is the governance, risk and evidence layer for institutional
+      tokenized-asset operations: controls first, then assets move.
+    failure_modes:
+      - id: FM-1
+        name: No evidence to underwrite
+        cause: Raising on architecture (networks, gates, whitepapers) with no paying or committed customer.
+        assumption: Integration breadth substitutes for customer pull.
+        first_warning: Two non-VC investors showed interest, then passed (Sep 2026).
+      - id: FM-2
+        name: Dead channel
+        cause: Cold LinkedIn connection requests and unanswered VC approaches; 0 of 20 replied.
+        assumption: Fundraising is a volume problem a campaign engine can solve.
+        first_warning: 0/20 replies to LinkedIn intro requests.
+      - id: FM-3
+        name: Positioning ambiguity
+        cause: Stablecoin yield, tokenized assets, prediction markets and AI-agent governance told at once.
+        assumption: Optionality across markets makes the company look bigger.
+        first_warning: The agent's own registry once labelled LiqMint a yield platform.
+      - id: FM-4
+        name: Founder bandwidth
+        cause: Eight properties, tool building, consulting and publishing running during the raise.
+        assumption: Automation makes parallel work free.
+        first_warning: LiqMint sits in the same campaign registry as consumer matchmaking sites.
+      - id: FM-5
+        name: Not investable when interest arrives
+        cause: LLC-to-C-corp conversion and IP assignment not done; cap set on breadth, not proof.
+        assumption: Paperwork can wait until someone commits.
+        first_warning: An investor asks for cap and structure, then goes quiet.
+      - id: FM-6
+        name: Single thread
+        cause: Traction story rests on one broker-dealer prospect whose timeline follows its own Canton onboarding.
+        assumption: A walkthrough is a step toward an LOI.
+        first_warning: Three weeks pass without a date on the calendar.
+      - id: FM-7
+        name: Bad-money capture
+        cause: Under runway pressure, reopening a retainer placement agent or related-party capital already flagged.
+        assumption: Any money beats no money once runway is short.
+        first_warning: Rereading flagged-party notes "just to see".
+    gates:
+      - id: G1
+        name: Buyer reality
+        verify: At least 2 of 30 qualified prospects sign a paid PoV or an LOI with a named budget owner.
+        walk_away_if: 30 real conversations produce zero written commitments - sell the capability as consulting instead.
+        deadline_week: 10
+        blocks: [investor_outreach]
+      - id: G2
+        name: Investable structure
+        verify: C-corp conversion filed, all code and IP assigned to the company, data room complete.
+        walk_away_if: The IP cannot be cleanly assigned.
+        deadline_week: 4
+        blocks: [investor_outreach]
+      - id: G3
+        name: Positioning repeat-back
+        verify: 7 of 10 operators or investors repeat back the category and buyer after hearing the sentence once.
+        walk_away_if: Under 5 of 10 - do not launch anything until it is rewritten.
+        deadline_week: 3
+        blocks: [investor_outreach, public_launch]
+      - id: G4
+        name: Warm channel only
+        verify: At least 10 named warm introducers, each with a named investor.
+        walk_away_if: Fewer than 5 - do not open the round.
+        deadline_week: 12
+        blocks: [investor_outreach, cold_investor_outreach]
+      - id: G5
+        name: Commitment and runway
+        verify: Other properties have named owners; 9+ months personal runway without the raise; bad-money policy signed.
+        walk_away_if: Runway under 6 months - take consulting income first and raise later.
+        deadline_week: 4
+        blocks: [investor_outreach]
+    tripwires:
+      - {id: TW-1, failure_mode: FM-1, signal: Written design-partner commitments (paid PoV or LOI with budget owner), unit: count,
+         checks: [{week: 6, trips_if: "< 1"}, {week: 10, trips_if: "< 2"}], basis: premortem,
+         action: Stop investor work; run 10 more discovery calls on the most common objection.}
+      - {id: TW-2, failure_mode: FM-2, signal: First investor meetings from 10 warm intros, unit: count,
+         checks: [{week: 12, trips_if: "< 3"}], basis: premortem,
+         action: Switch the intro source to design partners' own investors.}
+      - {id: TW-2b, failure_mode: FM-2, signal: Cold VC messages sent this week, unit: count,
+         every_week_from: 1, trips_if: "> 0", basis: premortem,
+         action: Stop the sequence; cold VC outreach is disabled for 26 weeks.}
+      - {id: TW-3, failure_mode: FM-3, signal: Positioning repeat-back score out of 10, unit: score,
+         checks: [{week: 3, trips_if: "< 7"}], basis: premortem,
+         action: Freeze outreach; rewrite the sentence and retest.}
+      - {id: TW-3b, failure_mode: FM-3, signal: Investor passes citing "not our thesis" or "feature" (of first 6), unit: count,
+         checks: [{week: 16, trips_if: ">= 2"}], basis: premortem,
+         action: Rework category slide; test with 3 friendly investors before the next meeting.}
+      - {id: TW-4, failure_mode: FM-4, signal: Hours this week on non-LiqMint/Vireoka work, unit: hours,
+         every_week_from: 1, trips_if: "> 8", basis: premortem,
+         action: Hand the item to its delegate the same day.}
+      - {id: TW-5, failure_mode: FM-5, signal: C-corp conversion filed (1 = yes), unit: flag,
+         checks: [{week: 4, trips_if: "< 1"}], basis: premortem,
+         action: No investor meetings until filed.}
+      - {id: TW-5b, failure_mode: FM-5, signal: Days to answer the slowest investor document request, unit: days,
+         checks: [{week: 6, trips_if: "> 2"}], basis: premortem,
+         action: Finish the data room before the next meeting.}
+      - {id: TW-6, failure_mode: FM-6, signal: Mirai walkthrough date booked (1 = yes), unit: flag,
+         checks: [{week: 3, trips_if: "< 1"}], basis: premortem,
+         action: Remove Mirai from the traction story; add 2 replacement threads.}
+      - {id: TW-6b, failure_mode: FM-6, signal: Named post-walkthrough next step with budget owner (1 = yes), unit: flag,
+         checks: [{week: 8, trips_if: "< 1"}], basis: premortem,
+         action: Treat the thread as cold; rescore it below 60.}
+      - {id: TW-7, failure_mode: FM-7, signal: Contacts with flagged parties or retainer intermediaries without counsel, unit: count,
+         checks: [{week: 12, trips_if: "> 0"}, {week: 14, trips_if: "> 0"}, {week: 16, trips_if: "> 0"}], basis: premortem,
+         action: Engage independent counsel before any reply.}
+      - {id: TW-7b, failure_mode: FM-7, signal: Personal runway, unit: months,
+         checks: [{week: 12, trips_if: "< 4"}, {week: 16, trips_if: "< 4"}, {week: 20, trips_if: "< 4"}], basis: premortem,
+         action: Move to consulting income first; pause the raise.}
+
+  liqmint:
+    owner: Narendra Gore
+    focus: founder
+    one_sentence: >-
+      LiqMint makes stablecoin moves safer - check before you send - and never
+      holds your funds.
+    failure_modes:
+      - {id: FM-1, name: Read as a yield product, cause: Retail copy or third-party posts drift into yield or returns language.,
+         assumption: Education copy cannot create regulatory exposure., first_warning: Any lint block for yield language.}
+      - {id: FM-2, name: Content without activation, cause: Reels get views but viewers never complete a first safety check.,
+         assumption: Views convert on their own., first_warning: Lesson opens rise while first safety checks stay flat.}
+      - {id: FM-3, name: Retail steals founder time, cause: Retail growth work crowds out institutional selling.,
+         assumption: Retail traction impresses institutional investors., first_warning: Retail tasks on the founder's calendar.}
+    gates:
+      - {id: G1, name: Activation instrumented, verify: video_view -> lesson_open -> signup -> first_safety_check events verified in production.,
+         walk_away_if: Events cannot be verified - do not report retail numbers to investors., deadline_week: 3, blocks: [paid_acquisition]}
+      - {id: G2, name: Billing works end to end, verify: A real $19.99 subscription completes and cancels on each payment method.,
+         walk_away_if: Any method fails - remove it from checkout., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
+    tripwires:
+      - {id: TW-1, failure_mode: FM-1, signal: Lint blocks for yield or returns language this week, unit: count,
+         every_week_from: 1, trips_if: "> 0", basis: proposed, action: Pull the asset and review the source prompt.}
+      - {id: TW-2, failure_mode: FM-2, signal: First completed safety checks per 100 signups, unit: percent,
+         checks: [{week: 6, trips_if: "< 30"}, {week: 12, trips_if: "< 30"}], basis: proposed,
+         action: Replace the least-watched hero topic; shorten the path from lesson to check.}
+      - {id: TW-3, failure_mode: FM-3, signal: Founder hours on retail this week, unit: hours,
+         every_week_from: 1, trips_if: "> 2", basis: proposed, action: Automate or drop the task.}
+
+  vireoka:
+    owner: Narendra Gore
+    focus: founder
+    one_sentence: >-
+      Governance for AI that moves money - Vireoka's flagship is LiqMint
+      Institutional.
+    failure_modes:
+      - {id: FM-1, name: Portfolio signal, cause: vireoka.com and the founder's profiles still show consumer and philosophy properties.,
+         assumption: A portfolio looks like range., first_warning: An investor asks which company is the real one.}
+      - {id: FM-2, name: Internal names leak, cause: Engine names, council names or key-management details appear in public copy.,
+         assumption: Depth impresses; it also discloses., first_warning: Any property-banned-term lint block.}
+      - {id: FM-3, name: Two stories for one company, cause: Cognitive Governance and LiqMint pitched as separate businesses.,
+         assumption: More products means more value., first_warning: Investors ask for two decks.}
+    gates:
+      - {id: G1, name: Site shows one company, verify: No links, logos or menu items for the consumer properties on vireoka.com or the founder's LinkedIn.,
+         walk_away_if: Cannot be removed - do not start investor conversations., deadline_week: 3, blocks: [investor_outreach]}
+      - {id: G2, name: Investor portal works, verify: Apply -> NDA -> approval -> time-limited access tested end to end by an outsider.,
+         walk_away_if: Broken - send the data room by link instead., deadline_week: 6, blocks: []}
+    tripwires:
+      - {id: TW-1, failure_mode: FM-1, signal: Public pages linking to consumer properties, unit: count,
+         checks: [{week: 3, trips_if: "> 0"}], basis: premortem, action: Remove them before the next meeting.}
+      - {id: TW-2, failure_mode: FM-2, signal: Banned-term lint blocks this week, unit: count,
+         every_week_from: 1, trips_if: "> 0", basis: proposed, action: Pull the asset; add the term to banned_terms if new.}
+
+  # ================================================================ delegated
+  weddingos:
+    owner: null
+    focus: delegated
+    one_sentence: >-
+      The wedding operating system for multi-event South Asian weddings - one
+      plan for couples, families and vendors.
+    failure_modes:
+      - {id: FM-1, name: Positioning never confirmed, cause: No product repo backs the registry entry; campaigns sell features that may not exist.,
+         assumption: The drafted positioning matches the product., first_warning: Registry still says needs_review.}
+      - {id: FM-2, name: Marketplace with no vendors, cause: Couples arrive before vendors, or vendors before couples.,
+         assumption: One side will pull the other., first_warning: Couples invite vendors who never accept.}
+      - {id: FM-3, name: Affiliate revenue too thin, cause: 5-20% commissions on occasional purchases do not reach $2M.,
+         assumption: Affiliate income scales with traffic., first_warning: Revenue per wedding under $50 after 20 weddings.}
+      - {id: FM-4, name: Domain split, cause: weddingos.pro and weddingos.jodibana.com split traffic and trust.,
+         assumption: Both domains help., first_warning: Two URLs in the same campaign.}
+    gates:
+      - {id: G1, name: Owner and positioning, verify: Named owner; positioning confirmed from the product itself.,
+         walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
+      - {id: G2, name: Works for real couples, verify: 10 real couples complete plan + guest list + one vendor invite.,
+         walk_away_if: Fewer than 5 complete - fix the product before marketing., deadline_week: 10, blocks: [paid_acquisition]}
+      - {id: G3, name: One domain, verify: A single canonical domain chosen; the other redirects.,
+         walk_away_if: n/a, deadline_week: 4, blocks: [public_launch]}
+    tripwires:
+      - {id: TW-1, failure_mode: FM-2, signal: Vendor invite acceptance rate, unit: percent,
+         checks: [{week: 10, trips_if: "< 25"}], basis: proposed, action: Recruit vendors directly through planner partners first.}
+      - {id: TW-2, failure_mode: FM-3, signal: Revenue per completed wedding, unit: usd,
+         checks: [{week: 20, trips_if: "< 50"}], basis: proposed, action: Test a paid planner or vendor subscription.}
+      - {id: TW-3, failure_mode: FM-1, signal: Owner assigned (1 = yes), unit: flag,
+         checks: [{week: 4, trips_if: "< 1"}], basis: premortem, action: Freeze the property.}
+
+  jodibana:
+    owner: null
+    focus: delegated
+    one_sentence: >-
+      Invite-only, AI-assisted matchmaking for the Indian diaspora - verified
+      profiles and family-inclusive introductions, never casual swiping.
+    failure_modes:
+      - {id: FM-1, name: Trust and safety incident, cause: A fake or harmful profile reaches a member before verification catches it.,
+         assumption: Invite-only is enough safety., first_warning: Any report-a-profile ticket open more than 48 hours.}
+      - {id: FM-2, name: Empty room, cause: Paid acquisition sends members into cities with too few verified profiles to match.,
+         assumption: Members stay while the pool grows., first_warning: New members with zero suggested matches in week 1.}
+      - {id: FM-3, name: AI over-promise, cause: Copy implies the AI finds a spouse.,
+         assumption: A bold promise converts better., first_warning: Any guaranteed-match lint block.}
+      - {id: FM-4, name: Brand cannibalisation, cause: Jodibana and JodiUSA compete for the same US members and budget.,
+         assumption: Two brands double reach., first_warning: The same person signs up on both.}
+    gates:
+      - {id: G1, name: Owner and positioning, verify: Named owner; positioning confirmed from the product.,
+         walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
+      - {id: G2, name: Safety live, verify: Profile verification, report/block and admin review working; privacy policy and terms reviewed.,
+         walk_away_if: Not live - no public launch at all., deadline_week: 8, blocks: [paid_acquisition, public_launch]}
+      - {id: G3, name: Liquidity in one community, verify: 300 verified profiles in one launch city or community before paid acquisition.,
+         walk_away_if: Under 100 by week 16 - rethink the entry community., deadline_week: 16, blocks: [paid_acquisition]}
+    tripwires:
+      - {id: TW-1, failure_mode: FM-1, signal: Report tickets open over 48 hours, unit: count,
+         every_week_from: 1, trips_if: "> 0", basis: proposed, action: Pause invites until the queue is clear.}
+      - {id: TW-2, failure_mode: FM-2, signal: New members with zero suggested matches in week 1, unit: percent,
+         checks: [{week: 12, trips_if: "> 20"}, {week: 20, trips_if: "> 20"}], basis: proposed, action: Stop acquisition outside the launch community.}
+      - {id: TW-3, failure_mode: FM-4, signal: Duplicate sign-ups across Jodibana and JodiUSA, unit: percent,
+         checks: [{week: 12, trips_if: "> 10"}], basis: proposed, action: Merge funnels; one brand per market.}
+
+  jodiusa:
+    owner: null
+    focus: delegated
+    one_sentence: >-
+      The US edition of Jodibana - matchmaking for South Asians in America that
+      understands careers, relocation and interfaith families.
+    failure_modes:
+      - {id: FM-1, name: No reason to exist separately, cause: Same product and pool as Jodibana under a second name.,
+         assumption: A US brand converts better on its own., first_warning: No feature or pool difference can be named.}
+      - {id: FM-2, name: Empty room, cause: Members arrive in metros with too few verified profiles.,
+         assumption: The US is one market., first_warning: New members with zero suggested matches.}
+      - {id: FM-3, name: Community partner burn, cause: Temples, associations and alumni groups are asked to promote before safety is live.,
+         assumption: Community trust is renewable., first_warning: A partner asks about verification and there is no answer.}
+    gates:
+      - {id: G0, name: Brand decision, verify: Written decision on how JodiUSA differs from Jodibana (pool, features or audience) or a merge.,
+         walk_away_if: No difference can be written - fold into Jodibana., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
+      - {id: G1, name: Owner assigned, verify: Named owner.,
+         walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
+      - {id: G2, name: Safety live, verify: Shares Jodibana's verification, report/block and admin review.,
+         walk_away_if: Not live - no community partner outreach., deadline_week: 8, blocks: [paid_acquisition, public_launch]}
+    tripwires:
+      - {id: TW-1, failure_mode: FM-1, signal: Brand decision written (1 = yes), unit: flag,
+         checks: [{week: 4, trips_if: "< 1"}], basis: premortem, action: Fold into Jodibana.}
+      - {id: TW-2, failure_mode: FM-2, signal: New members with zero suggested matches in week 1, unit: percent,
+         checks: [{week: 12, trips_if: "> 20"}], basis: proposed, action: Concentrate on one metro.}
+
+  oratoplus:
+    owner: null
+    focus: delegated
+    one_sentence: >-
+      A gym for your voice - rehearse the talk, survive the Q&A, watch yourself
+      improve.
+    failure_modes:
+      - {id: FM-1, name: Sign-ups that never practice, cause: Visitors sign up but never record and score a first take.,
+         assumption: Sign-up is activation., first_warning: First scored take within 24h under the PRD target.}
+      - {id: FM-2, name: Free forever, cause: Users get enough value from the free tier and never pay.,
+         assumption: Power users upgrade on their own., first_warning: Free-to-paid under the PRD target at day 30.}
+      - {id: FM-3, name: Selling Wave 2, cause: Enterprise buyers are promised team seats, SSO or 2FA that are planned, not live.,
+         assumption: Roadmap items can close deals., first_warning: An Enterprise proposal lists team features.}
+    gates:
+      - {id: G1, name: Owner assigned, verify: Named owner.,
+         walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
+      - {id: G2, name: Activation proven, verify: First scored take within 24h at 55%+ on 50 organic sign-ups (PRD target).,
+         walk_away_if: Under 40% - fix onboarding before any paid spend., deadline_week: 8, blocks: [paid_acquisition]}
+      - {id: G3, name: Prices confirmed, verify: Current Growth and Enterprise prices confirmed in the PlanTier catalog.,
+         walk_away_if: n/a, deadline_week: 4, blocks: [public_launch]}
+    tripwires:
+      - {id: TW-1, failure_mode: FM-1, signal: Landing to sign-up conversion, unit: percent,
+         checks: [{week: 8, trips_if: "< 8"}], basis: prd, action: Rewrite the landing hero around the hostile Q&A.}
+      - {id: TW-2, failure_mode: FM-1, signal: First scored take within 24h, unit: percent,
+         checks: [{week: 8, trips_if: "< 55"}, {week: 16, trips_if: "< 55"}], basis: prd, action: Shorten time to first take.}
+      - {id: TW-3, failure_mode: FM-2, signal: Free to paid by day 30, unit: percent,
+         checks: [{week: 16, trips_if: "< 6"}, {week: 24, trips_if: "< 6"}], basis: prd, action: Move one differentiator behind the paywall.}
+      - {id: TW-4, failure_mode: FM-2, signal: Growth-tier monthly churn, unit: percent,
+         checks: [{week: 20, trips_if: "> 3.5"}], basis: prd, action: Interview 5 churned users before changing price.}
+
+  atmakosh:
+    owner: null
+    focus: delegated
+    one_sentence: >-
+      Governance-as-a-service for AI agents - systems call Atmakosh before they
+      act.
+    failure_modes:
+      - {id: FM-1, name: Selling unreleased tiers, cause: Paid tiers marketed before their unique features ship.,
+         assumption: A waitlist is a sale., first_warning: A checkout link for a waitlist-gated tier.}
+      - {id: FM-2, name: Compliance over-claim, cause: Copy says certified or compliant rather than mapped to obligations.,
+         assumption: Buyers want certainty., first_warning: Any design-intent lint warning on regulation copy.}
+      - {id: FM-3, name: Philosophy before utility, cause: Enterprise engineers see traditions and worldviews before the authorize API.,
+         assumption: The framing differentiates for every buyer., first_warning: Developer docs visits with no API key created.}
+      - {id: FM-4, name: Competes with the LiqMint raise, cause: Atmakosh content under the founder's name during the raise blurs his focus.,
+         assumption: Thought leadership helps every property., first_warning: Founder-authored Atmakosh posts during weeks 1-26.}
+    gates:
+      - {id: G1, name: Owner assigned, verify: Named owner who publishes under their own name.,
+         walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
+      - {id: G2, name: Developer path works, verify: An outside developer gets an authorize verdict from the API in under 15 minutes from the docs.,
+         walk_away_if: Over 60 minutes - fix docs before outreach., deadline_week: 8, blocks: [paid_acquisition]}
+      - {id: G3, name: Only released tiers are sold, verify: Every paid tier on the site is released or clearly waitlisted.,
+         walk_away_if: n/a, deadline_week: 4, blocks: [public_launch]}
+    tripwires:
+      - {id: TW-1, failure_mode: FM-3, signal: Docs visitors who create an API key, unit: percent,
+         checks: [{week: 12, trips_if: "< 5"}], basis: proposed, action: Put the authorize quickstart above the philosophy.}
+      - {id: TW-2, failure_mode: FM-4, signal: Founder-authored Atmakosh posts this week, unit: count,
+         every_week_from: 1, trips_if: "> 0", basis: premortem, action: Republish under the delegated owner.}
+      - {id: TW-3, failure_mode: FM-1, signal: Checkout links for unreleased tiers, unit: count,
+         checks: [{week: 4, trips_if: "> 0"}], basis: proposed, action: Replace with a waitlist form.}

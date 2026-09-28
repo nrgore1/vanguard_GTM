@@ -650,3 +650,55 @@ def test_e2e_28_runs_on_a_non_utf8_windows_style_locale(tmp_path):
                  ["outreach", "status"]):
         r = subprocess.run([sys.executable, "-m", "vanguard", *args], cwd=ROOT, env=env, capture_output=True)
         assert r.returncode == 0, (args, r.stderr.decode("utf-8", "replace")[-800:])
+
+
+# ------------------------------------------------------------------ fail-proof layer
+def test_e2e_failproof_cli_flow(env):
+    """E2E-29: record readings, set gates and print the tracker from the CLI; 3 tripped tripwires exit 2 (HALT)."""
+    cli(env, "record", "liqmint-institutional", "TW-3", "8", "--date", "2026-10-15", "--by", "test")
+    out = cli(env, "tripwires", "--property", "liqmint-institutional", "--as-of", "2026-10-16").stdout
+    assert "| TW-3 |" in out and "GREEN" in out and "G1 Buyer reality" in out
+    assert cli(env, "gate", "liqmint-institutional", "G2", "pass", check=False).returncode != 0  # --by required
+    cli(env, "gate", "liqmint-institutional", "G2", "pass", "--by", "Narendra")
+    r = cli(env, "gate", "liqmint-institutional", "G1", "fail", "--by", "Narendra")
+    assert "WALK-AWAY CONDITION" in r.stdout
+    # readings count toward a check only if dated on or before that check's Friday
+    for tw, v, d in (("TW-3", 4, "2026-10-16"), ("TW-6", 0, "2026-10-16"), ("TW-5", 0, "2026-10-22")):
+        cli(env, "record", "liqmint-institutional", tw, str(v), "--date", d)
+    r = cli(env, "tripwires", "--property", "liqmint-institutional", "--as-of", "2026-10-23", check=False)
+    assert r.returncode == 2 and "HALT" in r.stdout
+    data = json.loads(cli(env, "tripwires", "--json", "--as-of", "2026-10-23", check=False).stdout)
+    assert {p["property_id"] for p in data["properties"]} == {p.id for p in load_properties()}
+    assert cli(env, "record", "liqmint-institutional", "TW-99", "1", check=False).returncode != 0
+
+
+def test_e2e_run_drops_gate_blocked_tasks(env, tmp_path, monkeypatch):
+    """E2E-30: a run whose task plan includes investor outreach loses those tasks while gates are open, with a
+    GATE_BLOCKED note, and delegated properties with no owner carry a FOCUS_LOCK note."""
+    real = mock_fixtures.tasks
+
+    def with_investor_task(pid):
+        d = real(pid)
+        d["daily_task_registry"][4]["description"] = "Email 20 seed investors the pitch deck"
+        return d
+
+    monkeypatch.setattr(mock_fixtures, "tasks", with_investor_task)
+    from vanguard.llm import MockLLM
+    store = Store(tmp_path / "v.db")
+    rid = asyncio.run(run_portfolio(MockLLM(), get_properties(["liqmint-institutional", "weddingos"]), store))
+    pb = store.playbook(rid, "liqmint-institutional")
+    ids = [t.task_id for t in pb.daily_task_registry]
+    assert "LQI-005" not in ids and "LQI-006" in ids
+    assert "LQI-005" not in next(t for t in pb.daily_task_registry if t.task_id == "LQI-006").dependencies
+    assert any(n.startswith("GATE_BLOCKED: LQI-005") for n in pb.notes)
+    assert any(n.startswith("FOCUS_LOCK") for n in store.playbook(rid, "weddingos").notes)
+
+
+def test_e2e_premortem_dry_run(env, tmp_path):
+    """E2E-31: `vanguard premortem --dry-run` writes a 7-cause autopsy with verdict, adversary and tripwires, $0."""
+    out = tmp_path / "pm.md"
+    plan = tmp_path / "plan.md"
+    plan.write_text("Raise $3M from stablecoin VCs via LinkedIn in 6 months.", encoding="utf-8")
+    cli(env, "premortem", "liqmint-institutional", "--dry-run", "--plan", str(plan), "--out", str(out))
+    md = out.read_text(encoding="utf-8")
+    assert md.count("### #") == 7 and "## Verdict" in md and "## Adversary" in md and "## Tripwires" in md

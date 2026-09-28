@@ -838,6 +838,66 @@ def delete_task(tid: int, a: dict = Depends(admin_user)):
     return {"ok": True}
 
 
+# fail-proof layer: tripwires, gates, premortems -----------------------------------
+class ReadingIn(BaseModel):
+    tripwire_id: str
+    value: float
+    date: _date | None = None
+    note: str = Field(default="", max_length=500)
+
+
+class GateIn(BaseModel):
+    status: Literal["open", "passed", "failed"]
+    note: str = Field(default="", max_length=500)
+
+
+def _failproof():
+    from ..failproof import FailproofStore, load_failproof
+    return load_failproof(), FailproofStore(store())
+
+
+@api.get("/failproof")
+def failproof_tracker(as_of: _date | None = None, property_id: str | None = None, u: dict = Depends(current_user)):
+    from ..failproof import today, tracker
+    cfg, fs = _failproof()
+    return tracker(cfg, fs, as_of or today(), [valid_property(property_id)] if property_id else None)
+
+
+@api.post("/failproof/{pid}/readings", status_code=201)
+def failproof_reading(pid: str, body: ReadingIn, u: dict = Depends(current_user)):
+    from ..failproof import today
+    cfg, fs = _failproof()
+    valid_property(pid)
+    if body.tripwire_id not in {t.id for t in cfg.properties[pid].tripwires}:
+        raise HTTPException(422, f"unknown tripwire {body.tripwire_id!r} for {pid}")
+    d = body.date or today()
+    fs.record(pid, body.tripwire_id, body.value, d, body.note, u["email"])
+    store().audit(u["id"], "record", "tripwire", f"{pid}:{body.tripwire_id}", body.model_dump(mode="json"))
+    return {"ok": True}
+
+
+@api.put("/failproof/{pid}/gates/{gid}")
+def failproof_gate(pid: str, gid: str, body: GateIn, a: dict = Depends(admin_user)):
+    cfg, fs = _failproof()
+    valid_property(pid)
+    gate = next((g for g in cfg.properties[pid].gates if g.id == gid), None)
+    if not gate:
+        raise HTTPException(404, f"unknown gate {gid!r} for {pid}")
+    fs.set_gate(pid, gid, body.status, body.note, a["email"])
+    store().audit(a["id"], "update", "gate", f"{pid}:{gid}", body.model_dump())
+    return {"ok": True, "walk_away_if": gate.walk_away_if if body.status == "failed" else None}
+
+
+@api.get("/failproof/{pid}/premortem")
+def failproof_premortem(pid: str, u: dict = Depends(current_user)):
+    _, fs = _failproof()
+    valid_property(pid)
+    pm = fs.latest_premortem(pid)
+    if not pm:
+        raise HTTPException(404, "no premortem yet - run `vanguard premortem <property>`")
+    return pm
+
+
 # agent (admin) -------------------------------------------------------------------
 @api.get("/agent/status")
 def agent_status(a: dict = Depends(admin_user)):

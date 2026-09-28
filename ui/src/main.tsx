@@ -18,6 +18,7 @@ import Partners from "./pages/Partners";
 import PartnerDetail from "./pages/PartnerDetail";
 import Tasks from "./pages/Tasks";
 import Outreach from "./pages/Outreach";
+import Tripwires from "./pages/Tripwires";
 import Admin from "./pages/Admin";
 
 try { document.documentElement.dataset.theme = localStorage.getItem("vanguard.theme") ?? "dark"; } catch { /* ignore */ }
@@ -45,6 +46,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="partners/:id" element={<PartnerDetail />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="outreach" element={<Outreach />} />
+              <Route path="tripwires" element={<Tripwires />} />
               <Route path="admin" element={<Guard admin><Admin /></Guard>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
