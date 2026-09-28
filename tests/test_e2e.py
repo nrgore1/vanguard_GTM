@@ -683,6 +683,10 @@ def test_e2e_run_drops_gate_blocked_tasks(env, tmp_path, monkeypatch):
         return d
 
     monkeypatch.setattr(mock_fixtures, "tasks", with_investor_task)
+    from vanguard.failproof import load_failproof
+    unowned = load_failproof()
+    unowned.properties["weddingos"].owner = None
+    monkeypatch.setattr("vanguard.orchestrator.load_failproof", lambda **_: unowned)
     from vanguard.llm import MockLLM
     store = Store(tmp_path / "v.db")
     rid = asyncio.run(run_portfolio(MockLLM(), get_properties(["liqmint-institutional", "weddingos"]), store))

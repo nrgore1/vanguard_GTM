@@ -1,6 +1,6 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.7.0 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.7.1 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
 > **Rule for every change:** update this manual, `DESIGN.md` (including its §18 change log) and

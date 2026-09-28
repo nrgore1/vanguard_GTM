@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.7.0 |
+| **Version** | 0.7.1 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-09-28 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -812,6 +812,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.7.1 | 2026-09-28 | **Owners assigned:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are owned by Naren@atmakosh.com in `config/failproof.yaml`, which clears their FOCUS_LOCK notes. Tests keep exercising the focus lock with an unowned copy of the config. |
 | 0.7.0 | 2026-09-28 | **Fail-proof layer** (§17): Engine 0 forensic premortem (`vanguard premortem`, `--dry-run` at $0), Engine 5 readiness gates that remove blocked task classes (investor outreach, cold investor outreach, paid acquisition, public launch) from plans until passed, Engine 6 tripwire monitor with Friday checks and HALT at 3 tripped, and the focus lock for delegated properties. `config/failproof.yaml` covers all 8 properties; new tables `tripwire_readings`, `gate_status`, `premortems`; CLI `tripwires`, `record`, `gate`, `premortem`; `/api/failproof…` and machine `GET /failproof`; UI Tripwires page. Tests E2E-29–31, WEB-28 and `tests/test_failproof.py`. |
 | 0.6.0 | 2026-09-28 | **Researched partners** (§15.7): `config/partner_targets.yaml` lists 117 real, source-cited organisations across all 8 properties. `targets.py` imports them idempotently as named partners with inherited 3-step drafts, enriching playbook examples rather than duplicating them, and clamps each score into its priority band. Adds `vanguard partners import`, `POST /api/partners/import-research`, the "Load researched partners" button, researched badges, and clickable source, contact and website links. Tests WEB-26, WEB-27 and UI-15. |
 | 0.5.1 | 2026-09-28 | **Windows fix:** every text file is read and written as UTF-8 explicitly. Windows' default cp1252 crashed on the config files (`UnicodeDecodeError` in `demo-data`, `run`, `serve`). The CLI console is set to UTF-8 with replacement. Adds `start.ps1` (one-command Windows start) and a flat install layout in the setup guide. |

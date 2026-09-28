@@ -113,7 +113,10 @@ def test_classifier_and_focus_lock(cfg):
     assert "cold_investor_outreach" in classify_task("Send cold connection requests to VCs", cfg)
     assert "paid_acquisition" in classify_task("Launch paid social campaign on Instagram", cfg)
     assert classify_task("Record a demo of the evidence pack", cfg) == []
-    assert focus_issues(cfg, "weddingos")          # delegated, no owner yet
+    assert focus_issues(cfg, "weddingos") == []    # delegated and owned
+    unowned = cfg.model_copy(deep=True)
+    unowned.properties["weddingos"].owner = None
+    assert focus_issues(unowned, "weddingos")      # delegated, no owner -> flagged
     assert focus_issues(cfg, "liqmint-institutional") == []
 
 

@@ -199,7 +199,7 @@ properties:
 
   # ================================================================ delegated
   weddingos:
-    owner: null
+    owner: Naren@atmakosh.com
     focus: delegated
     one_sentence: >-
       The wedding operating system for multi-event South Asian weddings - one
@@ -229,7 +229,7 @@ properties:
          checks: [{week: 4, trips_if: "< 1"}], basis: premortem, action: Freeze the property.}
 
   jodibana:
-    owner: null
+    owner: Naren@atmakosh.com
     focus: delegated
     one_sentence: >-
       Invite-only, AI-assisted matchmaking for the Indian diaspora - verified
@@ -259,7 +259,7 @@ properties:
          checks: [{week: 12, trips_if: "> 10"}], basis: proposed, action: Merge funnels; one brand per market.}
 
   jodiusa:
-    owner: null
+    owner: Naren@atmakosh.com
     focus: delegated
     one_sentence: >-
       The US edition of Jodibana - matchmaking for South Asians in America that
@@ -285,7 +285,7 @@ properties:
          checks: [{week: 12, trips_if: "> 20"}], basis: proposed, action: Concentrate on one metro.}
 
   oratoplus:
-    owner: null
+    owner: Naren@atmakosh.com
     focus: delegated
     one_sentence: >-
       A gym for your voice - rehearse the talk, survive the Q&A, watch yourself
@@ -315,7 +315,7 @@ properties:
          checks: [{week: 20, trips_if: "> 3.5"}], basis: prd, action: Interview 5 churned users before changing price.}
 
   atmakosh:
-    owner: null
+    owner: Naren@atmakosh.com
     focus: delegated
     one_sentence: >-
       Governance-as-a-service for AI agents - systems call Atmakosh before they

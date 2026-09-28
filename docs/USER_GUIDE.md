@@ -1,6 +1,6 @@
 # Vanguard-GTM — User Guide
 
-Version 0.7.0 · updated 2026-09-28 · for the team (general users) and admins
+Version 0.7.1 · updated 2026-09-28 · for the team (general users) and admins
 
 Vanguard turns the agent's go-to-market plans into day-to-day work: campaigns you run and
 measure, partners you work through a pipeline, and tasks you tick off. Everyone shares one

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1 — 2026-09-28
+
+- **Owners assigned:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are owned by
+  Naren@atmakosh.com (`config/failproof.yaml`), so their plans no longer carry FOCUS_LOCK notes.
+- Tests still check the focus lock, using a copy of the config with an owner removed.
+
 ## 0.7.0 — 2026-09-28
 
 ### Added: fail-proof layer (premortem, gates, tripwires, focus lock)

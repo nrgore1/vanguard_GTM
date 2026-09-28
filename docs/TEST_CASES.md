@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.7.0 · updated 2026-09-28
+Version 0.7.1 · updated 2026-09-28
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -40,7 +40,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | E2E-27 | Model not pulled | Server up with a different model; server down | The message names the exact `ollama pull qwen3.6:27b`; the down case says "not reachable" |
 | E2E-28 | Works on a non-UTF-8 (Windows cp1252-style) locale | `demo-data`, `partners recommend jodibana`, a dry run and `outreach status` all exit 0 with `LC_ALL=C`/`PYTHONUTF8=0`. A static check fails if any `read_text`/`write_text`/`open("w…")` in `vanguard/` lacks `encoding=`. |
 | E2E-29 | Fail-proof CLI flow | `record`, `gate` and `tripwires` from the CLI | A reading shows GREEN; `gate pass` without `--by` is refused; `gate fail` prints the walk-away condition; three tripped tripwires make `tripwires` exit 2 with HALT; `--json` covers all 8 properties; an unknown tripwire is refused. |
-| E2E-30 | Gates remove blocked tasks from a run | Dry run where one institutional task emails seed investors | That task is gone, dependants no longer point at it, a `GATE_BLOCKED` note names it, and the delegated WeddingOS playbook carries a `FOCUS_LOCK` note. |
+| E2E-30 | Gates remove blocked tasks from a run | Dry run where one institutional task emails seed investors | That task is gone, dependants no longer point at it, a `GATE_BLOCKED` note names it, and a WeddingOS playbook run with its owner removed carries a `FOCUS_LOCK` note. |
 | E2E-31 | Premortem at $0 | `premortem liqmint-institutional --dry-run --plan plan.md --out pm.md` | The markdown has 7 ranked causes, a verdict, an adversary and a tripwire table. |
 
 ## Live smoke cases (opt-in)
