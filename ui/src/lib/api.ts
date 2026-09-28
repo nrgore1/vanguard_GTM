@@ -1,0 +1,200 @@
+// Typed client for the Vanguard-GTM web API (/api). Token lives in localStorage.
+export type Role = "admin" | "user";
+export interface User { id: number; email: string; name: string; role: Role }
+export interface Property {
+  id: string; url: string; name: string; track: string; motion: string; positioning_status: string;
+  task_prefix: string; positioning: string; pricing_facts: string[];
+}
+export type CampaignStatus = "draft" | "scheduled" | "active" | "paused" | "completed";
+export interface Campaign {
+  id: number; property_id: string; name: string; kind: string; channel: string | null; status: CampaignStatus;
+  start_date: string | null; end_date: string | null; budget_usd: number; goal_metric: string | null;
+  goal_value: number | null; description: string | null; content: string | null; owner_id: number | null;
+  owner_name?: string | null; created_by: number | null; source_run_id: string | null; updated_at: string;
+  sent?: number; replies?: number; meetings?: number; signups?: number; conversions?: number;
+  revenue_usd?: number; spend_usd?: number; results?: Result[];
+}
+export interface Result {
+  id: number; campaign_id: number; date: string; sent: number; opens: number; clicks: number; replies: number;
+  meetings: number; signups: number; conversions: number; revenue_usd: number; spend_usd: number;
+  notes: string | null; created_by: number | null; by_name?: string;
+}
+export type PartnerStage = "identified" | "contacted" | "in_conversation" | "pilot" | "signed" | "declined";
+export type PartnerKind = "design_partner" | "co_sell" | "distribution" | "referral_affiliate" | "integration";
+export interface Partner {
+  id: number; property_id: string; name: string; kind: PartnerKind; stage: PartnerStage; partner_type: string | null;
+  contact_name: string | null; contact_email: string | null; value_sharing_model: string | null;
+  mutual_value: string | null; first_ask: string | null; next_step: string | null; next_step_date: string | null;
+  owner_id: number | null; owner_name?: string | null; interactions?: number | Interaction[]; source_run_id?: string | null;
+  last_contact?: string | null; created_by: number | null; updated_at: string;
+  category?: string | null; is_segment?: number; priority_score?: number | null; priority?: "P0" | "P1" | "P2" | null;
+  factors?: Record<string, number> | null; rationale?: string | null; deal_structure?: string | null;
+  how_to_find?: string | null; website?: string | null; source?: string | null; parent_id?: number | null;
+  agreement_status?: AgreementStatus | null; agreement_signed_date?: string | null; agreement_notes?: string | null;
+  outreach?: OutreachMessage[]; targets?: { id: number; name: string; stage: string; contact_email: string | null; agreement_status: string | null }[];
+  segment_name?: string | null; email_consent?: EmailConsent | null;
+}
+export interface AgentStatus {
+  version: string; provider: string; local_model: string; local_ok: boolean | null; local_message: string;
+  paid_runs: boolean; cap_usd: number; claude_model: string; claude_key_set: boolean; notion_token_set: boolean;
+  email?: EmailStatus;
+}
+export type EmailConsent = "none" | "opted_in" | "existing_relationship" | "replied" | "opted_out";
+export interface PostmarkStatus {
+  configured: boolean; stream_outreach: string; stream_notify: string; inbound: boolean; allow_cold: boolean;
+  cold_via_smtp: boolean; monthly_cap: number; track_opens: boolean; webhook_auth: boolean; used_this_month?: number;
+}
+export interface EmailStatus {
+  mode: string; live: boolean; problems: string[]; sender: string; daily_cap: number; imap_configured: boolean;
+  postmark: PostmarkStatus | null;
+}
+export type AgreementStatus = "none" | "proposed" | "negotiating" | "signed" | "declined";
+export type OutreachStatus = "draft" | "approved" | "sent" | "replied" | "cancelled" | "failed" | "bounced";
+export interface OutreachMessage {
+  id: number; partner_id: number; step: number; delay_days: number; subject: string; body: string; status: OutreachStatus;
+  lint_status: string; lint_findings: string | null; approved_by: string | null; approved_at: string | null;
+  sent_at: string | null; to_email: string | null; error: string | null; replied_at: string | null;
+  partner_name?: string; property_id?: string; partner_kind?: string; partner_stage?: string; contact_email?: string | null;
+  contact_name?: string | null; priority_score?: number | null; priority?: string | null;
+  transport?: string | null; pm_message_id?: string | null; delivered_at?: string | null; opened_at?: string | null;
+}
+export interface OutreachStats {
+  draft: number; approved: number; sent: number; replied: number; cancelled: number; failed: number; bounced: number;
+  ever_sent: number; blocked: number; partners_contacted: number; partners_replied: number; reply_rate: number | null;
+  sent_today: number; suppressed: number;
+  email: EmailStatus;
+}
+export interface Interaction {
+  id: number; partner_id: number; date: string; type: string; summary: string; outcome: string;
+  next_step: string | null; created_by: number | null; by_name?: string; partner_name?: string; property_id?: string;
+}
+export type TaskStatus = "Not started" | "In progress" | "Done" | "Blocked";
+export interface Task {
+  id: number; run_id: string; property_id: string; task_id: string; day: number; priority: "P0" | "P1" | "P2";
+  owner: string; tool?: string | null; status: TaskStatus; description: string; category: string; kpi: string;
+  dependencies: string[]; assignee_id: number | null; assignee_name: string | null; due_date: string | null;
+  notes: string | null;
+}
+export interface PropertyDash {
+  property_id: string; name: string; track: string; arr_target_usd: number; monthly_conversions_target: number;
+  revenue_to_date_usd: number; arr_run_rate_usd: number; funnel: Record<string, number>;
+  campaigns: { total: number; active: number }; partners: Record<string, number>;
+  tasks: { total: number; done: number }; playbook: { lint_status: string; approved_by: string | null } | null;
+  agreements: Record<AgreementStatus, number>; outreach: { drafts: number; approved: number; sent: number; replied: number };
+}
+export interface Dashboard {
+  properties: PropertyDash[]; weekly: { week: string; start: string; revenue_usd: number; conversions: number;
+    meetings: number; signups: number }[];
+  latest_run: string | null; recent_interactions: Interaction[];
+  my_open_tasks: { id: number; property_id: string; task_id: string; status: string; priority: string; description: string }[];
+}
+export interface Run {
+  id: string; created_at: string; finished_at: string | null; status: string; property_ids: string[];
+  errors: Record<string, string>; usage: Record<string, number | string>;
+  playbooks?: { property_id: string; lint_status: string; approved_by: string | null }[];
+}
+
+const TOKEN = "vanguard.token";
+export const session = {
+  get token() { try { return localStorage.getItem(TOKEN); } catch { return null; } },
+  set(t: string) { try { localStorage.setItem(TOKEN, t); } catch { /* private mode */ } },
+  clear() { try { localStorage.removeItem(TOKEN); } catch { /* ignore */ } },
+};
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
+async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (session.token) headers.Authorization = `Bearer ${session.token}`;
+  const r = await fetch(`/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  if (r.status === 401 && path !== "/auth/login") {
+    session.clear();
+    window.dispatchEvent(new Event("vanguard:logout"));
+  }
+  if (!r.ok) {
+    let msg = r.statusText;
+    try {
+      const j = await r.json();
+      msg = typeof j.detail === "string" ? j.detail
+        : Array.isArray(j.detail) ? j.detail.map((d: { loc?: string[]; msg: string }) => `${(d.loc ?? []).slice(1).join(".")}: ${d.msg}`).join("; ")
+        : msg;
+    } catch { /* not JSON */ }
+    throw new ApiError(r.status, msg);
+  }
+  return r.json() as Promise<T>;
+}
+
+const qs = (o: Record<string, string | number | boolean | undefined>) => {
+  const p = Object.entries(o).filter(([, v]) => v !== undefined && v !== "" && v !== false);
+  return p.length ? "?" + new URLSearchParams(p.map(([k, v]) => [k, String(v)])).toString() : "";
+};
+
+export const api = {
+  login: (email: string, password: string) => req<{ token: string; user: User }>("POST", "/auth/login", { email, password }),
+  me: () => req<User>("GET", "/me"),
+  properties: () => req<Property[]>("GET", "/properties"),
+  dashboard: () => req<Dashboard>("GET", "/dashboard"),
+  setTarget: (pid: string, b: { arr_target_usd: number; monthly_conversions_target: number; notes?: string }) =>
+    req("PUT", `/targets/${pid}`, b),
+
+  campaigns: (f: { property_id?: string; status?: string } = {}) => req<Campaign[]>("GET", `/campaigns${qs(f)}`),
+  campaign: (id: number) => req<Campaign>("GET", `/campaigns/${id}`),
+  createCampaign: (b: Partial<Campaign>) => req<{ id: number }>("POST", "/campaigns", b),
+  updateCampaign: (id: number, b: Partial<Campaign>) => req("PATCH", `/campaigns/${id}`, b),
+  deleteCampaign: (id: number) => req("DELETE", `/campaigns/${id}`),
+  addResult: (id: number, b: Partial<Result>) => req<{ id: number }>("POST", `/campaigns/${id}/results`, b),
+  deleteResult: (id: number) => req("DELETE", `/results/${id}`),
+
+  partners: (f: { property_id?: string; kind?: string } = {}) => req<Partner[]>("GET", `/partners${qs(f)}`),
+  partner: (id: number) => req<Partner & { interactions: Interaction[] }>("GET", `/partners/${id}`),
+  createPartner: (b: Partial<Partner>) => req<{ id: number }>("POST", "/partners", b),
+  updatePartner: (id: number, b: Partial<Partner>) => req("PATCH", `/partners/${id}`, b),
+  deletePartner: (id: number) => req("DELETE", `/partners/${id}`),
+  addInteraction: (id: number, b: Partial<Interaction> & { stage?: PartnerStage }) =>
+    req<{ id: number }>("POST", `/partners/${id}/interactions`, b),
+  deleteInteraction: (id: number) => req("DELETE", `/interactions/${id}`),
+
+  recommendPartners: (b: { property_id: string; mode: "offline" | "model"; provider?: string }) =>
+    req<{ partners: number; updated: number; messages: number; recommendations: { rank: number; name: string; kind: string; score: number; priority: string; lint_status: string }[] }>("POST", "/partners/recommend", b),
+  addTarget: (segmentId: number, b: { name: string; contact_name?: string; contact_email?: string; website?: string }) =>
+    req<{ id: number }>("POST", `/partners/${segmentId}/targets`, b),
+  recordReply: (pid: number, b: { date: string; summary: string; outcome?: string; kind: string }) =>
+    req<{ classification: string; outcome: string; cancelled_steps: number; stage: string }>("POST", `/partners/${pid}/reply`, b),
+  outreach: (f: { status?: string; property_id?: string; partner_id?: number } = {}) =>
+    req<OutreachMessage[]>("GET", `/outreach${qs(f as Record<string, string | undefined>)}`),
+  outreachStats: () => req<OutreachStats>("GET", "/outreach/stats"),
+  editOutreach: (id: number, b: { subject?: string; body?: string }) =>
+    req<{ ok: boolean; lint_status: string; lint_findings: { rule_id: string; message: string; excerpt: string; severity: string }[] }>("PATCH", `/outreach/${id}`, b),
+  approveOutreach: (ids: number[]) => req<{ approved: number[]; refused: { id: number; reason: string }[] }>("POST", "/outreach/approve", { ids }),
+  cancelOutreach: (id: number) => req("POST", `/outreach/${id}/cancel`),
+  sendDue: () => req<{ sent: { id: number; partner: string; step: number; to: string; transport?: string }[]; skipped: { id: number; partner: string; step: number; reason: string }[]; mode: string }>("POST", "/outreach/send-due"),
+  syncReplies: () => req<{ matched: number; bounces: number; unmatched: number; duplicates: number }>("POST", "/outreach/sync-replies"),
+  sendDigest: () => req<{ sent: number; transport?: string; reason?: string }>("POST", "/outreach/digest"),
+  postmarkSync: () => req<{ stream: string; pulled: number; pushed: number; remote_total: number }>("POST", "/outreach/postmark-sync"),
+  postmarkStatus: () => req<{ ok: boolean; streams: Record<string, string>; missing: string[]; not_transactional: string[]; error?: string;
+    used_this_month: number; monthly_cap: number }>("GET", "/email/postmark"),
+
+  tasks: (f: { property_id?: string; status?: string; mine?: boolean } = {}) => req<Task[]>("GET", `/tasks${qs(f)}`),
+  createTask: (b: Record<string, unknown>) => req<{ task_id: string }>("POST", "/tasks", b),
+  updateTask: (id: number, b: Partial<Task>) => req("PATCH", `/tasks/${id}`, b),
+  deleteTask: (id: number) => req("DELETE", `/tasks/${id}`),
+
+  users: () => req<(User & { active?: number; last_login?: string | null; created_at?: string })[]>("GET", "/users"),
+  createUser: (b: { email: string; name: string; role: Role; password: string }) => req("POST", "/users", b),
+  updateUser: (id: number, b: Partial<{ name: string; role: Role; active: boolean; password: string }>) =>
+    req("PATCH", `/users/${id}`, b),
+  deleteUser: (id: number) => req("DELETE", `/users/${id}`),
+
+  agentStatus: () => req<AgentStatus>("GET", "/agent/status"),
+  runs: () => req<Run[]>("GET", "/runs"),
+  run: (id: string) => req<Run>("GET", `/runs/${id}`),
+  playbook: <T,>(run: string, pid: string) => req<T>("GET", `/runs/${run}/playbooks/${pid}`),
+  startRun: (b: { properties: string[]; dry_run: boolean; provider?: string }) =>
+    req<{ run_id: string }>("POST", "/runs", b),
+  approve: (run: string, pid: string) => req("POST", `/runs/${run}/approve/${pid}`),
+  importRun: (run: string) => req<{ campaigns: number; partners: number; messages: number; skipped: number }>("POST", `/runs/${run}/import`),
+  syncRun: (run: string) => req<{ playbooks: number; tasks: number }>("POST", `/runs/${run}/sync`),
+  audit: () => req<{ id: number; at: string; user_name: string | null; action: string; entity: string; entity_id: string; detail: string | null }[]>("GET", "/audit"),
+};

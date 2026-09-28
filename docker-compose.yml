@@ -1,0 +1,19 @@
+# Deploy to /opt/vanguard-gtm on the Hostinger VPS, next to the other stacks.
+services:
+  vanguard:
+    build: .
+    container_name: vanguard-gtm
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./config:/app/config:ro      # edit positioning / lint rules without rebuilding
+    networks: [edge]
+    # Local model on the VPS host (optional): Ollama listening on the host
+    extra_hosts: ["host.docker.internal:host-gateway"]
+
+networks:
+  edge:
+    external: true
+    name: ${TRAEFIK_NETWORK:-edge}   # the network your Traefik edge container is on

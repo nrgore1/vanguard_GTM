@@ -1,0 +1,21 @@
+# runtime data and secrets - never commit
+data/
+output/
+.env
+.env.*
+!.env.example
+*.db
+Sign ins*
+*password*
+*secret*
+# Python / tooling
+.venv/
+venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+# local leftovers
+_to_delete/
+*.zip
+~$*
+/SETUP_NOTION_AND_KEYS.md

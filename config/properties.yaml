@@ -1,0 +1,317 @@
+# Vanguard-GTM property registry
+# ------------------------------------------------------------------
+# Source of truth the agent plans from. Positioning here OVERRIDES the
+# one-line descriptions in the original Vanguard-GTM prompt.
+#
+# Last refreshed: 2026-09-27 from C:\Users\NAREN\vireoka-dev (see `sources`
+# on each entry). Re-run the refresh whenever a product doc changes and bump
+# the date above; the design doc's change log records each refresh.
+#
+# positioning_status:
+#   confirmed    - taken from the product's own repo docs (PRD / design / positioning)
+#   needs_review - no product repo found under vireoka-dev; drafted from secondary
+#                  material. Runs, but every output is tagged NEEDS_POSITIONING_REVIEW.
+#
+# Fields the engines read: positioning, not_this, capability_facts, pricing_facts,
+# icp_seeds, partner_seeds, channels, known_pipeline_context (private), banned_terms
+# (extra lint rules for this property only).
+
+defaults:
+  revenue_target_usd: 2000000
+  campaign_days: 30
+  market: US
+
+properties:
+
+  # ---------------- Track A: Institutional fintech / treasury ----------------
+  - id: liqmint
+    task_prefix: LQR
+    url: https://liqmint.com
+    name: LiqMint (R0 retail)
+    track: A
+    motion: product_led_growth
+    lint_profile: institutional
+    positioning_status: confirmed
+    positioning: >
+      The non-custodial safety layer for stablecoins, for retail users. LiqMint
+      never holds user funds; it makes stablecoin moves safer, auditable and
+      defensible - wallet-transfer safety checks, stablecoin intelligence, a
+      Knowledge Center and the Vira assistant. Growth model is a
+      content-to-conversion loop: short educational reels -> Knowledge Center
+      lesson -> signup -> FIRST COMPLETED SAFETY CHECK (the activation event,
+      not signup) -> 7/30-day return.
+    not_this: >
+      Not a yield product, not a retail DeFi dashboard or yield table, not an
+      exchange, not investment advice. Never promise yield or returns; copy is
+      educational ("not advice"). Payments are subscription billing only - no
+      wallet transfers, deposits or stablecoin purchases through LiqMint.
+    capability_facts:
+      - "Wallet-transfer safety checks (e.g. five checks before sending USDC, wrong-chain protection, wallet-approval explanations)"
+      - "Stablecoin intelligence views, Knowledge Center (/learn) lessons with embedded videos, Vira assistant"
+      - "Content Studio publishing pipeline: up to ~50 scheduled reels/month; weekday 10:00 and 16:00 UTC slots"
+      - "Funnel instrumentation live: video_view -> lesson_open -> signup -> first_safety_check -> return_visit"
+      - "Integration breadth (design scope): 10 native connectors, 700+ wallets via WalletConnect, 25 chains, 25 protocols"
+    pricing_facts:
+      - "Retail plan: $19.99/month via Stripe (card, Apple Pay) or PayPal; guest and free Basic access exist"
+      - "Retail tiers in code: Basic, Individual Investor, Investor Pro"
+    icp_seeds:
+      - "US retail stablecoin holders (USDC/USDT) moving funds between wallets, exchanges and chains who fear irreversible mistakes"
+      - "Crypto-curious professionals who want to learn stablecoin safety before acting"
+    partner_seeds: ["wallet providers", "crypto education creators", "exchange learn/education programs", "personal-finance newsletters"]
+    channels: [youtube_shorts, instagram_reels, tiktok, x, seo_knowledge_center, email_nurture]
+    known_pipeline_context: >
+      R0 launch plan: hand-finish 10 flagship reels; three activation hero topics
+      (five checks before sending USDC; avoiding wrong-chain mistakes; what wallet
+      approvals mean); 3-minute investor demo path on /learn. Partner revenue is
+      pipeline only.
+    sources:
+      - vireoka-dev/liqmint-institutional-canton/docs/LiqMint_R0_Launch_Plan.md
+      - vireoka-dev/liqmint-institutional-canton/docs/R0_Funnel_Tracking.md
+      - vireoka-dev/liqmint-institutional-canton/docs/R0_BILLING_WALLET_EMAIL_STRIPE_DESIGN.md
+      - vireoka-dev/liqmint-institutional-canton/liqmint_r0_stripe_apple_pay_paypal_readme.md
+      - vireoka-dev/liqmint-institutional-canton/docs/unified-access-and-institution-onboarding.md
+
+  - id: liqmint-institutional
+    task_prefix: LQI
+    url: https://institutional.liqmint.com
+    name: LiqMint Institutional Edition
+    track: A
+    motion: high_touch_sales
+    lint_profile: institutional
+    positioning_status: confirmed
+    positioning: >
+      Governed AI treasury infrastructure for stablecoin capital: the operating
+      system for governed stablecoin treasury management. Every treasury action
+      becomes a persisted workflow - proposal, simulation, policy validation,
+      approval, settlement verification - and produces an audit-grade Treasury
+      Evidence Pack. Non-custodial and customer-signed: LiqMint prepares wallet
+      proposals, the customer's wallet stays the signer and custodian. A separate
+      institutional product and deployment track (not a Pro-plan extension),
+      tenant-scoped, provider-neutral. Customer-facing terms: SMDP Score and
+      Allocation Windows.
+    not_this: >
+      Not a chatbot, not a retail DeFi dashboard, not a yield table, not an
+      unmanaged autonomous trading bot, not a single-model AI wrapper. Never
+      presented as risk-free, fixed-return, perfectly hedged, guaranteed-yield or
+      guaranteed-settlement. Does not pool assets, take discretionary custody,
+      receive private keys or execute autonomously. Partner APIs and
+      jurisdictional availability are contract-dependent.
+    capability_facts:
+      - "Institutional package design: 50 stablecoin workflows and 50 enforceable policy templates; policies fail closed when evidence is missing"
+      - "Agent templates: allocation, risk_policy, execution, reconciliation, reporting"
+      - "Integration adapters available, credentials required before use: Fireblocks, Coinbase Prime, Safe (multisig proposals), Snowflake and Splunk (evidence/telemetry export); Okta SSO/SCIM is a configuration blueprint"
+      - "Safe execution: signer verification, owner/threshold enforcement"
+      - "Onboarding: NDA and security review -> SSO/RBAC -> 30 days read-only baseline -> customer-approved policy set -> proposal-only integration -> test transaction -> customer finance validates savings"
+      - "Provider candidates under diligence (never claim live): Hyperliquid, Open USD (OUSD, distinct from Origin Dollar), Robinhood Chain/APIs, Bitstamp Institutional; Canton: 'fully capable of supporting Canton integration'"
+      - "Integration breadth (design scope): 102 networks"
+    pricing_facts:
+      - "Reference annual package: $175,000 (Institutional Pro/Enterprise); ROI calculator is customer-editable and illustrative, not a guarantee"
+    icp_seeds:
+      - "Heads of digital assets / treasury at US broker-dealers, banks and asset managers running tokenized Treasuries, repo and stablecoin balances"
+      - "Crypto-native funds and corporate treasuries with $50M+ stablecoin balances across several chains and wallets needing segregation of duties and audit evidence"
+    partner_seeds: ["qualified custodians and wallet infrastructure (Fireblocks, Coinbase Prime, Safe)", "Big-4 / digital-asset audit practices", "tokenization platforms", "Canton ecosystem participants", "treasury management systems"]
+    channels: [linkedin, email_outbound, whitepapers, events]
+    known_pipeline_context: >
+      Pre-commercial. A US broker-dealer digital-assets lead is evaluating a
+      Canton + tokenized Treasury/repo governance walkthrough. "Meridian Crest" in
+      the repo is a FICTIONAL design customer - never cite it or its numbers as
+      real.
+    banned_terms: ["Meridian Crest"]
+    sources:
+      - vireoka-dev/liqmint-institutional-canton/docs/positioning/liqmint-treasury-os-positioning.md
+      - vireoka-dev/liqmint-institutional-canton/docs/product/LiqMint_Institutional_Master_PRD_v1.0_2026-07-06.docx
+      - vireoka-dev/liqmint-institutional-canton/docs/institutional/meridian-crest-stablecoin-solution.md
+      - vireoka-dev/liqmint-institutional-canton/ROADMAP.md
+
+  - id: vireoka
+    task_prefix: VIR
+    url: https://vireoka.com
+    name: Vireoka
+    track: A
+    motion: high_touch_sales
+    lint_profile: institutional
+    positioning_status: confirmed
+    positioning: >
+      Cognitive Governance for AI: "We govern how AI reasons, not just what it
+      outputs." Vireoka LLC is the parent of LiqMint (governed stablecoin
+      treasury) and the Vireoka agent runtime; public benefits are auditability,
+      traceability, explainability and risk controls. Approved public vocabulary:
+      Cognitive Governance (default), Intelligence Stewardship, Deliberative
+      Intelligence, Reasoning Governance, Strategic Intelligence Fabric; product
+      language: Cognitive Dashboard, Reasoning Audit, Deliberation Replay,
+      Reasoning Diff, Intelligence Lineage.
+    not_this: >
+      Not a generic software consultancy. Internal engine names, council member
+      names, pipeline specifics, key-management details and endpoint inventories
+      never appear publicly. Detailed demos, pricing and roadmap are NDA-gated
+      in the investor portal.
+    capability_facts:
+      - "Agent runtime roadmap (design intent): NeMo-compatible agent wrapper, Nemotron model backend, LangGraph adapters first, OpenTelemetry tracing"
+      - "Investor portal: apply -> accept NDA -> approval -> time-limited access"
+    icp_seeds:
+      - "CISOs, CROs and Heads of AI at enterprises deploying agentic AI in regulated workflows"
+      - "Strategic investors and design partners for AI-agent governance"
+    partner_seeds: ["AI platform vendors", "GRC platforms", "consulting alliances", "NVIDIA ecosystem programs"]
+    channels: [linkedin, x, whitepapers]
+    banned_terms: ["AtmaSphere", "Decision Management", "Decision Dashboard", "Decision Audit", "Decision Replay", "Decision Lineage", "HKDF", "SecretBox", "keyring"]
+    sources:
+      - vireoka-dev/vireoka_final_website/DECISION_LEDGER.md
+      - vireoka-dev/atmakosh-platform/docs/VIREOKA_RUNTIME_PRD_ADDENDUM.md
+
+  # ---------------- Track B: Event, relationship & community ----------------
+  # No product repos for these three were found under vireoka-dev. Drafts below
+  # use a matchmaking business analysis found in
+  # vireoka-dev/oratoplus-monorepo/Oratoplus.docx (a pasted chat transcript).
+  - id: weddingos
+    task_prefix: WOS
+    url: https://weddingos.jodibana.com
+    name: WeddingOS
+    track: B
+    motion: product_led_growth
+    lint_profile: consumer
+    positioning_status: needs_review
+    positioning: >
+      Wedding operating system for couples and vendors - planning, vendor
+      coordination, guest management - built for multi-event South Asian
+      weddings, and the wedding-commerce end of the Jodibana relationship-to-
+      marriage ecosystem. Live at weddingos.jodibana.com; weddingos.pro is the
+      planned standalone domain.
+    pricing_facts:
+      - "Draft: wedding-commerce affiliate revenue (outfits, jewelry, decor, honeymoon) at 5-20% per sale"
+    icp_seeds:
+      - "Engaged couples planning multi-day South Asian weddings in the US"
+      - "Wedding planners and venues managing 10+ events/yr"
+    partner_seeds: ["luxury wedding planners", "venues", "South Asian bridal expos", "decor/caterer collectives", "ethnic-wear retailers"]
+    channels: [instagram, tiktok, pinterest, email_nurture]
+    sources: ["vireoka-dev/oratoplus-monorepo/Oratoplus.docx (matchmaking business analysis section)"]
+
+  - id: jodibana
+    task_prefix: JDB
+    url: https://jodibana.com
+    name: Jodibana
+    track: B
+    motion: product_led_growth
+    lint_profile: consumer
+    positioning_status: needs_review
+    positioning: >
+      Invite-only, AI-assisted matchmaking for the Indian diaspora and India:
+      AI matchmaking agents (match discovery, smart filters, a dating advisor),
+      culturally aligned preferences, verified profiles and admin approvals,
+      and a path into wedding commerce - a relationship-to-marriage ecosystem
+      rather than casual swiping.
+    not_this: "AI is an enhancement, never a promise of a match."
+    pricing_facts:
+      - "Draft tiers: Free (limited matches/week), Premium, VIP (dedicated consultant); $10-$100/month"
+      - "Draft one-time items: profile boost $5-$10, AI compatibility report $15-$20, matchmaking call $50-$100"
+    icp_seeds:
+      - "Marriage-minded South Asian professionals 25-38 in the US, UK, Canada, Australia, UAE and Tier-1 Indian cities"
+      - "Parents and family members searching on behalf of a son or daughter"
+    partner_seeds: ["cultural associations", "temples, gurdwaras and community centers", "alumni networks", "wedding planners"]
+    channels: [instagram, tiktok, whatsapp_communities, email_nurture]
+    sources: ["vireoka-dev/oratoplus-monorepo/Oratoplus.docx (matchmaking business analysis section)"]
+
+  - id: jodiusa
+    task_prefix: JUS
+    url: https://jodiusa.com
+    name: JodiUSA
+    track: B
+    motion: product_led_growth
+    lint_profile: consumer
+    positioning_status: needs_review
+    positioning: >
+      The US-diaspora edition of Jodibana: invite-only, AI-assisted matchmaking
+      for South Asians in the US - cultural compatibility plus American
+      life-stage realities (careers, relocation, inter-regional and interfaith
+      families) - with verified profiles and family-inclusive introductions.
+    not_this: "AI is an enhancement, never a promise of a match."
+    pricing_facts:
+      - "Draft: same tier ladder as Jodibana ($10-$100/month) plus boosts and compatibility reports"
+    icp_seeds:
+      - "US-based South Asian professionals 26-40, first and second generation"
+    partner_seeds: ["university South Asian student/alumni associations", "diaspora professional networks", "temples and cultural festivals", "speed-matchmaking event organizers"]
+    channels: [instagram, tiktok, community_events, email_nurture]
+    sources: ["vireoka-dev/oratoplus-monorepo/Oratoplus.docx (matchmaking business analysis section)"]
+
+  # ---------------- Track C: AI & cognitive platforms ----------------
+  - id: oratoplus
+    task_prefix: ORA
+    url: https://oratoplus.com
+    name: OratoPlus
+    track: C
+    motion: product_led_growth
+    lint_profile: standard
+    positioning_status: confirmed
+    positioning: >
+      "A gym for your voice - rehearse the talk, survive the Q&A, watch yourself
+      improve." Record a take in the browser, get it scored (Clarity, Structure,
+      Evidence, Presence) with coaching notes, then face an adaptive, voiced
+      hostile Q&A examiner that attacks your weakest answer. Word-level pause
+      analytics (power pauses vs stalls), crutch-word fingerprint and trends
+      across sessions. The same platform turns rehearsal into content: slide
+      illustrations, two-host audio overviews and a short-video pipeline.
+    not_this: "Not a transcription tool and not a replacement for a human coach; no camera/body-language analysis or live meeting integration in v1."
+    capability_facts:
+      - "Differentiators demo-able today: hostile Q&A sparring, pause timeline, zero-setup browser recording with offline-degraded scoring, insights from the user's own takes"
+      - "Free tier includes 1 sparring session per month; add-ons (illustrations, audio overviews) have quotas"
+      - "Built-in marketing stack: UTM capture -> lead event -> CRM scoring rules -> hot-lead Slack alerts; per-campaign funnel metrics and ROAS"
+      - "Team seats, SSO and 2FA are Wave 2 (planned) - do not sell them as live"
+    pricing_facts:
+      - "Tiers: Free -> Growth (individuals, creators) -> Enterprise (L&D / sales enablement seats); prices live in the admin-editable PlanTier catalog - confirm current numbers before quoting"
+      - "PRD targets (internal, never in copy): landing->signup >= 8%, first scored take >= 55% within 24h, free->paid >= 6% by day 30, $40k MRR at 6 months, Growth churn <= 3.5%/mo"
+    icp_seeds:
+      - "Startup founders facing investor pitches and demo days"
+      - "Engineers and PMs presenting to execs; job seekers with interviews scheduled"
+      - "Sales-enablement and L&D leaders (e.g. 40-seat sales org, QBR season) for Enterprise"
+      - "Non-native English professionals working on pace and filler words; public-speaking coaches and Toastmasters clubs"
+    partner_seeds: ["Toastmasters clubs and public-speaking communities", "sales communities (RevGenius, Modern Sales Pros)", "accelerators and demo-day programs", "MBA and university career centers", "executive coaches"]
+    channels: [product_hunt, hacker_news, linkedin, x, tiktok, youtube_shorts, reddit_communities, seo_blog, podcasts]
+    sources:
+      - vireoka-dev/oratoplus-monorepo/docs/03-prd.md
+      - vireoka-dev/oratoplus-monorepo/docs/11-gtm-marketing-plan.md
+      - vireoka-dev/oratoplus-monorepo/docs/21-design-document.md
+      - vireoka-dev/oratoplus-monorepo/oratoplus-backlog.csv
+
+  - id: atmakosh
+    task_prefix: ATM
+    url: https://atmakosh.com
+    name: Atmakosh
+    track: C
+    motion: product_led_growth
+    lint_profile: institutional
+    positioning_status: confirmed
+    positioning: >
+      Governance-as-a-service for AI agents: systems call Atmakosh before they
+      act. Powerful, goal-driven agents are governed with structure - plural
+      judgment, a declared perimeter, graduated autonomy, human oversight and
+      tamper-evident evidence - not with trust. A decision is deliberated by
+      eight independent worldviews in four traditions (Vedanta, Jain, Buddhist;
+      Nyaya; Stoic, Kantian; Confucian; Management); disagreement is preserved,
+      never averaged; a deterministic, deny-wins rule issues the verdict - the
+      model only advises. Every decision is hash-chained and replays exactly.
+      "Governance is cost discipline": an ungoverned agent is an unbounded
+      invoice. Mapped to emerging EU/US/UK/Canada AI-governance obligations;
+      Regulation (EU) 2026/1744 deferred Annex III - "the date moved, the work
+      didn't."
+    not_this: >
+      Not a sandbox/isolation product, not an autonomous decision-maker, not an
+      investment or financial-advice product. Not "certified compliant" with
+      any regulation - mapped to obligations.
+    capability_facts:
+      - "API: POST /v1/agents/authorize -> verdict, conditions, execute, approval_required, chained audit_id"
+      - "Autonomy tiers: shadow (observe-only), human_in_loop (signed admin approval), autonomous"
+      - "Five-gate loop: suspension -> circuit breakers -> deny-by-default perimeter -> eight-worldview council -> autonomy tier"
+      - "Agents: Veda (governance spine, live); Kairo (governed ops/cost agent, control-plane model shipped)"
+      - "Regions live: EU, US, CA, UK; India and Gulf coming soon"
+      - "Internal governance benchmark: 20 cases at 100% on schema validity, determinism, replay, disagreement preservation, escalation (internal eval, cite as such)"
+    pricing_facts:
+      - "Tiers: Free (Free Council at /app), Starter, Pro, Enterprise (contact us); paid tiers are waitlist-gated until their unique features are released - a tier is only sellable once released"
+    icp_seeds:
+      - "Platform/ML engineering leads orchestrating agents that deploy code, move money or touch customer data"
+      - "Heads of AI governance, compliance and risk at US multinationals with EU exposure"
+      - "Individual evaluators and researchers exploring plural, governed reasoning (Free Council)"
+    partner_seeds: ["agent orchestration frameworks (LangGraph, CrewAI)", "AI safety labs and ethics boards", "EU AI Act law-firm practices", "GRC platforms", "university philosophy / AI-ethics programs"]
+    channels: [linkedin, x, developer_docs, articles_with_email_gate, whitepapers, academic]
+    sources:
+      - vireoka-dev/atmakosh-platform/README.md
+      - vireoka-dev/atmakosh-platform/docs/DESIGN.md
+      - vireoka-dev/atmakosh-platform/docs/STRIPE_BILLING_PLAN.md

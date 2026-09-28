@@ -1,0 +1,16 @@
+# Drop into the Traefik edge's dynamic-config directory (/opt/liqmint/edge/...).
+# File provider has watch off, so restart Traefik after adding:
+#   docker restart <traefik container>
+http:
+  routers:
+    vanguard-gtm:
+      rule: "Host(`gtm.vireoka.com`)"   # the web app (UI + /api + /machine + /hooks/postmark)
+      entryPoints: [websecure]
+      service: vanguard-gtm
+      tls:
+        certResolver: letsencrypt   # match the resolver name your other routers use
+  services:
+    vanguard-gtm:
+      loadBalancer:
+        servers:
+          - url: "http://vanguard-gtm:8080"

@@ -1,0 +1,466 @@
+# Vanguard-GTM partner playbooks - the "expert" layer for Engine 2B (Partner Outreach).
+# ---------------------------------------------------------------------------------
+# For every property: which partner categories to pursue, what kind of partnership each
+# is, why both sides win, the usual deal structure, where to find the right contact,
+# and default scoring factors. The agent (local model or Claude) uses this as grounding
+# to name specific organisations; with no model at all, `vanguard partners recommend
+# --offline` turns it straight into prioritised segment-level recommendations + drafts.
+#
+# kinds: design_partner | co_sell | referral_affiliate | distribution | integration
+# factors (1-5): fit        - how closely their customers match our ICP
+#                reach      - size of the audience/pipeline they can open
+#                access     - how reachable (warm path, public contact, small org = easier)
+#                strategic  - long-term value (moat, data, credibility, co-selling motion)
+#                speed      - how fast a first result is realistic
+# Priority score = weighted average (weights below) mapped to 0-100; P0 >= 75, P1 >= 55, else P2.
+# Examples are illustrative targets to research - never claim a relationship exists.
+
+scoring:
+  weights: {fit: 0.30, reach: 0.25, access: 0.15, strategic: 0.20, speed: 0.10}
+  p0_min: 75
+  p1_min: 55
+
+message_rules:
+  max_steps: 3
+  default_delays_days: [0, 4, 9]
+  # every sent email gets the compliance footer from outreach.py (sender identity, postal
+  # address, opt-out). Templates must never claim customers, partners, users or results.
+
+properties:
+
+  jodibana:
+    product_line: "an invite-only, AI-assisted matchmaking platform for marriage-minded South Asian families"
+    categories:
+      - id: wedding_planners
+        label: "South Asian wedding planners & coordinators"
+        kind: co_sell
+        why: "Planners meet engaged couples months before the wedding and are trusted by families; Jodibana sits one step earlier in the same journey, so each side can refer the other."
+        value_exchange: "Planner gets a referral fee or featured-vendor placement for couples who come through Jodibana; Jodibana gets co-branded content and introductions to the families planners serve."
+        deal_structure: "Two-way referral agreement (flat fee per booked referral, or 10-15% of first-year subscription) + co-marketing"
+        where_to_find: "Instagram & Pinterest wedding portfolios, WedMeGood/The Knot vendor listings, South Asian bridal expos; owner/founder via website contact or LinkedIn"
+        factors: {fit: 5, reach: 4, access: 4, strategic: 4, speed: 4}
+        angle: "families you plan for often ask who they should trust for the step before the wedding"
+        offer: "a two-way referral arrangement and a featured-planner slot for families on Jodibana"
+      - id: photographers
+        label: "Wedding photographers & videographers (South Asian weddings)"
+        kind: referral_affiliate
+        why: "Photographers have large, highly engaged social followings of recently married couples and their friends - exactly the audience of the next wedding."
+        value_exchange: "Photographer gets an affiliate commission and portfolio features; Jodibana gets authentic storytelling content and reach into engaged communities."
+        deal_structure: "Affiliate code (percentage of first subscription) + content collaboration"
+        where_to_find: "Instagram hashtags for Indian/South Asian weddings, vendor directories, wedding expo exhibitor lists"
+        factors: {fit: 4, reach: 5, access: 4, strategic: 3, speed: 4}
+        angle: "your work already reaches the friends and siblings who are next in line"
+        offer: "an affiliate code plus a feature of your portfolio in our wedding stories"
+      - id: destination_resorts
+        label: "Destination wedding resorts & hotels"
+        kind: co_sell
+        why: "Resorts hosting multi-day Indian weddings (Udaipur, Jaipur, Goa, Cancun, Punta Cana) want pipeline 12-24 months ahead of the event."
+        value_exchange: "Resort gets early visibility with families before venue decisions; Jodibana gets premium partner offers that increase member value."
+        deal_structure: "Co-marketing + member-exclusive offer; referral fee on confirmed bookings where allowed"
+        where_to_find: "Resort wedding/events sales teams (Director of Wedding Sales), destination-wedding travel agencies"
+        factors: {fit: 4, reach: 3, access: 2, strategic: 4, speed: 2}
+        angle: "families choose a destination long before they call a venue"
+        offer: "a member-exclusive destination-wedding offer and early introductions to engaged families"
+      - id: venues_banquet
+        label: "Banquet halls & wedding venues in diaspora hubs"
+        kind: co_sell
+        why: "Venues in NJ/NY, Bay Area, Houston, Dallas and Chicago host most US South Asian weddings and run open houses the community attends."
+        value_exchange: "Venue gets a booked-couple referral channel; Jodibana gets event space for community matchmaking mixers."
+        deal_structure: "Referral fee per booked wedding + hosted mixer events"
+        where_to_find: "Venue event managers; local South Asian wedding expos; Google Maps searches for Indian banquet halls"
+        factors: {fit: 4, reach: 3, access: 3, strategic: 3, speed: 3}
+        angle: "the couples who book your hall met somewhere first"
+        offer: "a referral partnership and a co-hosted community mixer at your venue"
+      - id: community_orgs
+        label: "Temples, cultural associations & community centers"
+        kind: design_partner
+        why: "Community bodies already run informal matchmaking and family networks; they can co-design how AI assistance respects family involvement and privacy."
+        value_exchange: "Community gets a private, moderated introduction program for members; Jodibana gets a real-world pilot, feedback and trust."
+        deal_structure: "Free pilot for members (8-12 weeks) with an optional revenue share to the organisation afterwards"
+        where_to_find: "Community center boards, youth/family committees, cultural festival organisers"
+        factors: {fit: 5, reach: 3, access: 3, strategic: 5, speed: 3}
+        angle: "many families in your community already ask elders and friends for introductions"
+        offer: "a private, moderated pilot for your members that you help shape"
+      - id: bridal_jewelry
+        label: "Bridal wear boutiques & jewelers"
+        kind: referral_affiliate
+        why: "High-intent retail touchpoint for families once a match is confirmed - completes the relationship-to-wedding ecosystem."
+        value_exchange: "Boutique gets member-exclusive promotions; Jodibana earns affiliate revenue on wedding commerce."
+        deal_structure: "Affiliate commission on member purchases (5-20% range to negotiate)"
+        where_to_find: "Boutique owners in diaspora hubs, bridal trunk shows, Instagram"
+        factors: {fit: 3, reach: 3, access: 4, strategic: 3, speed: 3}
+        angle: "families shopping for the wedding are usually months into the journey"
+        offer: "a member-exclusive offer and an affiliate arrangement"
+
+  jodiusa:
+    product_line: "an invite-only, AI-assisted matchmaking platform for South Asians building their lives in the US"
+    categories:
+      - id: diaspora_associations
+        label: "Diaspora cultural & regional associations"
+        kind: design_partner
+        why: "Regional associations (state/language groups) run events where families meet; they can co-design culturally respectful matchmaking."
+        value_exchange: "Association gets a members-only introduction program and event content; JodiUSA gets a pilot cohort and trusted endorsement."
+        deal_structure: "Free members' pilot, then revenue share or sponsorship of association events"
+        where_to_find: "Association boards, event committees, annual convention organisers"
+        factors: {fit: 5, reach: 4, access: 3, strategic: 5, speed: 3}
+        angle: "your members' families already rely on the community for introductions"
+        offer: "a members-only pilot your association helps shape"
+      - id: alumni_networks
+        label: "University & professional alumni networks (US chapters)"
+        kind: distribution
+        why: "Alumni chapters of Indian institutions and diaspora professional networks reach marriage-age professionals directly."
+        value_exchange: "Chapter gets a member benefit and event partner; JodiUSA gets targeted reach."
+        deal_structure: "Member discount + event sponsorship"
+        where_to_find: "Chapter presidents/event leads on LinkedIn; chapter websites"
+        factors: {fit: 5, reach: 4, access: 3, strategic: 3, speed: 3}
+        angle: "your members are building careers here and many are open to meeting someone with shared roots"
+        offer: "a member benefit and a co-hosted professionals' mixer"
+      - id: student_associations
+        label: "University South Asian student associations"
+        kind: distribution
+        why: "Graduate students and recent alumni are the next cohort; associations run large cultural events."
+        value_exchange: "Association gets event sponsorship; JodiUSA builds early awareness (18+ graduate audiences)."
+        deal_structure: "Event sponsorship; no data sharing"
+        where_to_find: "University org directories, cultural show organisers"
+        factors: {fit: 3, reach: 4, access: 4, strategic: 3, speed: 4}
+        angle: "your events bring together people who will soon be thinking about marriage"
+        offer: "sponsorship of your next cultural event"
+      - id: boutique_matchmakers
+        label: "Independent & boutique matchmakers"
+        kind: co_sell
+        why: "Human matchmakers have trust and client lists but limited reach; AI-assisted discovery extends their capacity."
+        value_exchange: "Matchmaker gets tooling and a wider verified pool; JodiUSA gets premium service partners."
+        deal_structure: "Revenue share on premium clients; white-label workspace"
+        where_to_find: "Matchmaker websites, community referrals, Instagram"
+        factors: {fit: 4, reach: 3, access: 4, strategic: 4, speed: 4}
+        angle: "your clients value your judgment, and more of them want a wider circle"
+        offer: "a revenue-share partnership and a workspace for your clients"
+      - id: diaspora_media
+        label: "Diaspora media & creators"
+        kind: distribution
+        why: "Community newspapers, podcasts and creators shape conversations about modern marriage in the diaspora."
+        value_exchange: "Media gets content and sponsorship; JodiUSA gets credible awareness."
+        deal_structure: "Sponsored content series; affiliate for creators"
+        where_to_find: "Editors, podcast hosts, creator managers"
+        factors: {fit: 4, reach: 5, access: 3, strategic: 3, speed: 3}
+        angle: "your audience talks about modern marriage in the diaspora every week"
+        offer: "a sponsored content series on how families meet today"
+      - id: wedding_vendors_us
+        label: "US wedding vendors (planners, photographers, venues)"
+        kind: referral_affiliate
+        why: "Post-match wedding commerce - the same vendors Jodibana/WeddingOS work with."
+        value_exchange: "Vendor gets referrals; JodiUSA earns affiliate revenue."
+        deal_structure: "Two-way referral"
+        where_to_find: "Vendor directories, expos"
+        factors: {fit: 3, reach: 3, access: 4, strategic: 3, speed: 3}
+        angle: "the couples you serve met somewhere first"
+        offer: "a two-way referral arrangement"
+
+  weddingos:
+    product_line: "a wedding operating system that coordinates multi-day South Asian weddings for couples, planners and vendors"
+    categories:
+      - id: planners_design
+        label: "South Asian wedding planners running 10+ events a year"
+        kind: design_partner
+        why: "Planners feel the coordination pain most (multiple events, vendors, family stakeholders) and will shape the product."
+        value_exchange: "Planner gets free use and influence on the roadmap; WeddingOS gets a real workflow to build around."
+        deal_structure: "Free design-partner seat for a season, then discounted pricing"
+        where_to_find: "Planner websites, Instagram, wedding expos"
+        factors: {fit: 5, reach: 3, access: 4, strategic: 5, speed: 4}
+        angle: "a multi-event wedding means dozens of vendors and family decision-makers to keep aligned"
+        offer: "a free design-partner seat for the season and a direct line to the roadmap"
+      - id: venues
+        label: "Wedding venues & banquet halls"
+        kind: co_sell
+        why: "Venues can bundle WeddingOS into their packages and reduce back-and-forth with couples."
+        value_exchange: "Venue gets a smoother client experience; WeddingOS gets distribution to every booked couple."
+        deal_structure: "Bundled licence or referral fee per couple onboarded"
+        where_to_find: "Venue event/sales managers"
+        factors: {fit: 4, reach: 4, access: 3, strategic: 4, speed: 3}
+        angle: "your team answers the same planning questions for every couple"
+        offer: "WeddingOS bundled into your packages"
+      - id: destination_resorts
+        label: "Destination wedding resorts & hotels"
+        kind: co_sell
+        why: "Multi-day destination weddings need guest, room-block and itinerary coordination."
+        value_exchange: "Resort gets coordinated guest logistics; WeddingOS gets high-value weddings."
+        deal_structure: "Co-marketing + referral fee"
+        where_to_find: "Director of Wedding Sales at resorts, destination-wedding travel agencies"
+        factors: {fit: 4, reach: 3, access: 2, strategic: 4, speed: 2}
+        angle: "guest logistics across three or four days is where destination weddings get stressful"
+        offer: "a co-marketing pilot for your next Indian wedding season"
+      - id: vendors_referral
+        label: "Photographers, decorators, caterers, DJs & mehndi artists"
+        kind: referral_affiliate
+        why: "Vendors are invited into WeddingOS by couples and planners - a built-in viral loop."
+        value_exchange: "Vendor gets fewer coordination calls and a profile; WeddingOS gets network effects."
+        deal_structure: "Free vendor profiles; affiliate for vendors who bring couples"
+        where_to_find: "Instagram, vendor directories, expos"
+        factors: {fit: 4, reach: 4, access: 5, strategic: 3, speed: 4}
+        angle: "timelines and last-minute changes usually reach you through five different chats"
+        offer: "a free vendor profile and an affiliate code for couples you bring"
+      - id: bridal_expos
+        label: "Bridal expos & wedding media"
+        kind: distribution
+        why: "Expos concentrate engaged couples and vendors in one room."
+        value_exchange: "Organiser gets a digital planning partner; WeddingOS gets booth/sponsor reach."
+        deal_structure: "Sponsorship or exhibitor package"
+        where_to_find: "Expo organisers' partnership teams"
+        factors: {fit: 4, reach: 5, access: 3, strategic: 3, speed: 3}
+        angle: "couples leave your expo with a bag of cards and no plan to coordinate them"
+        offer: "a digital planning partnership for your attendees"
+
+  liqmint:
+    product_line: "a non-custodial stablecoin safety layer for retail users - safety checks before every transfer, never holding funds"
+    categories:
+      - id: crypto_educators
+        label: "Crypto education creators & newsletters"
+        kind: distribution
+        why: "Educators already teach safe self-custody; LiqMint turns lessons into an action (a first safety check)."
+        value_exchange: "Creator gets an affiliate programme and co-branded lessons; LiqMint gets activated users."
+        deal_structure: "Affiliate on paid plans + co-produced safety lessons"
+        where_to_find: "YouTube, newsletters, X; creator business emails"
+        factors: {fit: 5, reach: 5, access: 3, strategic: 3, speed: 4}
+        angle: "your audience learns the theory of safe transfers but still makes the irreversible mistakes"
+        offer: "co-produced safety lessons and an affiliate programme"
+      - id: wallet_providers
+        label: "Self-custody wallet providers"
+        kind: integration
+        why: "Pre-transfer checks are most useful inside the wallet flow."
+        value_exchange: "Wallet gets a safety feature without building it; LiqMint gets embedded distribution."
+        deal_structure: "Integration partnership; revenue share on premium checks"
+        where_to_find: "Wallet BD / partnerships leads"
+        factors: {fit: 4, reach: 5, access: 2, strategic: 5, speed: 2}
+        angle: "user support tickets about wrong-chain or wrong-address transfers are painful for everyone"
+        offer: "an integration pilot for pre-transfer safety checks"
+      - id: tax_portfolio_tools
+        label: "Crypto tax & portfolio tracking tools"
+        kind: co_sell
+        why: "Their users hold stablecoins and care about records; complementary, non-competing."
+        value_exchange: "Cross-promotion to overlapping users; bundled offers."
+        deal_structure: "Co-marketing + reciprocal referral"
+        where_to_find: "Partnerships teams"
+        factors: {fit: 4, reach: 4, access: 3, strategic: 3, speed: 3}
+        angle: "your users care about clean records, and safer transfers keep those records clean"
+        offer: "a reciprocal referral and co-marketing pilot"
+      - id: community_design
+        label: "Crypto communities & DAOs (retail-heavy)"
+        kind: design_partner
+        why: "Active communities give fast feedback on which safety checks matter."
+        value_exchange: "Community gets free Pro access for members; LiqMint gets product feedback."
+        deal_structure: "Free Pro seats for a pilot group"
+        where_to_find: "Discord/Telegram community leads"
+        factors: {fit: 4, reach: 3, access: 4, strategic: 3, speed: 4}
+        angle: "your members help each other avoid transfer mistakes every week"
+        offer: "free Pro access for a pilot group that shapes our safety checks"
+
+  liqmint-institutional:
+    product_line: "governed stablecoin treasury infrastructure - policy-gated, customer-signed workflows with audit-grade evidence"
+    categories:
+      - id: institutional_design
+        label: "Digital-asset desks at broker-dealers, banks & asset managers"
+        kind: design_partner
+        why: "Institutions onboarding tokenized Treasuries, repo and stablecoin treasury need governance evidence before scaling."
+        value_exchange: "Institution shapes policy templates for its use case at design-partner pricing; LiqMint gets a reference workflow."
+        deal_structure: "Paid pilot (scoped, 90 days, read-only baseline first) converting to annual licence"
+        where_to_find: "Heads of digital assets, treasury, risk; industry events; warm introductions"
+        factors: {fit: 5, reach: 2, access: 2, strategic: 5, speed: 2}
+        angle: "tokenized-asset flows are moving from pilot to production faster than the evidence trail around them"
+        offer: "a scoped governance walkthrough for one workflow, starting in read-only mode"
+        examples: []
+      - id: custodians
+        label: "Qualified custodians & institutional wallet infrastructure"
+        kind: co_sell
+        why: "LiqMint is non-custodial and customer-signed; custodians remain the signer, so the fit is complementary."
+        value_exchange: "Custodian adds a policy/evidence layer for clients; LiqMint gets co-selling into their book."
+        deal_structure: "Technology partnership + co-selling with referral fee"
+        where_to_find: "Partnerships/BD leads"
+        factors: {fit: 5, reach: 5, access: 2, strategic: 5, speed: 2}
+        angle: "clients keep asking how approvals and policy evidence travel with each transaction"
+        offer: "a joint solution brief and a co-selling pilot with one shared client"
+        examples: ["Fireblocks", "Coinbase Prime", "Anchorage Digital", "BitGo"]
+      - id: advisory_firms
+        label: "Big-4 & boutique digital-asset advisory practices"
+        kind: co_sell
+        why: "Advisors design controls for clients adopting digital assets and need tooling to implement them."
+        value_exchange: "Advisor gets an implementation platform; LiqMint gets introductions and credibility."
+        deal_structure: "Alliance agreement; referral or implementation partnership"
+        where_to_find: "Digital asset practice leads"
+        factors: {fit: 4, reach: 4, access: 2, strategic: 5, speed: 2}
+        angle: "control frameworks for tokenized assets are easier to design than to evidence day to day"
+        offer: "an alliance conversation about implementing your control frameworks"
+        examples: ["Deloitte", "KPMG", "EY", "PwC"]
+      - id: tokenization_platforms
+        label: "Tokenization platforms & issuers"
+        kind: integration
+        why: "Issuers want their institutional holders to have governed treasury operations."
+        value_exchange: "Platform improves institutional readiness; LiqMint gets integration-led distribution."
+        deal_structure: "Integration partnership + co-marketing"
+        where_to_find: "BD / partnerships leads"
+        factors: {fit: 4, reach: 4, access: 2, strategic: 4, speed: 2}
+        angle: "institutional holders need policy and evidence around the assets you issue"
+        offer: "an integration conversation for governed institutional flows"
+        examples: ["Securitize", "Ondo Finance"]
+      - id: treasury_systems
+        label: "Treasury management systems"
+        kind: integration
+        why: "Corporate treasuries run on TMS platforms; stablecoin balances need to appear in the same controls."
+        value_exchange: "TMS extends to stablecoin workflows; LiqMint reaches corporate treasury."
+        deal_structure: "Integration + marketplace listing"
+        where_to_find: "Partnerships / product leads"
+        factors: {fit: 4, reach: 4, access: 2, strategic: 4, speed: 1}
+        angle: "stablecoin balances are appearing on treasury desks outside the usual controls"
+        offer: "an integration discussion"
+        examples: ["Kyriba"]
+
+  vireoka:
+    product_line: "Cognitive Governance for AI - governing how AI agents reason, with auditability and risk controls"
+    categories:
+      - id: enterprise_design
+        label: "Enterprises deploying AI agents in regulated workflows"
+        kind: design_partner
+        why: "Banks, insurers and healthcare teams moving agents into production need reasoning-level governance evidence."
+        value_exchange: "Enterprise shapes controls for its use case; Vireoka gets a reference architecture."
+        deal_structure: "Paid design-partner pilot (one workflow, 60-90 days)"
+        where_to_find: "Heads of AI, CRO/CISO offices, innovation labs"
+        factors: {fit: 5, reach: 2, access: 2, strategic: 5, speed: 2}
+        angle: "agents are moving from demos into workflows that auditors will ask about"
+        offer: "a scoped pilot on one agent workflow"
+      - id: systems_integrators
+        label: "AI consultancies & systems integrators"
+        kind: co_sell
+        why: "SIs build agent solutions for clients and need a governance layer to get them approved."
+        value_exchange: "SI shortens client approvals; Vireoka gets implementation-led distribution."
+        deal_structure: "Partner programme: referral/resale margin + certification"
+        where_to_find: "AI practice leads, partner managers"
+        factors: {fit: 4, reach: 4, access: 3, strategic: 4, speed: 3}
+        angle: "client risk teams slow down agent projects that are otherwise ready"
+        offer: "a partner-programme conversation and a joint pilot with one client"
+      - id: agent_platforms
+        label: "Agent platform & framework vendors"
+        kind: integration
+        why: "Framework users need governance hooks; integrations make Vireoka the default choice."
+        value_exchange: "Platform gets a governance story; Vireoka gets developer distribution."
+        deal_structure: "Technical integration + co-marketing"
+        where_to_find: "DevRel and partnerships teams"
+        factors: {fit: 4, reach: 5, access: 3, strategic: 4, speed: 3}
+        angle: "enterprise buyers ask how agent decisions will be reviewed and explained"
+        offer: "a governance integration and joint technical content"
+      - id: grc_vendors
+        label: "GRC & AI assurance vendors"
+        kind: co_sell
+        why: "GRC tools track policies; Vireoka produces the runtime evidence those policies need."
+        value_exchange: "Evidence flows into their platform; joint deals."
+        deal_structure: "Integration + co-selling"
+        where_to_find: "Partnerships leads"
+        factors: {fit: 4, reach: 4, access: 2, strategic: 4, speed: 2}
+        angle: "policies on paper need evidence from running systems"
+        offer: "an evidence-feed integration and a co-selling pilot"
+
+  oratoplus:
+    product_line: "an AI speaking coach - rehearse a talk, face a hostile Q&A examiner, and see measurable improvement"
+    categories:
+      - id: accelerators
+        label: "Startup accelerators & demo-day programmes"
+        kind: design_partner
+        why: "Every cohort rehearses pitches under deadline and faces investor Q&A - the product's sharpest use case."
+        value_exchange: "Programme gets free cohort access and pitch-readiness reports; OratoPlus gets structured feedback and stories."
+        deal_structure: "Free cohort pilot, then per-cohort licence"
+        where_to_find: "Programme directors, platform/community managers"
+        factors: {fit: 5, reach: 3, access: 4, strategic: 4, speed: 5}
+        angle: "founders rehearse the pitch but rarely rehearse the hard questions"
+        offer: "free OratoPlus access for your next cohort before demo day"
+      - id: sales_enablement
+        label: "Sales enablement & L&D leaders"
+        kind: design_partner
+        why: "Teams rolling out new messaging need every rep to rehearse and a way to see readiness."
+        value_exchange: "Team gets a readiness report; OratoPlus gets an Enterprise reference workflow."
+        deal_structure: "Paid pilot for one team for one quarter"
+        where_to_find: "VP Enablement / L&D on LinkedIn; enablement communities"
+        factors: {fit: 5, reach: 3, access: 3, strategic: 5, speed: 3}
+        angle: "new messaging rolls out on slides long before every rep can say it well"
+        offer: "a one-quarter readiness pilot for one team"
+      - id: coaches
+        label: "Executive & public-speaking coaches"
+        kind: co_sell
+        why: "Coaches want clients to practise between sessions; OratoPlus gives them the receipts."
+        value_exchange: "Coach gets a client dashboard and revenue share; OratoPlus gets distribution."
+        deal_structure: "Revenue share on client seats"
+        where_to_find: "Coach directories, LinkedIn, ICF chapters"
+        factors: {fit: 4, reach: 3, access: 5, strategic: 3, speed: 4}
+        angle: "clients improve fastest when they practise between sessions"
+        offer: "a coach workspace with a revenue share on client seats"
+      - id: speaking_clubs
+        label: "Toastmasters clubs & speaking communities"
+        kind: distribution
+        why: "Members already practise every week and want feedback between meetings."
+        value_exchange: "Club gets a member discount; OratoPlus gets community reach."
+        deal_structure: "Club discount codes"
+        where_to_find: "Club officers, district leaders"
+        factors: {fit: 4, reach: 4, access: 5, strategic: 2, speed: 4}
+        angle: "members want more practice and feedback than one meeting a week allows"
+        offer: "a member discount and a pause-analytics workshop for your club"
+      - id: career_centers
+        label: "MBA & university career centres"
+        kind: distribution
+        why: "Students rehearse interviews and presentations under pressure."
+        value_exchange: "Centre gets student access; OratoPlus gets early-career users."
+        deal_structure: "Institutional licence or free tier promotion"
+        where_to_find: "Career centre directors"
+        factors: {fit: 4, reach: 4, access: 3, strategic: 3, speed: 3}
+        angle: "students practise answers but rarely practise follow-up questions"
+        offer: "access for students in your next recruiting season"
+
+  atmakosh:
+    product_line: "governance-as-a-service for AI agents - a deny-by-default, plural-worldview check before an agent acts, with a hash-chained audit trail"
+    categories:
+      - id: platform_teams_design
+        label: "AI platform teams at regulated enterprises"
+        kind: design_partner
+        why: "Teams putting agents into production need a governed authorisation step before actions."
+        value_exchange: "Team shapes the authorisation API and evidence format; Atmakosh gets a production reference."
+        deal_structure: "Design-partner pilot on one agent (shadow mode first)"
+        where_to_find: "Heads of AI platform, ML engineering leads"
+        factors: {fit: 5, reach: 2, access: 3, strategic: 5, speed: 3}
+        angle: "agents that deploy code or move money need a review step that doesn't slow everything down"
+        offer: "a shadow-mode pilot on one agent - it observes and never blocks"
+      - id: law_firms
+        label: "EU AI Act & technology law practices"
+        kind: co_sell
+        why: "Counsel advise on obligations; Atmakosh produces operational evidence that supports them."
+        value_exchange: "Firm gets an implementation partner; Atmakosh gets trusted introductions."
+        deal_structure: "Referral alliance"
+        where_to_find: "Technology/AI regulation partners"
+        factors: {fit: 4, reach: 4, access: 2, strategic: 5, speed: 2}
+        angle: "clients ask how AI obligations become day-to-day evidence"
+        offer: "a referral alliance and a joint client briefing"
+      - id: agent_frameworks
+        label: "Agent orchestration frameworks"
+        kind: integration
+        why: "A native authorisation hook makes governance one line of code."
+        value_exchange: "Framework gets a governance integration; Atmakosh gets developer adoption."
+        deal_structure: "Open integration + co-marketing"
+        where_to_find: "Maintainers, DevRel"
+        factors: {fit: 4, reach: 5, access: 3, strategic: 4, speed: 4}
+        angle: "developers ask how to stop an agent from taking an out-of-scope action"
+        offer: "an open integration and a joint tutorial"
+      - id: grc_assurance
+        label: "GRC & AI assurance platforms"
+        kind: co_sell
+        why: "Their policy registers need runtime decisions as evidence."
+        value_exchange: "Evidence feed into their platform; co-selling."
+        deal_structure: "Integration + co-selling"
+        where_to_find: "Partnerships leads"
+        factors: {fit: 4, reach: 4, access: 2, strategic: 4, speed: 2}
+        angle: "risk registers describe AI controls that are hard to evidence at runtime"
+        offer: "an evidence-feed integration"
+      - id: academic_ethics
+        label: "University AI-ethics & philosophy programmes"
+        kind: distribution
+        why: "Plural-worldview deliberation is a research and teaching asset."
+        value_exchange: "Programme gets a teaching tool; Atmakosh gets credibility and research collaboration."
+        deal_structure: "Free academic licence + research collaboration"
+        where_to_find: "Programme directors, faculty"
+        factors: {fit: 3, reach: 3, access: 4, strategic: 4, speed: 3}
+        angle: "students debate AI ethics in theory far more than they can test it"
+        offer: "a free academic licence and a guest session"

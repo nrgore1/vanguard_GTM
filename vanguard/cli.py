@@ -1,0 +1,509 @@
+"""vanguard - command line entry point."""
+from __future__ import annotations
+
+import argparse
+import os
+import asyncio
+import json
+import logging
+import sys
+from pathlib import Path
+
+from .exporters import NotApproved, export_sequences, export_tasks
+from .cost import estimate
+from .llm import make_llm
+from .orchestrator import OUTPUT_DIR, run_portfolio
+from .registry import get_properties
+from .store import Store
+
+
+def _run_id(store: Store, given: str | None) -> str:
+    rid = given or store.latest_run_id()
+    if not rid:
+        sys.exit("no runs yet - start one with `vanguard run`")
+    return rid
+
+
+def _preflight(a, llm, n_props: int) -> None:
+    """Decide what this run may spend, tell the user, and stop early when it can't run for $0."""
+    from .providers import FallbackLLM
+    if isinstance(llm, FallbackLLM):
+        ok, msg = asyncio.run(llm.primary.check())
+        cap = float(os.getenv("VANGUARD_MAX_COST_USD", "0") or 0)
+        fb = f"ON, capped at ${cap:.2f} - used only for calls the local model fails" if llm.backup_enabled else "OFF"
+        print(f"Primary: local model {llm.primary.model} ($0) - {msg}\nClaude fallback: {fb}")
+        if not ok and not llm.backup_enabled:
+            sys.exit(f"Local model not ready and Claude fallback is off, so nothing was run or spent.\n  {msg}\n"
+                     "  See docs/SETUP_NOTION_AND_KEYS.md Part 3 (install Ollama + pull a model), "
+                     "or use `vanguard run --dry-run`.")
+        if not ok:
+            est = estimate(n_props, os.getenv("VANGUARD_MODEL", "claude-sonnet-5"), llm.web_search)
+            print(f"Local model unavailable: every call will go to Claude (~${est['total_usd']:.2f}, cap ${cap:.2f}).")
+        if llm.backup_enabled and not a.yes and input("Proceed? [y/N] ").strip().lower() != "y":
+            sys.exit("cancelled")
+        return
+    est = estimate(n_props, llm.model, llm.web_search)
+    cap = llm.meter.budget_usd or 0
+    print(f"Provider: Claude only. Estimated cost: ~${est['total_usd']:.2f} on {llm.model} "
+          f"(web research {'on' if llm.web_search else 'off'})")
+    if cap <= 0:
+        sys.exit("Paid API runs are OFF (VANGUARD_MAX_COST_USD=0), so nothing was spent.\n"
+                 "  $0 options: VANGUARD_PROVIDER=local (a model on your machine), `vanguard run --dry-run`, or "
+                 "`vanguard prompt all --out prompts/` + `vanguard import all prompts/`.\n"
+                 "  To allow paid runs, set VANGUARD_MAX_COST_USD to a cap, e.g. 5.")
+    print(f"Hard spend cap for this run: ${cap:.2f}")
+    if not a.yes and input("Proceed? [y/N] ").strip().lower() != "y":
+        sys.exit("cancelled")
+
+
+def cmd_run(a, store: Store):
+    props = get_properties(a.properties.split(","))
+    llm = make_llm(a.dry_run, web_search=False if a.no_research else None, provider=a.provider)
+    if not a.dry_run:
+        _preflight(a, llm, len(props))
+    print(f"Running {len(props)} properties in parallel (concurrency {a.concurrency or 'default'})"
+          f"{' [DRY RUN - mock LLM, $0]' if a.dry_run else ''}")
+    rid = asyncio.run(run_portfolio(llm, props, store, concurrency=a.concurrency))
+    cmd_status(argparse.Namespace(run=rid), store)
+    if a.sync:
+        cmd_sync(argparse.Namespace(run=rid), store)
+
+
+def cmd_status(a, store: Store):
+    rid = _run_id(store, a.run)
+    run = store.run(rid)
+    u = run.get("usage") or {}
+    print(f"\nRun {rid}  status={run['status']}  started={run['created_at']}  finished={run['finished_at']}")
+    if u:
+        print(f"Spend: ${u.get('cost_usd', 0):.2f}  model={u.get('model')}  calls={u.get('calls', 0)}  "
+              f"tokens in/out={u.get('input_tokens', 0):,}/{u.get('output_tokens', 0):,}  searches={u.get('web_searches', 0)}"
+              + (f"  local calls={u['local_calls']} fallbacks to Claude={u['fallback_calls']}" if "local_calls" in u else ""))
+    print(f"{'property':24} {'lint':8} {'ACV':>12} {'units':>7} {'months':>7} {'tasks':>6}  approved  notes")
+    for row in store.playbooks(rid):
+        pb = json.loads(row["body"])
+        rr = pb["revenue_roadmap"]
+        flags = [n.split(":")[0] for n in pb["notes"] if ":" in n and not n.startswith("lint repair")]
+        print(f"{row['property_id']:24} {row['lint_status']:8} {rr['target_acv']:>12} {rr['required_active_units']:>7} "
+              f"{rr['months_to_target_estimate']:>7} {len(pb['daily_task_registry']):>6}  "
+              f"{(row['approved_by'] or '-'):8}  {', '.join(flags)}")
+    for pid, err in run["errors"].items():
+        print(f"{pid:24} FAILED   {err}")
+
+
+def cmd_show(a, store: Store):
+    rid = _run_id(store, a.run)
+    pb = store.playbook(rid, a.property)
+    if not pb:
+        sys.exit(f"no playbook for {a.property} in {rid}")
+    print(pb.model_dump_json(indent=2))
+
+
+def cmd_approve(a, store: Store):
+    rid = _run_id(store, a.run)
+    if store.approve(rid, a.property, a.by):
+        print(f"approved {a.property} in {rid} by {a.by}")
+    else:
+        sys.exit(f"cannot approve {a.property}: missing, or blocked by the lint gate")
+
+
+def cmd_export(a, store: Store):
+    rid = _run_id(store, a.run)
+    out = Path(a.out or OUTPUT_DIR / rid / "exports")
+    pids = [r["property_id"] for r in store.playbooks(rid)] if a.property == "all" else [a.property]
+    for pid in pids:
+        try:
+            for p in export_sequences(store, rid, pid, out):
+                print(f"wrote {p}")
+        except NotApproved as e:
+            print(f"skipped: {e}")
+    print(f"wrote {export_tasks(store, rid, out, a.format)}")
+
+
+def cmd_notion_setup(a, store: Store):
+    from .notion_sync import CONFIG_PATH, Notion
+
+    async def go():
+        n = Notion()
+        try:
+            return await n.setup(a.parent_page)
+        finally:
+            await n.aclose()
+    cfg = asyncio.run(go())
+    print(f"created Notion databases {cfg} -> {CONFIG_PATH}")
+
+
+def cmd_sync(a, store: Store):
+    from .notion_sync import Notion
+    rid = _run_id(store, a.run)
+
+    async def go():
+        n = Notion()
+        try:
+            return await n.sync_run(store, rid)
+        finally:
+            await n.aclose()
+    print(f"Notion sync {rid}: {asyncio.run(go())}")
+
+
+def cmd_estimate(a, store: Store):
+    props = get_properties(a.properties.split(","))
+    provider = (a.provider or os.getenv("VANGUARD_PROVIDER", "local")).lower()
+    model = a.model or os.getenv("VANGUARD_MODEL", "claude-sonnet-5")
+    web = not a.no_research and os.getenv("VANGUARD_WEB_SEARCH", "1") == "1"
+    claude = estimate(len(props), model, web)
+    if provider == "local":
+        research = web and os.getenv("VANGUARD_RESEARCH_WITH_CLAUDE", "0") == "1"
+        out = {"provider": "local", "local_model": os.getenv("VANGUARD_LOCAL_MODEL", "qwen3.6:27b"),
+               "properties": len(props), "total_usd": 0.0,
+               "worst_case_usd": min(float(os.getenv("VANGUARD_MAX_COST_USD", "0") or 0), claude["total_usd"]),
+               "claude_estimate_if_every_call_fell_back_usd": claude["total_usd"],
+               "web_research": "via Claude (paid)" if research else "off (local models have no web access)",
+               "note": "local runs cost $0; worst case is bounded by VANGUARD_MAX_COST_USD (0 = fallback off)"}
+    else:
+        out = claude | {"provider": "claude"}
+    print(json.dumps(out, indent=2))
+
+
+def cmd_doctor(a, store: Store):
+    """Check configuration without spending anything."""
+    import os
+    import httpx
+    from .notion_sync import CONFIG_PATH, NOTION_VERSION
+    ok = True
+
+    def line(good: bool, msg: str):
+        nonlocal ok
+        ok &= good
+        print(("  OK   " if good else "  FAIL ") + msg)
+
+    def info(msg: str):
+        print("  INFO " + msg)
+
+    print("Vanguard-GTM doctor")
+    provider = os.getenv("VANGUARD_PROVIDER", "local").lower()
+    info(f"provider: {provider}")
+    if provider == "local":
+        from .providers import LocalLLM
+        good, msg = asyncio.run(LocalLLM().check())
+        line(good, f"local model: {msg}")
+    key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not key:
+        if provider == "claude":
+            line(False, "ANTHROPIC_API_KEY not set (required when VANGUARD_PROVIDER=claude)")
+        else:
+            info("ANTHROPIC_API_KEY not set - fine: Claude is only the optional paid fallback")
+    else:
+        r = httpx.get("https://api.anthropic.com/v1/models", timeout=20,
+                      headers={"x-api-key": key, "anthropic-version": "2023-06-01"})
+        line(r.status_code == 200, f"Anthropic key accepted (HTTP {r.status_code}; listing models is free)")
+    tok = os.getenv("NOTION_TOKEN", "")
+    if not tok:
+        line(False, "NOTION_TOKEN not set")
+    else:
+        r = httpx.get("https://api.notion.com/v1/users/me", timeout=20,
+                      headers={"Authorization": f"Bearer {tok}", "Notion-Version": NOTION_VERSION})
+        line(r.status_code == 200, f"Notion token accepted (HTTP {r.status_code})")
+        if CONFIG_PATH.exists():
+            cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+            for k, dbid in cfg.items():
+                r = httpx.get(f"https://api.notion.com/v1/databases/{dbid}", timeout=20,
+                              headers={"Authorization": f"Bearer {tok}", "Notion-Version": NOTION_VERSION})
+                line(r.status_code == 200, f"{k} reachable (HTTP {r.status_code})")
+        else:
+            line(False, f"{CONFIG_PATH} missing - run `vanguard notion-setup --parent-page <id>`")
+    cap = float(os.getenv("VANGUARD_MAX_COST_USD", "0") or 0)
+    info(f"paid API runs: {'ON, capped at $%.2f per run' % cap if cap > 0 else 'OFF ($0 mode)'}  "
+         f"(Claude model {os.getenv('VANGUARD_MODEL', 'claude-sonnet-5')}"
+         f"{', fallback only' if provider == 'local' else ''})")
+    info("Notion API: free")
+    from .outreach import EmailConfig
+    ecfg = EmailConfig.from_env()
+    info(f"email mode: {ecfg.mode}")
+    for pr in ecfg.problems():
+        line(False, pr)
+    if ecfg.postmark_token:
+        from .postmark import PostmarkError, check_streams
+        try:
+            chk = check_streams(ecfg)
+            line(chk["ok"], f"Postmark token accepted; streams {', '.join(chk['streams']) or 'none'}"
+                 + "".join(f"; missing {m}" for m in chk["missing"]) + "".join(f"; {w}" for w in chk["not_transactional"]))
+        except (PostmarkError, httpx.HTTPError) as ex:
+            line(False, f"Postmark: {ex}")
+        info(f"Postmark monthly cap {ecfg.postmark_monthly_cap} (free plan = 100/month); cold first touch "
+             f"{'ALLOWED via Postmark' if ecfg.postmark_allow_cold else 'via your SMTP mailbox' if ecfg.smtp_ready else 'held (no SMTP)'}")
+    sys.exit(0 if ok else 1)
+
+
+def cmd_prompt(a, store: Store):
+    """`prompt <id> [--out FILE]` or `prompt all --out DIR` (one <id>.prompt.txt per property)."""
+    from .engines import manual_prompt
+    props = get_properties([a.property])
+    if a.property == "all":
+        if not a.out:
+            sys.exit("`prompt all` needs --out DIR")
+        d = Path(a.out)
+        d.mkdir(parents=True, exist_ok=True)
+        for p in props:
+            (d / f"{p.id}.prompt.txt").write_text(manual_prompt(p), encoding="utf-8")
+        print(f"wrote {len(props)} prompts to {d}/. Paste each into its own Claude chat (they can run in parallel),\n"
+              f"save each JSON reply as {d}/<id>.json, then run `vanguard import all {d}`")
+        return
+    text = manual_prompt(props[0])
+    if a.out:
+        Path(a.out).write_text(text, encoding="utf-8")
+        print(f"wrote {a.out} ({len(text):,} chars). Paste it into a Claude chat, save the JSON reply, "
+              f"then run `vanguard import {a.property} <reply.json>`")
+    else:
+        print(text)
+
+
+def _read_reply(path: Path) -> dict:
+    raw = path.read_text(encoding="utf-8")
+    start, end = raw.find("{"), raw.rfind("}")  # tolerate ```json fences or text around the object
+    return json.loads(raw[start:end + 1])
+
+
+def cmd_import(a, store: Store):
+    """`import <id> <reply.json>` or `import all <DIR>` (reads <id>.json per property into one run)."""
+    from pydantic import ValidationError
+    from .engines import import_playbook
+    from .lint_gate import LintGate
+    from .orchestrator import new_run_id
+    src = Path(a.file)
+    if a.property == "all":
+        jobs = [(p, src / f"{p.id}.json") for p in get_properties(["all"])]
+        missing = [p.id for p, f in jobs if not f.exists()]
+        jobs = [(p, f) for p, f in jobs if f.exists()]
+        if not jobs:
+            sys.exit(f"no <id>.json replies found in {src}")
+    else:
+        jobs, missing = [(get_properties([a.property])[0], src)], []
+    rid = a.run or new_run_id()
+    if not store.run(rid):
+        store.create_run(rid, [p.id for p, _ in jobs])
+    gate, errors = LintGate(), {}
+    for p, f in jobs:
+        try:
+            pb = import_playbook(p, rid, _read_reply(f), gate)
+        except (ValidationError, ValueError, KeyError) as e:
+            errors[p.id] = f"{type(e).__name__}: {str(e)[:300]}"
+            print(f"FAILED {p.id}: {errors[p.id]}")
+            continue
+        store.save_playbook(pb)
+        print(f"imported {p.id} into run {rid}: lint={pb.lint_status}, tasks={len(pb.daily_task_registry)}")
+        for fd in pb.lint_findings:
+            print(f"  [{fd.severity}] {fd.rule_id} @ {fd.location}: {fd.excerpt}")
+    store.finish_run(rid, errors, {"model": "manual", "cost_usd": 0.0})
+    if missing:
+        print(f"no reply yet for: {', '.join(missing)}")
+
+
+def cmd_partners(a, store: Store):
+    from .lint_gate import LintGate
+    from .partners import plan_partners
+    from .web.db import WebStore
+    ws = WebStore(store.path)
+    llm = make_llm(False, provider=a.provider) if a.model else None
+    if llm is not None:
+        from .providers import FallbackLLM
+        if isinstance(llm, FallbackLLM):
+            ok, msg = asyncio.run(llm.primary.check())
+            if not ok and not llm.backup_enabled:
+                sys.exit(f"{msg}\n  Drop --model to use the $0 expert playbook, or start your local model.")
+    for p in get_properties(a.property.split(",")):
+        recs = asyncio.run(plan_partners(llm, p, None, LintGate()))
+        made = sum(ws.upsert_recommendation(p.id, r, None, None)["partner_created"] for r in recs)
+        print(f"\n{p.name}: {len(recs)} recommendations ({made} new partners, drafts created for new ones)")
+        print(f"  {'#':>2} {'pri':3} {'score':>5}  {'kind':18} partner")
+        for r in recs:
+            flag = "" if r["lint_status"] == "pass" else f"  [lint {r['lint_status']}]"
+            print(f"  {r['rank']:>2} {r['priority']:3} {r['score']:>5}  {r['kind']:18} {r['name']}"
+                  f"{' (segment - find named targets)' if r['is_segment'] else ''}{flag}")
+
+
+def cmd_outreach(a, store: Store):
+    from .outreach import EmailConfig, approve, queue_stats, send_due, sync_replies
+    from .web.db import WebStore
+    ws = WebStore(store.path)
+    cfg = EmailConfig.from_env()
+    if a.action == "status":
+        st = cfg.status()
+        print(f"Email mode: {st['mode']}{' (LIVE - really sends)' if st['live'] else ' (writes .eml files to output/outbox, sends nothing)' if st['mode'] == 'outbox' else ''}")
+        for pr in st["problems"]:
+            print(f"  problem: {pr}")
+        print(f"Daily cap {st['daily_cap']} · IMAP reply sync {'on' if st['imap_configured'] else 'off (record replies by hand)'}")
+        if st["postmark"]:
+            from .outreach import postmark_used_this_month
+            pm = st["postmark"]
+            print(f"Postmark: streams outreach={pm['stream_outreach']} notify={pm['stream_notify']} · "
+                  f"{postmark_used_this_month(ws)}/{pm['monthly_cap']} this month · inbound {'on' if pm['inbound'] else 'off'} · "
+                  f"cold first touch {'via Postmark' if pm['allow_cold'] else 'via SMTP' if pm['cold_via_smtp'] else 'held'}")
+        print(json.dumps(queue_stats(ws), indent=2))
+    elif a.action == "approve":
+        print(approve(ws, [int(x) for x in a.ids], a.by or "cli"))
+    elif a.action == "send":
+        res = send_due(ws, cfg)
+        if res.get("error"):
+            sys.exit(res["error"])
+        for m in res["sent"]:
+            print(f"sent   #{m['id']} step {m['step']} -> {m['partner']} <{m['to']}>")
+        for m in res["skipped"]:
+            print(f"queued #{m['id']} step {m['step']} {m['partner']}: {m['reason']}")
+        print(f"{len(res['sent'])} sent ({res['mode']} mode)")
+    elif a.action == "sync-replies":
+        print(sync_replies(ws, cfg))
+    elif a.action == "digest":
+        from .outreach import send_digest
+        print(send_digest(ws, cfg))
+    elif a.action in ("postmark-sync", "postmark-check"):
+        if not cfg.postmark_token:
+            sys.exit("POSTMARK_SERVER_TOKEN is not set")
+        from .outreach import postmark_used_this_month
+        from .postmark import check_streams, sync_suppressions
+        if a.action == "postmark-sync":
+            print(json.dumps(sync_suppressions(ws, cfg), indent=2))
+        else:
+            print(json.dumps(check_streams(cfg) | {"used_this_month": postmark_used_this_month(ws),
+                                                   "monthly_cap": cfg.postmark_monthly_cap}, indent=2))
+
+
+def _outreach_loop(minutes: float, db_path) -> None:
+    """Background: every N minutes send due approved messages and check for replies."""
+    import threading
+    import time as _t
+    from .outreach import EmailConfig, send_due, sync_replies
+    from .web.db import WebStore
+
+    def loop():
+        ws = WebStore(db_path)
+        while True:
+            try:
+                cfg = EmailConfig.from_env()
+                r = send_due(ws, cfg)
+                if cfg.imap_host:
+                    sync_replies(ws, cfg)
+                if r.get("sent"):
+                    logging.getLogger("vanguard.outreach").info("scheduler sent %d", len(r["sent"]))
+            except Exception:
+                logging.getLogger("vanguard.outreach").exception("outreach scheduler tick failed")
+            _t.sleep(minutes * 60)
+    threading.Thread(target=loop, daemon=True, name="outreach-scheduler").start()
+
+
+def cmd_serve(a, store: Store):
+    import uvicorn
+    from .web.app import UI_DIST
+    every = float(os.getenv("VANGUARD_OUTREACH_EVERY_MIN", "0") or 0)
+    if every > 0:
+        print(f"Outreach scheduler: every {every:g} min (sends only messages an admin approved)")
+        _outreach_loop(every, store.path)
+    if not UI_DIST.exists():
+        print(f"note: UI not built ({UI_DIST} missing) - API only. Build it with `cd ui && npm install && npm run build`.")
+    print(f"Vanguard-GTM web app on http://{'localhost' if a.host == '0.0.0.0' else a.host}:{a.port}")
+    uvicorn.run("vanguard.web.app:app", host=a.host, port=a.port)
+
+
+def cmd_create_user(a, store: Store):
+    import getpass
+    from .web.db import WebStore
+    from .web.security import hash_password
+    ws = WebStore(store.path)
+    if ws.user_by_email(a.email):
+        sys.exit(f"{a.email} already exists")
+    pw = a.password or getpass.getpass("Password (min 10 chars): ")
+    uid = ws.create_user(a.email, a.name, a.role, hash_password(pw))
+    print(f"created {a.role} user {a.email} (id {uid})")
+
+
+def cmd_seed_users(a, store: Store):
+    """First-run convenience: one admin and one general user with random passwords, shown once."""
+    from .web.db import WebStore
+    from .web.security import generate_password, hash_password
+    ws = WebStore(store.path)
+    if ws.q("SELECT id FROM users LIMIT 1"):
+        sys.exit("users already exist - use `vanguard create-user` or the Admin > Users page")
+    print("Created (save these now - passwords are not stored in readable form):")
+    for email, name, role in ((a.admin_email, "Admin", "admin"), (a.user_email, "Team Member", "user")):
+        pw = generate_password()
+        ws.create_user(email, name, role, hash_password(pw))
+        print(f"  {role:5}  {email:28}  password: {pw}")
+
+
+def cmd_demo_data(a, store: Store):
+    from .web.demo import load_demo, purge_demo
+    from .web.db import WebStore
+    ws = WebStore(store.path)
+    print(purge_demo(ws) if a.purge else load_demo(ws))
+
+
+def _utf8_console() -> None:
+    """Windows consoles and pipes may default to cp1252; never crash printing names like 'Mandap & Co · P0'."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
+def main(argv=None):
+    _utf8_console()
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    ap = argparse.ArgumentParser(prog="vanguard", description="Vanguard-GTM orchestrator")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    r = sub.add_parser("run", help="generate launch engines")
+    r.add_argument("--properties", default="all", help="comma list of ids, or 'all'")
+    r.add_argument("--concurrency", type=int)
+    r.add_argument("--dry-run", action="store_true", help="offline mock LLM, no API calls")
+    r.add_argument("--sync", action="store_true", help="push to Notion when done")
+    r.add_argument("--no-research", action="store_true", help="skip Engine 1 web search (cheaper)")
+    r.add_argument("-y", "--yes", action="store_true", help="don't ask to confirm the cost estimate")
+    r.add_argument("--provider", choices=["local", "claude"], help="override VANGUARD_PROVIDER (default local)")
+    r.set_defaults(fn=cmd_run)
+
+    s = sub.add_parser("status"); s.add_argument("--run"); s.set_defaults(fn=cmd_status)
+    s = sub.add_parser("show"); s.add_argument("property"); s.add_argument("--run"); s.set_defaults(fn=cmd_show)
+    s = sub.add_parser("approve", help="human sign-off; required before email export")
+    s.add_argument("property"); s.add_argument("--by", required=True); s.add_argument("--run"); s.set_defaults(fn=cmd_approve)
+    s = sub.add_parser("export", help="Smartlead/Instantly sequence CSVs + task backlog")
+    s.add_argument("property", nargs="?", default="all"); s.add_argument("--run"); s.add_argument("--out")
+    s.add_argument("--format", choices=["csv", "json"], default="csv"); s.set_defaults(fn=cmd_export)
+    s = sub.add_parser("notion-setup"); s.add_argument("--parent-page", required=True); s.set_defaults(fn=cmd_notion_setup)
+    s = sub.add_parser("sync", help="push a run to Notion"); s.add_argument("--run"); s.set_defaults(fn=cmd_sync)
+    s = sub.add_parser("estimate", help="pre-run cost estimate, spends nothing")
+    s.add_argument("--properties", default="all"); s.add_argument("--model"); s.add_argument("--no-research", action="store_true")
+    s.add_argument("--provider", choices=["local", "claude"])
+    s.set_defaults(fn=cmd_estimate)
+    s = sub.add_parser("prompt", help="print a self-contained prompt for producing a playbook in a Claude chat ($0 API)")
+    s.add_argument("property"); s.add_argument("--out"); s.set_defaults(fn=cmd_prompt)
+    s = sub.add_parser("import", help="validate + lint a playbook JSON produced in a Claude chat and store it")
+    s.add_argument("property"); s.add_argument("file"); s.add_argument("--run"); s.set_defaults(fn=cmd_import)
+    s = sub.add_parser("doctor", help="check keys and Notion access, spends nothing"); s.set_defaults(fn=cmd_doctor)
+    s = sub.add_parser("create-user", help="add a web-app user")
+    s.add_argument("--email", required=True); s.add_argument("--name", required=True)
+    s.add_argument("--role", choices=["admin", "user"], default="user"); s.add_argument("--password")
+    s.set_defaults(fn=cmd_create_user)
+    s = sub.add_parser("seed-users", help="first run: create an admin and a general user with random passwords")
+    s.add_argument("--admin-email", default="admin@vireoka.com"); s.add_argument("--user-email", default="team@vireoka.com")
+    s.set_defaults(fn=cmd_seed_users)
+    s = sub.add_parser("demo-data", help="load clearly-labelled [DEMO] campaigns/partners/results to explore the UI")
+    s.add_argument("--purge", action="store_true", help="remove all [DEMO] records"); s.set_defaults(fn=cmd_demo_data)
+    s = sub.add_parser("partners", help="partnerships expert: recommend, score and prioritise partners + draft outreach")
+    s.add_argument("action", choices=["recommend"]); s.add_argument("property", help="property id(s), comma list, or all")
+    s.add_argument("--model", action="store_true", help="let the local model/Claude name specific organisations "
+                   "(default: $0 expert playbook)")
+    s.add_argument("--provider", choices=["local", "claude"]); s.set_defaults(fn=cmd_partners)
+    s = sub.add_parser("outreach", help="approval-gated partner emails: status | approve | send | sync-replies | "
+                       "digest | postmark-sync | postmark-check")
+    s.add_argument("action", choices=["status", "approve", "send", "sync-replies", "digest", "postmark-sync", "postmark-check"])
+    s.add_argument("ids", nargs="*", help="message ids (approve)"); s.add_argument("--by")
+    s.set_defaults(fn=cmd_outreach)
+    s = sub.add_parser("serve"); s.add_argument("--host", default="0.0.0.0"); s.add_argument("--port", type=int, default=8080)
+    s.set_defaults(fn=cmd_serve)
+
+    a = ap.parse_args(argv)
+    a.fn(a, Store())
+
+
+if __name__ == "__main__":
+    main()

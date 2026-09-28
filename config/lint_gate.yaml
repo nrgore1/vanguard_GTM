@@ -1,0 +1,84 @@
+# Lint gate - every piece of outward-facing copy the agent produces
+# (email subjects/bodies, social hooks, post drafts, narratives) is checked
+# against these rules before it can be synced or exported.
+#
+# severity:  block -> item is marked BLOCKED_LINT and never exported
+#            warn  -> item is exported but flagged for human review
+# Patterns are Python regexes, matched case-insensitively.
+
+attribution:
+  # Any quantitative claim in copy must name a public source within the same
+  # sentence: "(Source: X)", "according to X", "per X", "X reports".
+  enabled_profiles: [institutional, standard]
+  number_pattern: '(\$\s?\d[\d,.]*\s?(k|m|bn|b|t|million|billion|trillion)?|\d[\d,.]*\s?(%|percent|x\b|bps))'
+  # keywords case-insensitive; "per X" and "(Org, 2025)" need a capitalised name
+  source_pattern: '((?i:\bsources?:|\baccording to\b|\bdata from\b|\breports?\b)|\bper [A-Z]|\(\s?[A-Z][\w&.\- ]+,? \d{4}\s?\))'
+  severity: block
+
+profiles:
+
+  institutional:
+    - id: no-customer-claims
+      severity: block
+      pattern: '\b(our|trusted by|used by|chosen by|leading)\s+(customers?|clients?|institutions|banks|partners)\b'
+      message: "Pre-commercial: no customer, client or partner claims."
+    - id: no-traction-claims
+      severity: block
+      pattern: '\b(ARR|MRR|revenue of|customers? (have|are)|in production at|deployed at|live with|processing \$|assets under)\b'
+      message: "No traction, revenue or production-deployment claims."
+    - id: no-testimonials
+      severity: block
+      pattern: '(“|")[^"”]{10,}(”|")\s*[-–—]\s*[A-Z][a-z]+'
+      message: "No quoted testimonials - there are no customers to quote."
+    - id: design-intent-framing
+      severity: warn
+      pattern: '\b(guarantees?|ensures? compliance|fully compliant|certified|audited|bank-grade|military-grade|unhackable)\b'
+      message: "Frame capabilities as architectural design intent, not guarantees or certifications."
+    - id: crypto-proof-language
+      severity: warn
+      pattern: '\bcryptographic(ally)? (proof|proven|verif)'
+      message: "Verify 'cryptographic proof' language against the actual architecture before use."
+    - id: canton-claim
+      severity: block
+      pattern: '\b(supports?|integrated with|live on|native to) Canton\b'
+      message: "Say 'fully capable of supporting Canton integration' until built."
+    - id: liqmint-not-yield
+      severity: block
+      pattern: '\b(earn|high|guaranteed|passive|stablecoin)\s+yield\b|\byield (product|platform|farming)\b|\bAPY\b'
+      message: "LiqMint is a governance control plane, not a yield product (also a securities-law risk)."
+    - id: country-rule-packs
+      severity: block
+      pattern: '\b(pre-?built|out-of-the-box|ready-made)\s+(country|jurisdiction(al)?)\s+(rule|compliance)\s+packs?\b'
+      message: "No pre-built country rule packs - policies are encoded at implementation."
+
+  standard:
+    - id: no-customer-claims
+      severity: block
+      pattern: '\b(trusted by|used by|join) \d[\d,]*\+?\s*(users|professionals|teams|companies)\b'
+      message: "No user-count or customer claims until real, sourced figures exist."
+    - id: no-testimonials
+      severity: block
+      pattern: '(“|")[^"”]{10,}(”|")\s*[-–—]\s*[A-Z][a-z]+'
+      message: "No invented testimonials."
+    - id: no-guaranteed-outcomes
+      severity: warn
+      pattern: '\bguarantee(d|s)?\b'
+      message: "Avoid guaranteed-outcome language."
+
+  consumer:
+    - id: no-fabricated-social-proof
+      severity: block
+      pattern: '\b(\d[\d,]*\+?\s*(happy )?(couples|matches|members|weddings|families)\b|success stor(y|ies) from)'
+      message: "No member/match/couple counts or success stories until real and consented."
+    - id: no-testimonials
+      severity: block
+      pattern: '(“|")[^"”]{10,}(”|")\s*[-–—]\s*[A-Z][a-z]+'
+      message: "No invented testimonials - use real, consented quotes only."
+    - id: no-guaranteed-match
+      severity: block
+      pattern: '\bguarantee(d|s)? (a |your )?(match|partner|spouse|marriage)\b|\bfind (your|the) (one|soulmate) in \d+'
+      message: "No guaranteed-match or timed-outcome promises (FTC deceptive-claims risk)."
+    - id: sensitive-targeting
+      severity: warn
+      pattern: '\b(caste|fair[- ]skinned|fair complexion|wheatish)\b'
+      message: "Avoid caste/colorism language in copy and ad targeting."
