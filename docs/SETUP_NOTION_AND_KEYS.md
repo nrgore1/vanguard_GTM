@@ -1,6 +1,6 @@
 # Setup guide: Notion, keys, and keeping it at $0
 
-Version 0.5.1 · updated 2026-09-28
+Version 0.6.0 · updated 2026-09-28
 
 ## What costs money, and what doesn't
 

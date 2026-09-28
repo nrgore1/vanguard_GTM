@@ -584,6 +584,16 @@ async def recommend_partners(body: RecommendIn, a: dict = Depends(admin_user)):
                                                           "lint_status")} for r in recs]}
 
 
+@api.post("/partners/import-research")
+def import_research(a: dict = Depends(admin_user)):
+    """Load config/partner_targets.yaml (real, researched organisations) as named partners with draft emails."""
+    from ..targets import import_targets
+    res = import_targets(store(), user_id=a["id"])
+    store().audit(a["id"], "import-research", "partner", None,
+                  {k: v for k, v in res.items() if k != "errors"} | {"errors": len(res["errors"])})
+    return res
+
+
 @api.get("/outreach")
 def list_outreach(status: str | None = None, property_id: str | None = None, partner_id: int | None = None,
                   u: dict = Depends(current_user)):

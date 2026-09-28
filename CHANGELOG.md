@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0 — 2026-09-28
+
+### Added: researched partners (real organisations)
+- **`config/partner_targets.yaml`:** 117 real organisations across all 8 properties, each with a
+  source link, why it fits, location, contact page or partner program, generic inbox where one
+  is published, priority hint and confidence.
+  - Design partners, for example: U.S. Bank, BNY, UnitedHealth/Optum, Ameriprise, ABN AMRO,
+    Zurich, MN Cup, gener8tor, India Association of Minnesota, TANA, The Simply Elegant Group.
+  - Co-sell and channel partners, for example: Fireblocks, Anchorage, Kyriba, Credo AI,
+    LangChain, CrewAI, Toastmasters, Koinly, CoinLedger, Maharani Weddings.
+  - An independent re-check confirmed the recent claims. One slip was corrected: it is
+    Securitize Capital, the subsidiary, that is SEC-registered.
+- **Import:** `vanguard partners import`, `POST /api/partners/import-research` and a "Load
+  researched partners" button (admin).
+  - Each organisation becomes a named partner under its category, with its own 3 draft emails.
+  - Playbook examples (Fireblocks, KPMG and so on) are enriched rather than duplicated.
+  - Re-runs are idempotent and keep hand-entered emails.
+  - Scores are clamped into the priority band.
+- **UI:** "researched" badges; clickable website, source and contact links on the partner page.
+- **Tests:** WEB-26, WEB-27, UI-15.
+
 ## 0.5.1 — 2026-09-28
 
 ### Fixed

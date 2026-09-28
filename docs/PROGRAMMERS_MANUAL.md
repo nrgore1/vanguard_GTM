@@ -1,6 +1,6 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.5.1 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.6.0 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
 > **Rule for every change:** update this manual, `DESIGN.md` (including its §17 change log) and
@@ -53,6 +53,7 @@ vanguard-gtm/
 │   ├── lint_gate.py  registry.py  store.py  notion_sync.py  exporters.py
 │   ├── providers.py         # local models (Ollama / OpenAI-compatible) + Claude fallback
 │   ├── partners.py          # Engine 2B: recommend, score, prioritise partners, draft sequences
+│   ├── targets.py           # import researched real organisations (config/partner_targets.yaml)
 │   ├── outreach.py          # approval-gated sending, consent routing, reply matching, opt-outs, team alerts
 │   ├── postmark.py          # Postmark streams: send, webhooks, suppression sync, stream check
 │   ├── mock_fixtures.py     # placeholder data for dry runs and tests
@@ -155,6 +156,28 @@ property:
 
 Every property needs at least one `design_partner` and one `co_sell` category.
 
+### 3.3a `config/partner_targets.yaml`
+Researched, real organisations to approach, grouped by property id under `properties:`. Each item
+has these fields:
+
+| Field | What it holds |
+|---|---|
+| `category` | A category id from `partner_playbooks.yaml` for that property (validated) |
+| `name` | The organisation's name |
+| `website` | https, or null |
+| `location` | City and state or country |
+| `why` | Grounded in the evidence, with no guarantees or unsourced numbers |
+| `evidence_url` | https link to the source |
+| `contact_email` | A generic organisation inbox, or null. Never a person's address. |
+| `contact_url` | https contact page, partner program or form |
+| `priority_hint` | `P0`, `P1` or `P2` |
+| `confidence` | `high` or `medium` |
+| `kind` | Informational; the category decides the real kind |
+
+Edit the file freely and re-run `vanguard partners import`. It is idempotent: existing partners
+are refreshed, never duplicated, and hand-entered emails are kept. `tests/test_web.py::WEB-27`
+validates the file.
+
 ### 3.4 `config/lint_gate.yaml`
 
 - `attribution`: `enabled_profiles`, `number_pattern`, `source_pattern` and `severity`.
@@ -180,6 +203,7 @@ Every property needs at least one `design_partner` and one `co_sell` category.
 | `vanguard sync [--run ID]` | Pushes a run to Notion. Safe to repeat. | No |
 | `vanguard serve [--host] [--port 8080]` | Starts the web app: UI at `/`, UI API at `/api`, machine API at `/machine` | No |
 | `vanguard seed-users [--admin-email E] [--user-email E]` | First run only: creates one admin and one general user with random passwords, printed once | No |
+| `vanguard partners import [FILE]` | Loads researched real organisations (default `config/partner_targets.yaml`) as named partners with their own 3 draft emails. Idempotent; prints added/refreshed counts and how many lack a public inbox. Nothing is approved or sent. | No |
 | `vanguard partners recommend <property\|a,b\|all> [--model] [--provider local\|claude]` | The partnerships expert. Prints the ranked plan and stores partners with 3-step drafts. `--model` lets the local model name organisations; the default is the $0 playbook. | No (local) |
 | `vanguard outreach status` | Email mode, problems, daily cap, Postmark streams and monthly usage, queue and reply stats | No |
 | `vanguard outreach approve <ids…> [--by NAME]` | Approves messages from the CLI (the admin's call) | No |
@@ -208,7 +232,7 @@ Sign in with `POST /api/auth/login {email, password}`, which returns `{token, us
 | Portfolio | `GET /properties`, `GET /dashboard` · admin: `PUT /targets/{property}` |
 | Campaigns | `GET /campaigns?property_id&status`, `POST /campaigns`, `GET/PATCH /campaigns/{id}`, `DELETE /campaigns/{id}` (creator or admin), `POST /campaigns/{id}/results`, `DELETE /results/{id}` (creator or admin) |
 | Partners | `GET /partners?property_id&kind`, `POST /partners`, `GET/PATCH /partners/{id}`, `POST /partners/{id}/interactions` (optional `stage` moves the partner), `DELETE /interactions/{id}` (creator or admin) · admin: `DELETE /partners/{id}` |
-| Partner outreach | admin: `POST /partners/recommend {property_id, mode: offline\|model, provider}` · all users: `POST /partners/{segment}/targets` (add a named organisation under a segment), `POST /partners/{id}/reply {date, summary, outcome?, kind}`, `GET /outreach?status&property_id&partner_id` (segments excluded unless partner_id), `GET /outreach/stats`, `PATCH /outreach/{id}` (edit; resets to draft; re-lints) · admin: `POST /outreach/approve {ids}`, `POST /outreach/{id}/cancel`, `POST /outreach/send-due`, `POST /outreach/sync-replies`, `POST /outreach/digest`, `POST /outreach/postmark-sync`, `GET /email/postmark` (stream check + usage; 409 without a token). Partner `PATCH` also takes `agreement_status`, `agreement_signed_date`, `agreement_notes`, `website`, `email_consent` (`opted_out` also suppresses the address and cancels queued messages). `GET /outreach/stats` → `email.postmark` includes `used_this_month`. |
+| Partner outreach | admin: `POST /partners/import-research` (load `config/partner_targets.yaml`; returns per-property created/updated, errors, without_email) · admin: `POST /partners/recommend {property_id, mode: offline\|model, provider}` · all users: `POST /partners/{segment}/targets` (add a named organisation under a segment), `POST /partners/{id}/reply {date, summary, outcome?, kind}`, `GET /outreach?status&property_id&partner_id` (segments excluded unless partner_id), `GET /outreach/stats`, `PATCH /outreach/{id}` (edit; resets to draft; re-lints) · admin: `POST /outreach/approve {ids}`, `POST /outreach/{id}/cancel`, `POST /outreach/send-due`, `POST /outreach/sync-replies`, `POST /outreach/digest`, `POST /outreach/postmark-sync`, `GET /email/postmark` (stream check + usage; 409 without a token). Partner `PATCH` also takes `agreement_status`, `agreement_signed_date`, `agreement_notes`, `website`, `email_consent` (`opted_out` also suppresses the address and cancels queued messages). `GET /outreach/stats` → `email.postmark` includes `used_this_month`. |
 | Tasks | `GET /tasks?property_id&status&mine`, `PATCH /tasks/{id}` (a user may change only status and notes, and only when assigned) · admin: `POST /tasks`, `DELETE /tasks/{id}` |
 | Agent (admin) | `GET /agent/status`, `GET /runs`, `POST /runs {properties, dry_run, provider}` (409 if it can't run at $0), `GET /runs/{id}`, `GET /runs/{id}/playbooks/{pid}`, `POST /runs/{id}/approve/{pid}`, `POST /runs/{id}/import`, `POST /runs/{id}/sync` |
 | Audit (admin) | `GET /audit?limit=100` |

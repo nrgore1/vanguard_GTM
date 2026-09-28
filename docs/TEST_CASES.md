@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.5.1 · updated 2026-09-28
+Version 0.6.0 · updated 2026-09-28
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -77,6 +77,8 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-23 | Postmark streams: consent routing and payload | Postmark mode with no SMTP holds cold first touches ("permission-based") and calls Postmark 0 times. Marking a partner opted in sends step 1 on the `partners` stream: MessageID stored, transport postmark, From, To, Tag = property, Metadata outreach/partner ids, Reply-To `reply+o<id>@inbound…`, TrackOpens false, TrackLinks None, postal footer, List-Unsubscribe to the inbound hash, server token header. A cold partner goes through the SMTP cold mailer instead. A monthly cap of 1 holds step 2. `ALLOW_COLD` sends a cold partner via Postmark. Stats show mode, live, stream and usage. |
 | WEB-24 | Postmark webhooks | No or wrong Basic Auth → 401. Delivery and Open set the timestamps. An Inbound reply with MailboxHash `o<id>` → positive, in_conversation, consent replied, steps 2–3 cancelled, a duplicate ignored, and an alert on the notify stream to the admin and partner owner (logged). A SpamComplaint → opted_out, remaining cancelled, suppressed. A soft bounce leaves it sent; a hard bounce → bounced and suppressed. SubscriptionChange adds or removes a suppression. Unknown types are ignored. Unset credentials → 503. |
 | WEB-25 | Postmark admin: streams, suppression sync, digest | Users get 403. The stream check is OK, and flags a Broadcasts notify stream. A manual opted_out consent cancels all steps. Sync pulls 1 remote suppression (`postmark:HardBounce`) and pushes 1 local one. The digest emails the admin on the notify stream (3 awaiting, top partner listed, Metadata kind) and counts toward monthly usage. Without a token: stream check 409, and the digest falls back to the outbox. |
+| WEB-26 | Import researched partners | Users get 403. The admin import has no errors and creates or updates every organisation in the YAML (`source=research`). Fireblocks and KPMG enrich the playbook examples with no duplicates. India Association of Minnesota sits under the community_orgs segment as a P0 design partner with website, contact URL and 3 draft emails (merge tags kept). No message leaves draft. A re-run creates nothing and keeps a hand-entered email. |
+| WEB-27 | Targets file quality | Every item has a known property and category, https evidence, contact and website links, a valid inbox format, a why, a priority hint and a confidence. No duplicate names; at least 10 per property. `vanguard partners import` runs at $0 with no problems. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
@@ -99,6 +101,7 @@ Atmakosh.
 | UI-12 | Partner outreach, end to end (admin) | Recommend Jodibana partners (planners, resorts, photographers listed). The priority list starts with P0. Open the planner segment (why and how-to-find shown) and add "Mandap & Co Planners" with an email. Its sequence is personalised. Approve 3. The outreach queue is in outbox mode; Send due now → 1 sent to the right address, step 2 "due". Record a phone reply → positive, 2 stopped, In conversation. Mark agreement signed → stage Signed, and the dashboard's Jodibana card shows 1 signed. |
 | UI-13 | General user limits | No Send/Check replies/Recommend buttons. Can add a named target and edit a draft, which saves as "needs admin approval". No approve buttons. |
 | UI-14 | Email permission + digest | Uma opens Shaadi Squad Events: permission "none" with the cold-routing note. She sets "Opted out", sees the toast, and all 3 messages show cancelled. The admin clicks "Email approval digest" and gets "Digest emailed to 1 admin (outbox)". |
+| UI-15 | Load researched partners | The admin clicks "Load researched partners" and gets a toast. India Association of Minnesota opens with the "researched organisation" badge, a clickable iamn.org website and contact link, and 3 drafts titled "… + Jodibana: a small pilot idea". |
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
 
 ## Component tests (`tests/test_vanguard.py`)

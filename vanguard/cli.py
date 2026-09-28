@@ -303,6 +303,19 @@ def cmd_partners(a, store: Store):
     from .partners import plan_partners
     from .web.db import WebStore
     ws = WebStore(store.path)
+    if a.action == "import":
+        from .targets import DEFAULT_PATH, import_targets
+        res = import_targets(ws, a.property or DEFAULT_PATH)
+        for pid, st in res["properties"].items():
+            print(f"  {pid:24} {st['created']:3} added  {st['updated']:3} refreshed")
+        for e in res["errors"]:
+            print(f"  problem: {e}")
+        total = sum(st["created"] for st in res["properties"].values())
+        print(f"{total} researched organisations added as partners, each with 3 draft emails awaiting approval. "
+              f"{res['without_email']} have no public inbox - use their contact page, or add a contact email.")
+        return
+    if not a.property:
+        sys.exit("usage: vanguard partners recommend <property|a,b|all>")
     llm = make_llm(False, provider=a.provider) if a.model else None
     if llm is not None:
         from .providers import FallbackLLM
@@ -488,8 +501,12 @@ def main(argv=None):
     s.set_defaults(fn=cmd_seed_users)
     s = sub.add_parser("demo-data", help="load clearly-labelled [DEMO] campaigns/partners/results to explore the UI")
     s.add_argument("--purge", action="store_true", help="remove all [DEMO] records"); s.set_defaults(fn=cmd_demo_data)
-    s = sub.add_parser("partners", help="partnerships expert: recommend, score and prioritise partners + draft outreach")
-    s.add_argument("action", choices=["recommend"]); s.add_argument("property", help="property id(s), comma list, or all")
+    s = sub.add_parser("partners", help="partnerships expert: recommend, score and prioritise partners + draft outreach; "
+                       "import researched named organisations")
+    s.add_argument("action", choices=["recommend", "import"])
+    s.add_argument("property", nargs="?", default=None,
+                   help="recommend: property id(s), comma list, or all. import: targets YAML "
+                        "(default config/partner_targets.yaml)")
     s.add_argument("--model", action="store_true", help="let the local model/Claude name specific organisations "
                    "(default: $0 expert playbook)")
     s.add_argument("--provider", choices=["local", "claude"]); s.set_defaults(fn=cmd_partners)

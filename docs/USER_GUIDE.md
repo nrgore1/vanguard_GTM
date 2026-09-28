@@ -1,6 +1,6 @@
 # Vanguard-GTM — User Guide
 
-Version 0.5.1 · updated 2026-09-28 · for the team (general users) and admins
+Version 0.6.0 · updated 2026-09-28 · for the team (general users) and admins
 
 Vanguard turns the agent's go-to-market plans into day-to-day work: campaigns you run and
 measure, partners you work through a pipeline, and tasks you tick off. Everyone shares one
@@ -145,6 +145,24 @@ What happens automatically:
 Admin tools:
 - **Email approval digest** sends every admin the list of drafts waiting for approval.
 - **Sync suppressions** lines up our do-not-email list with Postmark's.
+
+### Researched partners: real organisations to approach
+Admins can click **Load researched partners** on the Partners page. It adds about 117 real
+organisations across all eight properties, each checked against its own website or recent news.
+For example:
+- U.S. Bank, BNY and Fireblocks for LiqMint Institutional;
+- the India Association of Minnesota and TANA for Jodibana and JodiUSA;
+- gener8tor, MN Cup and Toastmasters for OratoPlus.
+
+Each organisation:
+- has a **researched** badge, its website, why it fits (with a clickable source) and its contact
+  page;
+- gets its own copy of the three draft emails, which still need an admin's approval.
+
+Most large organisations don't publish a partnerships inbox. For those, the queue shows "needs
+contact email": use the contact page or partner program linked on the partner, find the right
+person, and add their business email (Edit). Loading again is safe; it never duplicates partners
+or overwrites an email you entered.
 
 ## Tasks
 - The agent's 30-day plan for each property, plus tasks admins add by hand (ids like `ORA-M001`).

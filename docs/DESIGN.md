@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.5.1 |
+| **Version** | 0.6.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-09-27 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -102,6 +102,7 @@ flowchart TB
 | `registry.py` | Load and validate `properties.yaml`, render the per-property brief | `Property`, `load_properties`, `get_properties`, `Property.brief()` |
 | `schema.py` | Pydantic contracts for every engine and the final playbook | `MarketIntel`, `PartnershipPlan`, `CampaignPlan`, `TaskPlan`, `Playbook` |
 | `partners.py` | Engine 2B: expert playbooks, deterministic scoring, offline plan, model plan with lint repair | `offline_plan`, `plan_partners`, `score` |
+| `targets.py` | Loads researched, real organisations (`config/partner_targets.yaml`) as named partners under their category, idempotently | `import_targets`, `load` |
 | `outreach.py` | Approval-gated sending (outbox/SMTP/Postmark), consent routing, compliance footer, suppression, IMAP reply matching, reply classification, team notifications | `send_due`, `approve`, `record_reply`, `sync_replies`, `notify_reply`, `send_digest`, `EmailConfig` |
 | `postmark.py` | Postmark Email API client, stream payloads, webhook event handling (bounce, spam, delivery, open, subscription, inbound), suppression sync, stream check | `PostmarkClient`, `PostmarkMailer`, `handle_event`, `sync_suppressions`, `check_streams` |
 | `providers.py` | Local models (Ollama or any OpenAI-compatible server) and the local-first chain with Claude as fallback | `LocalLLM`, `FallbackLLM`, `LocalUnavailable`, `extract_json` |
@@ -618,7 +619,47 @@ The other properties follow the same pattern.
 - The dashboard shows agreements signed and in talks for each property and for the portfolio,
   along with partner emails sent, replies and reply rate.
 
-### 15.7 Data (new or changed)
+### 15.7 Researched partner targets (v0.6.0)
+`config/partner_targets.yaml` lists **real organisations** for each property, 13–16 per property
+and 117 in the first release. They were found by web research and checked against each
+organisation's own site or recent news.
+
+**Fields per organisation:**
+- `category`, which must be a category id from `partner_playbooks.yaml`;
+- `name`, `website`, `location`;
+- `why`, one or two sentences grounded in the evidence;
+- `evidence_url`;
+- `contact_email`: only a generic inbox published on the organisation's own site, otherwise
+  empty;
+- `contact_url`: a contact page, partner program or application form;
+- `priority_hint` (P0–P2) and `confidence` (high or medium).
+
+**Privacy:** the file holds no personal emails, phone numbers or named individuals. Contacts
+are organisation channels only.
+
+**Import:** `import_targets` (`vanguard partners import`, `POST /api/partners/import-research`,
+or the "Load researched partners" button) works as follows:
+1. **Finds the template** for each category. That is the category's segment, or for categories
+   the playbook lists by name (custodians, Big-4 and so on) its named example. If the
+   property has no segments yet, the $0 expert plan is created first.
+2. **Matches existing partners.** A target whose name matches an existing partner, including a
+   playbook example contained in the research name (for example "KPMG" in "KPMG US - Digital
+   Assets Advisory"), enriches that partner instead of duplicating it.
+3. **Creates the rest** as named partners (`source='research'`, `parent_id` = segment) with
+   their own copy of the template's 3 draft emails (merge tags intact).
+4. **Sets the fields:**
+   - `rationale` = why + source + confidence;
+   - `how_to_find` = contact URL + location;
+   - `priority` = the hint;
+   - `priority_score` = the template score nudged by the hint, then clamped into the hint's
+     band (P0 ≥ 75, P1 55–74, P2 < 55), so score and priority never disagree.
+5. **Keeps your work on re-runs.** Re-running refreshes the research fields only. It never
+   changes stage, outreach status, agreements or a contact email entered by hand.
+
+Nothing is approved or sent. Targets without a public inbox show "needs contact email" in the
+queue until someone adds a business contact.
+
+### 15.8 Data (new or changed)
 | Table | Columns |
 |---|---|
 | `partners` (new columns) | category, is_segment, parent_id, priority_score, priority, factors, rationale, deal_structure, how_to_find, website, source, agreement_status, agreement_signed_date, agreement_notes |
@@ -727,6 +768,7 @@ sync (§15.5) remains the free option, and both can run.
 
 | Version | Date | Change |
 |---|---|---|
+| 0.6.0 | 2026-09-28 | **Researched partners** (§15.7): `config/partner_targets.yaml` lists 117 real, source-cited organisations across all 8 properties. `targets.py` imports them idempotently as named partners with inherited 3-step drafts, enriching playbook examples rather than duplicating them, and clamps each score into its priority band. Adds `vanguard partners import`, `POST /api/partners/import-research`, the "Load researched partners" button, researched badges, and clickable source, contact and website links. Tests WEB-26, WEB-27 and UI-15. |
 | 0.5.1 | 2026-09-28 | **Windows fix:** every text file is read and written as UTF-8 explicitly. Windows' default cp1252 crashed on the config files (`UnicodeDecodeError` in `demo-data`, `run`, `serve`). The CLI console is set to UTF-8 with replacement. Adds `start.ps1` (one-command Windows start) and a flat install layout in the setup guide. |
 | 0.5.0 | 2026-09-27 | **Postmark message streams** (§16): `postmark` email mode sending through a transactional outreach stream with Tag, Metadata, a `+o<id>` Reply-To and List-Unsubscribe; per-partner `email_consent` with the permission-based policy (cold first touch via your own SMTP or held; `VANGUARD_POSTMARK_ALLOW_COLD` override); monthly cap (default 100); Basic-Auth webhook for Delivery, Open, Bounce, SpamComplaint, SubscriptionChange and Inbound replies; two-way suppression sync; stream check; reply alerts and approval digest on a notify stream (`notification_log`); UI Postmark banner, transport badges, consent select, digest button; CLI `outreach digest\|postmark-sync\|postmark-check`; `doctor` checks Postmark. Docs-sync now also catches env vars read through `g = os.getenv`. |
 | 0.4.0 | 2026-09-27 | **Partner outreach** (§15): expert partner playbooks for all 8 properties; Engine 2B recommends, scores and prioritises design, co-sell and channel partners and drafts 3-step sequences; segments → named targets; admin-approved sending (outbox by default, SMTP optional) with compliance footer, suppression, cap and threading; IMAP and manual reply tracking; agreement tracking on the dashboard; Outreach page; `partners recommend` and `outreach` CLI. |

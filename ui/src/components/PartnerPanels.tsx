@@ -7,6 +7,19 @@ import { label, relTime, shortDate, today } from "../lib/format";
 import { Badge, Button, Card, CardHeader, ErrorNote, Field, Input, Modal, Select, Textarea, statusTone, useToast } from "./ui";
 import { OUTREACH_TONE, OutreachEditor, preview } from "./OutreachEditor";
 
+function shortUrl(u: string) {
+  const t = u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+  const [host, ...rest] = t.split("/");
+  const path = rest.join("/");
+  return path.length > 18 ? `${host}/…${path.slice(-14)}` : t;
+}
+
+/** Plain text with http(s) links made clickable (research notes carry source and contact URLs). */
+export function Linkify({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s|)]+)/g);
+  return <>{parts.map((s, i) => i % 2 ? <a key={i} href={s} target="_blank" rel="noreferrer noopener" className="break-all text-vireo underline-offset-2 hover:underline">{shortUrl(s)}</a> : s)}</>;
+}
+
 const FACTOR_LABEL: Record<string, string> = { fit: "ICP fit", reach: "Reach", access: "Access", strategic: "Strategic value", speed: "Speed to result" };
 
 export function PriorityCard({ p }: { p: Partner }) {
@@ -29,9 +42,9 @@ export function PriorityCard({ p }: { p: Partner }) {
           <p className="pt-1 text-[11px] text-faint">Score = weighted fit 30% · reach 25% · strategic 20% · access 15% · speed 10%. P0 ≥ 75, P1 ≥ 55.</p>
         </div>
         <dl className="space-y-2.5 text-sm">
-          {p.rationale && <div><dt className="text-xs text-muted">Why</dt><dd>{p.rationale}</dd></div>}
+          {p.rationale && <div><dt className="text-xs text-muted">Why</dt><dd className="whitespace-pre-line"><Linkify text={p.rationale} /></dd></div>}
           {p.deal_structure && <div><dt className="text-xs text-muted">Typical deal</dt><dd>{p.deal_structure}</dd></div>}
-          {p.how_to_find && <div><dt className="flex items-center gap-1 text-xs text-muted"><Search size={11} />How to find the right contact</dt><dd>{p.how_to_find}</dd></div>}
+          {p.how_to_find && <div><dt className="flex items-center gap-1 text-xs text-muted"><Search size={11} />How to find the right contact</dt><dd><Linkify text={p.how_to_find} /></dd></div>}
         </dl>
       </div>
     </Card>

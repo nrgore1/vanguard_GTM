@@ -738,3 +738,65 @@ def test_web_25_postmark_admin_suppression_sync_streams_digest(env, pm, monkeypa
     monkeypatch.setenv("VANGUARD_EMAIL_MODE", "outbox")
     assert c.get("/api/email/postmark", headers=A).status_code == 409
     assert c.post("/api/outreach/digest", headers=A).json()["transport"] == "outbox"
+
+
+# ---------------------------------------------------------------- researched partners (v0.6.0)
+def test_web_26_import_researched_partners(env):
+    """WEB-26: admins load config/partner_targets.yaml: every organisation becomes a named partner (source research)
+    under its category with its own 3 draft emails, playbook examples like Fireblocks are enriched instead of
+    duplicated, re-running changes nothing, nothing is approved or sent, and general users get 403."""
+    c, A, s = env["c"], env["A"], env["s"]
+    assert c.post("/api/partners/import-research", headers=env["U"]).status_code == 403
+    r = c.post("/api/partners/import-research", headers=A).json()
+    assert r["errors"] == []
+    from vanguard.targets import load
+    data = load()
+    total = sum(len(v) for v in data.values())
+    assert sum(p["created"] + p["updated"] for p in r["properties"].values()) == total and set(r["properties"]) == set(data)
+    assert s.one("SELECT COUNT(*) AS n FROM partners WHERE source='research'")["n"] == total
+    fb = s.q("SELECT * FROM partners WHERE property_id='liqmint-institutional' AND name LIKE 'Fireblocks%'")
+    assert len(fb) == 1 and fb[0]["source"] == "research" and "Source: https://" in fb[0]["rationale"]
+    kp = s.q("SELECT name FROM partners WHERE property_id='liqmint-institutional' AND name LIKE '%KPMG%'")
+    assert [x["name"] for x in kp] == ["KPMG"]                          # enriched the playbook example, no duplicate
+    iam = s.one("SELECT * FROM partners WHERE property_id='jodibana' AND name='India Association of Minnesota (IAM)'")
+    seg = s.one("SELECT * FROM partners WHERE id=?", (iam["parent_id"],))
+    assert seg["is_segment"] == 1 and seg["category"] == "community_orgs" and iam["kind"] == "design_partner"
+    assert iam["priority"] == "P0" and iam["website"] == "https://iamn.org/" and "iamn.org/contact" in iam["how_to_find"]
+    msgs = s.q("SELECT * FROM outreach_messages WHERE partner_id=? ORDER BY step", (iam["id"],))
+    assert [m["status"] for m in msgs] == ["draft"] * 3 and "{{company}}" in msgs[0]["subject"] + msgs[0]["body"]
+    assert s.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE status!='draft'")["n"] == 0
+    # re-run: idempotent, and a hand-entered email is never overwritten
+    c.patch(f"/api/partners/{iam['id']}", json={"contact_email": "partnerships@iamn.example"}, headers=A)
+    r2 = c.post("/api/partners/import-research", headers=A).json()
+    assert all(p["created"] == 0 for p in r2["properties"].values())
+    assert s.one("SELECT COUNT(*) AS n FROM partners WHERE source='research'")["n"] == total
+    assert s.one("SELECT contact_email FROM partners WHERE id=?", (iam["id"],))["contact_email"] == "partnerships@iamn.example"
+    listed = c.get("/api/partners?property_id=jodibana", headers=env["U"]).json()
+    assert any(p["priority"] == "P0" and p["source"] == "research" for p in listed)
+
+
+def test_web_27_researched_targets_file_quality(tmp_path):
+    """WEB-27: config/partner_targets.yaml is well-formed: known property + category, https website/evidence/contact
+    links, valid inbox format, no duplicate names; the CLI imports it at $0."""
+    import re
+    import yaml
+    from vanguard.targets import load
+    pp = yaml.safe_load((ROOT / "config" / "partner_playbooks.yaml").read_text(encoding="utf-8"))
+    cats = {pid: {c["id"] for c in v["categories"]} for pid, v in (pp.get("properties") or pp).items()
+            if isinstance(v, dict) and "categories" in v}
+    seen = set()
+    for pid, items in load().items():
+        assert pid in cats and len(items) >= 10, pid
+        for t in items:
+            assert t["category"] in cats[pid], (pid, t["name"])
+            assert (pid, t["name"].lower()) not in seen
+            seen.add((pid, t["name"].lower()))
+            for k in ("evidence_url", "contact_url"):
+                assert t[k].startswith("https://"), (t["name"], k)
+            assert t.get("website") is None or t["website"].startswith("https://")
+            assert t["why"] and t["priority_hint"] in ("P0", "P1", "P2") and t["confidence"] in ("high", "medium")
+            if t.get("contact_email"):
+                assert re.fullmatch(r"[^@\s]+@[^@\s]+\.[a-z]{2,}", t["contact_email"].lower())
+    e = {k: v for k, v in os.environ.items()} | {"VANGUARD_DB": str(tmp_path / "c.db"), "PYTHONPATH": str(ROOT)}
+    r = subprocess.run([sys.executable, "-m", "vanguard", "partners", "import"], cwd=ROOT, env=e, capture_output=True, text=True)
+    assert r.returncode == 0 and "researched organisations added" in r.stdout and "problem" not in r.stdout, r.stdout + r.stderr

@@ -49,10 +49,12 @@ export default function PartnerDetail() {
             <span className="font-mono uppercase tracking-[0.16em] text-vireo">{propName(p.property_id)}</span>
             <Badge tone={kindTone(p.kind)}>{label(p.kind)}</Badge>
             {(p.source_run_id || p.source?.startsWith("agent")) && <Badge tone="violet">suggested by agent</Badge>}
+            {p.source === "research" && <Badge tone="sky">researched organisation</Badge>}
             {p.is_segment ? <Badge tone="amber">segment</Badge> : null}
           </div>
           <h1 className="font-serif text-[26px] font-semibold leading-tight">{p.name}</h1>
-          <p className="mt-1 text-sm text-muted">{KIND_HELP[p.kind]}{p.partner_type ? ` · ${p.partner_type}` : ""}</p>
+          <p className="mt-1 text-sm text-muted">{KIND_HELP[p.kind]}{p.partner_type ? ` · ${p.partner_type}` : ""}
+            {p.website && <> · <a href={p.website} target="_blank" rel="noreferrer noopener" className="text-vireo hover:underline">{p.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</a></>}</p>
         </div>
         <div className="flex gap-2">
           <Button icon={<Pencil size={14} />} onClick={() => setEditing(true)}>Edit</Button>

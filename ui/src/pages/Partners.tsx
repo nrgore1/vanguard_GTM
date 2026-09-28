@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Handshake, Plus, CalendarClock, MessageSquare, Sparkles, LayoutGrid, ListOrdered, FileSignature } from "lucide-react";
+import { Handshake, Plus, CalendarClock, MessageSquare, Sparkles, LayoutGrid, ListOrdered, FileSignature, Microscope } from "lucide-react";
 import { api, type Partner, type PartnerStage } from "../lib/api";
 import { useAuth, useLoad } from "../lib/auth";
 import { label, PARTNER_KINDS, relTime, shortDate, STAGES } from "../lib/format";
@@ -125,12 +125,25 @@ export default function Partners() {
     catch (e) { toast(String((e as Error).message), "err"); reload(); }
   };
 
+  const [importing, setImporting] = useState(false);
+  const importResearch = async () => {
+    setImporting(true);
+    try {
+      const r = await api.importResearch();
+      const added = Object.values(r.properties).reduce((n, s) => n + s.created, 0);
+      const refreshed = Object.values(r.properties).reduce((n, s) => n + s.updated, 0);
+      toast(`${added} researched partners added${refreshed ? `, ${refreshed} refreshed` : ""} - drafts await approval`, r.errors.length ? "err" : "ok");
+      reload();
+    } catch (e) { toast(String((e as Error).message), "err"); } finally { setImporting(false); }
+  };
+
   const byStage = (s: string) => (data ?? []).filter((p) => p.stage === s);
 
   return (
     <>
       <PageHeader eyebrow="Relationships" title="Partners" sub="Design partners, co-selling partners and distribution channels. Drag a card to move it through the pipeline; open it to log calls and emails."
         actions={<>
+          {isAdmin && <Button icon={<Microscope size={15} />} loading={importing} onClick={importResearch}>Load researched partners</Button>}
           {isAdmin && <Button icon={<Sparkles size={15} />} onClick={() => setRecommending(true)}>Recommend partners</Button>}
           <Button variant="primary" icon={<Plus size={15} />} onClick={() => setAdding(true)}>Add partner</Button></>} />
       <div className="mb-4 flex flex-wrap gap-2">
@@ -161,7 +174,8 @@ export default function Partners() {
                     <td className="whitespace-nowrap px-3 py-3">{p.priority ? <><Badge tone={statusTone(p.priority)}>{p.priority}</Badge> <span className="num text-xs text-muted">{p.priority_score}</span></> : <span className="text-faint">–</span>}</td>
                     <td className="max-w-[320px] px-3 py-3"><Link to={`/partners/${p.id}`} onClick={(e) => e.stopPropagation()} className="font-medium hover:text-vireo">{p.name}</Link>
                       <div className="mt-0.5 flex flex-wrap gap-1">{p.is_segment ? <Badge tone="amber">segment - add named targets</Badge> : null}
-                        {p.source?.startsWith("agent") && <Badge tone="violet">agent pick</Badge>}</div></td>
+                        {p.source?.startsWith("agent") && <Badge tone="violet">agent pick</Badge>}
+                        {p.source === "research" && <Badge tone="sky">researched</Badge>}</div></td>
                     <td className="px-3 py-3"><Badge tone={kindTone(p.kind)}>{label(p.kind)}</Badge></td>
                     <td className="whitespace-nowrap px-3 py-3 text-muted">{propName(p.property_id)}</td>
                     <td className="px-3 py-3"><Badge tone={statusTone(p.stage)}>{label(p.stage)}</Badge></td>

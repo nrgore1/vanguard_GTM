@@ -299,6 +299,19 @@ test.describe.serial("Vanguard-GTM web app", () => {
     await expect(page.getByText(/Digest emailed to 1 admin \(outbox\)/)).toBeVisible();
   });
 
+  test("UI-15 admin loads researched partners; a real organisation opens with clickable sources and its drafts", async ({ page }) => {
+    await login(page, ADMIN);
+    await page.goto("/partners?property=jodibana");
+    await page.getByRole("button", { name: "Load researched partners" }).click();
+    await expect(page.getByText(/researched partners added/)).toBeVisible();
+    await page.getByRole("link", { name: "India Association of Minnesota (IAM)" }).click();
+    await expect(page.getByText("researched organisation")).toBeVisible();
+    await expect(page.getByRole("link", { name: "iamn.org", exact: true })).toHaveAttribute("href", "https://iamn.org/");
+    await expect(page.getByRole("link", { name: "iamn.org/contact" })).toBeVisible();
+    await expect(page.getByText("India Association of Minnesota (IAM) + Jodibana: a small pilot idea").first()).toBeVisible();
+    await expect(page.getByText("draft", { exact: true })).toHaveCount(3);
+  });
+
   test("UI-11 theme toggle and sign-out", async ({ page }) => {
     await login(page, UMA);
     await page.getByRole("button", { name: "Toggle theme" }).click();

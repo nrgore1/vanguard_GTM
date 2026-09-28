@@ -1,0 +1,1368 @@
+# Researched partner targets - real organisations to approach, one list per property.
+# Loaded with:  vanguard partners import            (idempotent; safe to re-run after edits)
+# Each target becomes a named partner under its category segment and gets its own copy of the
+# segment's 3-step email drafts, which still need admin approval before anything is sent.
+#
+# Researched 2026-09-28 from public sources (evidence_url). Contacts are ORGANISATION channels only:
+# a generic inbox published on the org's own site, or its contact / partner-program page. Where
+# contact_email is empty, use the contact_url (often a form or partner application) or find the right
+# person yourself and add their business email on the partner page. Re-verify before outreach.
+# priority_hint: P0 approach first. confidence: high = current first-party evidence; medium = check first.
+researched: '2026-09-28'
+properties:
+  liqmint-institutional:
+  - category: institutional_design
+    name: U.S. Bancorp (U.S. Bank)
+    website: https://www.usbank.com
+    location: Minneapolis, MN
+    why: Launched USBDC, a proprietary USD stablecoin on Stellar (Sept 2026) with a live cross-border pilot and stated treasury/collateral
+      goals - the governed, auditable treasury-workflow gap LiqMint Institutional targets. Same metro as Vireoka.
+    evidence_url: https://www.usbank.com/about-us-bank/news-and-stories/article-library/us-bank-launches-usbdc-stablecoin.html
+    contact_email: null
+    contact_url: https://www.usbank.com/about-us-bank/contact-us.html
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: institutional_design
+    name: BNY (Bank of New York Mellon)
+    website: https://www.bny.com
+    location: New York, NY
+    why: Enabled USDC (with Circle) on its Digital Asset Custody platform in 2026 - a live stablecoin settlement program that
+      needs governed treasury workflows and evidence packs.
+    evidence_url: https://www.bny.com/corporate/global/en/about-us/newsroom/press-release/bny-expands-relationship-circle-adds-institutional-grade-stablecoin-enablement-services.html
+    contact_email: null
+    contact_url: https://www.bny.com/corporate/global/en/contact-us/business-inquiries.html
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: institutional_design
+    name: Citigroup (Citi Digital Assets)
+    website: https://www.citigroup.com/global/about-us/strategy/digital-assets
+    location: New York, NY
+    why: Publicly targeting a 2026 crypto custody launch and exploring stablecoin services - an active build phase where a
+      scoped non-custodial governance pilot can plug in.
+    evidence_url: https://www.cnbc.com/2025/10/13/citi-aims-to-launch-crypto-custody-in-2026-exploring-stablecoin.html
+    contact_email: null
+    contact_url: https://www.citigroup.com/global/about-us/strategy/digital-assets
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: institutional_design
+    name: State Street
+    website: https://www.statestreet.com
+    location: Boston, MA
+    why: Launched a stablecoin reserve fund (with Anchorage Digital) in 2026 as part of a blockchain-based custody/treasury
+      transformation - a live program needing policy-governed treasury operations.
+    evidence_url: https://www.coindesk.com/business/2026/01/16/state-street-a-usd36-billion-bank-is-aiming-to-change-legacy-finance-using-blockchain-tech
+    contact_email: null
+    contact_url: https://www.statestreet.com/us/en/asset-owner/about/contact-us
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: institutional_design
+    name: Standard Chartered
+    website: https://www.sc.com
+    location: London, UK (US CIB operations)
+    why: Reported launching stablecoin rails jointly with BNY and publishes institutional stablecoin research - an active
+      institutional stablecoin program.
+    evidence_url: https://www.americanbanker.com/news/why-standard-chartered-bny-launched-stablecoin-rails
+    contact_email: null
+    contact_url: https://www.sc.com/en/contact-us/
+    priority_hint: P2
+    confidence: medium
+    kind: design_partner
+  - category: custodians
+    name: Fireblocks
+    website: https://www.fireblocks.com
+    location: New York, NY
+    why: Already a named LiqMint Institutional adapter (the customer's wallet stays the signer); runs technology, infrastructure
+      and services partner tracks to co-sell governance and evidence tooling through.
+    evidence_url: https://www.fireblocks.com/partners/
+    contact_email: null
+    contact_url: https://www.fireblocks.com/partners/
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: custodians
+    name: BitGo
+    website: https://www.bitgo.com
+    location: Palo Alto, CA
+    why: Runs a formal Technology Partners track for integrations alongside its institutional custody and stablecoin infrastructure
+      work.
+    evidence_url: https://www.bitgo.com/company/partnerships/
+    contact_email: null
+    contact_url: https://www.bitgo.com/company/partnerships/
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: custodians
+    name: Anchorage Digital
+    website: https://www.anchorage.com
+    location: San Francisco, CA
+    why: Federally chartered digital-asset bank expanding institutional custody/settlement partnerships in 2026 (incl. State
+      Street's stablecoin reserve fund) - a co-sell partner for governed workflows on its rails.
+    evidence_url: https://www.crowdfundinsider.com/2026/05/281427-anchorage-digital-chosen-by-3iq-as-infrastructure-custody-partner-for-digital-assets-investment-platform/
+    contact_email: null
+    contact_url: https://www.anchorage.com/get-in-touch
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: advisory_firms
+    name: KPMG US - Digital Assets Advisory
+    website: https://kpmg.com/us/en/capabilities-services/financial-services-industry/kpmg-digital-assets-consulting.html
+    location: New York, NY
+    why: Practice covers stablecoin strategy, treasury/payments and tokenized funds for financial institutions - clients who
+      need audit-grade treasury evidence.
+    evidence_url: https://kpmg.com/us/en/capabilities-services/financial-services-industry/kpmg-digital-assets-consulting.html
+    contact_email: null
+    contact_url: https://kpmg.com/us/en/capabilities-services/financial-services-industry/kpmg-digital-assets-consulting.html
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: advisory_firms
+    name: PwC US - Digital Assets Practice
+    website: https://www.pwc.com
+    location: New York, NY
+    why: Reported (Jan 2026) expanding digital-asset services focused on corporate-treasury stablecoin 'plumbing' under the
+      GENIUS Act.
+    evidence_url: https://the-cfo.io/2026/01/07/pwcs-digital-asset-expansion-puts-focus-on-treasury-plumbing/
+    contact_email: null
+    contact_url: https://www.pwc.com/us/en/contact-us.html
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: advisory_firms
+    name: Deloitte US - Blockchain & Digital Assets
+    website: https://www2.deloitte.com/us/en/pages/about-deloitte/solutions/blockchain-digital-assets-solutions.html
+    location: New York, NY
+    why: Dedicated Blockchain & Digital Assets practice publishing stablecoin/treasury briefings - an advisory client base
+      for governance tooling.
+    evidence_url: https://www.deloitte.com/us/en/dbriefs-webcasts/from-hype-to-utility-how-stablecoins-redefine-financial-infrastructure.html
+    contact_email: null
+    contact_url: https://www2.deloitte.com/us/en/pages/about-deloitte/solutions/blockchain-digital-assets-solutions.html
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: tokenization_platforms
+    name: Securitize
+    website: https://securitize.io
+    location: New York, NY / Miami, FL
+    why: BlackRock's BUIDL tokenization partner; its subsidiary Securitize Capital became an SEC-registered investment adviser (Jul 2026) - tokenized treasuries it issues could flow
+      into LiqMint's governed settlement workflows.
+    evidence_url: https://www.nasdaq.com/press-release/securitize-becomes-registered-investment-adviser-2026-07-27
+    contact_email: null
+    contact_url: https://securitize.io/institutional-tokenization
+    priority_hint: P1
+    confidence: high
+    kind: integration
+  - category: tokenization_platforms
+    name: Ondo Finance
+    website: https://ondo.finance
+    location: New York, NY
+    why: Issues OUSG, one of the largest tokenized US Treasury funds, with a formal partner ecosystem - tokenized treasury
+      collateral for governed institutional workflows.
+    evidence_url: https://ondo.finance/ousg
+    contact_email: null
+    contact_url: https://ondo.finance/contact
+    priority_hint: P1
+    confidence: high
+    kind: integration
+  - category: tokenization_platforms
+    name: Franklin Templeton (Benji)
+    website: https://www.franklintempleton.com
+    location: San Mateo, CA
+    why: Benji tokenized money-market fund expanded across chains in 2026, including Canton - relevant to the Canton + tokenized
+      Treasury governance walkthrough already in your pipeline.
+    evidence_url: https://www.canton.network/canton-network-press-releases/franklin-templetons-benji-technology-platform-expands-to-canton-network
+    contact_email: null
+    contact_url: https://www.franklintempleton.com/contact-us
+    priority_hint: P2
+    confidence: medium
+    kind: integration
+  - category: treasury_systems
+    name: Kyriba
+    website: https://www.kyriba.com
+    location: San Diego, CA
+    why: Enterprise TMS (4,000+ customers) that announced 2026 partnerships with Circle (USDC) to bring stablecoin liquidity
+      into treasury workflows - complementary to policy-validated, audit-grade actions.
+    evidence_url: https://www.kyriba.com/news/kyriba-circle-usdc-stablecoin-enterprise-treasury/
+    contact_email: null
+    contact_url: https://www.kyriba.com/partner-ecosystem/
+    priority_hint: P1
+    confidence: high
+    kind: integration
+  - category: treasury_systems
+    name: Modern Treasury
+    website: https://www.moderntreasury.com
+    location: San Francisco, CA
+    why: Launched non-custodial stablecoin wallets and a stablecoin PSP (with Paxos) in 2026 - adjacent workflow-orchestration
+      space, a plausible integration and co-marketing partner.
+    evidence_url: https://www.moderntreasury.com/solutions/stablecoin-wallets
+    contact_email: null
+    contact_url: https://www.moderntreasury.com/contact
+    priority_hint: P2
+    confidence: medium
+    kind: integration
+  vireoka:
+  - category: enterprise_design
+    name: U.S. Bancorp (U.S. Bank)
+    website: https://www.usbank.com
+    location: Minneapolis, MN
+    why: Minneapolis-HQ regulated bank expanding its AWS collaboration to accelerate AI-driven customer experience (May 2026)
+      - scaling AI in production workflows that need auditability.
+    evidence_url: https://press.aboutamazon.com/aws/2026/5/u-s-bank-expands-collaboration-with-aws-to-accelerate-progressive-technology-transformation-and-ai-driven-customer-experience-innovation
+    contact_email: null
+    contact_url: https://www.usbank.com/newsroom.html
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: enterprise_design
+    name: UnitedHealth Group / Optum
+    website: https://www.unitedhealthgroup.com
+    location: Minnetonka, MN
+    why: Runs a formal Responsible AI program with a governing AI review board overseeing accountability and transparency
+      of deployed AI - needs reasoning audit and lineage for agentic workflows.
+    evidence_url: https://www.unitedhealthgroup.com/uhg/what-we-do/artificial-intelligence/ai-responsible-use.html
+    contact_email: null
+    contact_url: https://www.unitedhealthgroup.com/contact-us.html
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: enterprise_design
+    name: Ameriprise Financial
+    website: https://www.ameriprise.com
+    location: Minneapolis, MN
+    why: Committed ~$1B annual technology/AI spend to expand AI across advisor and client workflows - regulated advisory use
+      cases need auditability controls.
+    evidence_url: https://www.ameriprise.com/newsroom/news-releases/ameriprise-advances-ai-innovation-across-the-advisor-and-client-experience-with-usd1b-annual-spend-on-technology-and-ai-capabilities
+    contact_email: null
+    contact_url: https://www.ameriprise.com/newsroom
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: enterprise_design
+    name: Best Buy
+    website: https://www.bestbuy.com
+    location: Richfield, MN
+    why: Publicly integrating agentic AI into customer service and product discovery - consumer-scale agent decisions that
+      need traceability.
+    evidence_url: https://www.digitalcommerce360.com/2025/05/30/best-buy-agentic-ai-customer-service/
+    contact_email: null
+    contact_url: https://corporate.bestbuy.com/contact-us/
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: systems_integrators
+    name: Slalom
+    website: https://www.slalom.com
+    location: Seattle, WA (Minneapolis office)
+    why: Partners with Anthropic and Credo AI to deliver responsible-AI governance alongside agentic implementations - already
+      speaks governance-plus-agents.
+    evidence_url: https://www.slalom.com/us/en/who-we-are/partners
+    contact_email: null
+    contact_url: https://www.slalom.com/us/en/who-we-are/partners
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: systems_integrators
+    name: RSM US LLP
+    website: https://rsmus.com
+    location: Chicago, IL (Minneapolis office)
+    why: Dedicated AI governance and agentic AI consulting lines for mid-market and regulated clients - demand for third-party
+      agent-governance tooling.
+    evidence_url: https://rsmus.com/services/digital-transformation/artificial-intelligence/agentic-ai.html
+    contact_email: null
+    contact_url: https://rsmus.com/services/digital-transformation/artificial-intelligence/ai-governance.html
+    priority_hint: P2
+    confidence: high
+    kind: co_sell
+  - category: systems_integrators
+    name: Centric Consulting
+    website: https://centricconsulting.com
+    location: Columbus, OH (national)
+    why: Boutique SI with a dedicated AI governance consulting service line that could route agent-governance pilots.
+    evidence_url: https://centricconsulting.com/technology-solutions/artificial-intelligence-consulting/ai-governance-consulting-services/
+    contact_email: null
+    contact_url: https://centricconsulting.com/contact-us/
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: agent_platforms
+    name: LangChain / LangGraph
+    website: https://www.langchain.com
+    location: San Francisco, CA
+    why: LangGraph is Vireoka's first planned adapter; LangChain runs a partner network for its agent ecosystem.
+    evidence_url: https://www.langchain.com/langchain-partner-network
+    contact_email: null
+    contact_url: https://www.langchain.com/langchain-partner-network-form
+    priority_hint: P0
+    confidence: high
+    kind: integration
+  - category: agent_platforms
+    name: Arize AI
+    website: https://arize.com
+    location: Berkeley, CA
+    why: Agent observability/evaluation platform with a partner ecosystem, overlapping Vireoka's OpenTelemetry tracing and
+      reasoning-audit roadmap.
+    evidence_url: https://arize.com/partners/
+    contact_email: null
+    contact_url: https://arize.com/contact/
+    priority_hint: P1
+    confidence: high
+    kind: integration
+  - category: agent_platforms
+    name: NVIDIA Inception (NeMo)
+    website: https://www.nvidia.com/en-us/startups/
+    location: Santa Clara, CA
+    why: Admits AI-governance startups building on NeMo - matches the NeMo-compatible wrapper on Vireoka's roadmap; a program
+      application, not a cold pitch.
+    evidence_url: https://www.modelop.com/blog/modelop-joins-nvidia-inception-program-2
+    contact_email: null
+    contact_url: https://www.nvidia.com/en-us/startups/
+    priority_hint: P1
+    confidence: medium
+    kind: integration
+  - category: grc_vendors
+    name: Credo AI
+    website: https://www.credo.ai
+    location: San Francisco, CA
+    why: Runs a large, tiered AI-governance partner program (hyperscalers, GSIs, boutiques) - a structured co-sell route for
+      agent-specific governance.
+    evidence_url: https://www.credo.ai/blog/credo-ai-launches-the-largest-partner-program-operationalizing-ai-governance-for-enterprises
+    contact_email: null
+    contact_url: https://www.credo.ai/partnership/becomeapartner
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: grc_vendors
+    name: OneTrust
+    website: https://www.onetrust.com
+    location: Atlanta, GA
+    why: Relaunched its partner program around trusted data and AI - agent-level reasoning governance complements its platform.
+    evidence_url: https://www.onetrust.com/news/onetrust-unveils-evolution-of-its-partner-program/
+    contact_email: null
+    contact_url: https://www.onetrust.com/contact/
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: grc_vendors
+    name: ModelOp
+    website: https://www.modelop.com
+    location: Chicago, IL
+    why: AI governance/lifecycle platform building toward agentic governance workflows - adjacent, not competing.
+    evidence_url: https://www.modelop.com/blog/modelop-joins-nvidia-inception-program-2
+    contact_email: null
+    contact_url: https://www.modelop.com/contact
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  atmakosh:
+  - category: platform_teams_design
+    name: ABN AMRO Bank
+    website: https://www.abnamro.com
+    location: Amsterdam, NL
+    why: Built its own AI standards, an AI register and an EU AI Act-aligned framework while running production agents (credit
+      proposals, AML) - a regulated bank formalising agent governance.
+    evidence_url: https://www.abnamro.com/en/innovation/information/how-ai-helps-us-create-long-term-value
+    contact_email: null
+    contact_url: https://www.abnamro.com/en/contact
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: platform_teams_design
+    name: Zurich Insurance Group
+    website: https://www.zurich.com
+    location: Zurich, CH
+    why: Ran a 2025 Agentic AI Hyperchallenge (34 pilots to production) and published principles for accountable, governed
+      agentic AI.
+    evidence_url: https://www.zurich.com/about-us/ai-at-zurich
+    contact_email: null
+    contact_url: https://www.zurich.com/media/media-contacts
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: platform_teams_design
+    name: Revolut
+    website: https://www.revolut.com
+    location: London, UK
+    why: Building AI agents for customer service, sales and voice calls as a regulated fintech - will need graduated-autonomy
+      controls.
+    evidence_url: https://sifted.eu/articles/revolut-ai-agents-voice-calls
+    contact_email: null
+    contact_url: https://www.revolut.com/
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: platform_teams_design
+    name: Klarna
+    website: https://www.klarna.com
+    location: Stockholm, SE
+    why: One of the most cited production AI-assistant deployments at a regulated EU fintech, later partly walked back over
+      quality/oversight - a live case for pre-action governance and circuit breakers.
+    evidence_url: https://openai.com/index/klarna/
+    contact_email: null
+    contact_url: https://www.klarna.com/international/press/
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: law_firms
+    name: Bird & Bird
+    website: https://www.twobirds.com
+    location: London, UK (EU offices)
+    why: Active AI practice publishing a running 'Taking the EU AI Act to Practice' series through 2026 - clients need a technical
+      governance layer.
+    evidence_url: https://www.twobirds.com/en/insights/2026/taking-the-eu-ai-act-to-practice-the-final-transparency-code-of-practice
+    contact_email: null
+    contact_url: https://www.twobirds.com/en/capabilities/artificial-intelligence/ai-legal-services/contacts
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: law_firms
+    name: Osborne Clarke
+    website: https://www.osborneclarke.com
+    location: London, UK (EU offices)
+    why: Dedicated AI regulation practice; spun off an AI regulatory-monitoring venture in 2026.
+    evidence_url: https://legaltechnology.com/osborne-clarke-launches-independent-company-for-ai-regulatory-monitoring/
+    contact_email: null
+    contact_url: https://www.osborneclarke.com/
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: agent_frameworks
+    name: LangChain / LangGraph
+    website: https://www.langchain.com
+    location: San Francisco, CA
+    why: Formal Partner Network with an application form - register Atmakosh as pre-action governance middleware for LangGraph
+      agents.
+    evidence_url: https://www.langchain.com/langchain-partner-network
+    contact_email: null
+    contact_url: https://www.langchain.com/langchain-partner-network-form
+    priority_hint: P0
+    confidence: high
+    kind: integration
+  - category: agent_frameworks
+    name: CrewAI
+    website: https://www.crewai.com
+    location: San Francisco, CA
+    why: Public Marketplace with a documented submission process for third-party integrations - list Atmakosh as a governance
+      guardrail.
+    evidence_url: https://marketplace.crewai.com/
+    contact_email: null
+    contact_url: https://marketplace.crewai.com/
+    priority_hint: P0
+    confidence: high
+    kind: integration
+  - category: agent_frameworks
+    name: Google Agent Development Kit (ADK)
+    website: https://google.github.io/adk-docs/
+    location: Mountain View, CA
+    why: Growing public ADK integrations ecosystem across nine categories - a governance/guardrail integration listing is
+      plausible.
+    evidence_url: https://developers.googleblog.com/en/supercharge-your-ai-agents-adk-integrations-ecosystem/
+    contact_email: null
+    contact_url: https://google.github.io/adk-docs/
+    priority_hint: P2
+    confidence: medium
+    kind: integration
+  - category: grc_assurance
+    name: Credo AI
+    website: https://www.credo.ai
+    location: San Francisco, CA
+    why: Launched a global AI-governance partner program (Jul 2025) and an Integrations Hub - co-sell for an API-level pre-action
+      governance layer.
+    evidence_url: https://www.businesswire.com/news/home/20250715061509/en/Credo-AI-Launches-Global-Partner-Program-to-Govern-AI-at-Scale-Building-Trust-in-the-$15-Trillion-AI-Powered-Economy
+    contact_email: null
+    contact_url: https://www.credo.ai/partnership/becomeapartner
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: grc_assurance
+    name: Saidot
+    website: https://www.saidot.ai
+    location: Helsinki, FI
+    why: EU AI Act-focused governance platform (AI Act classifier, mapped policies, audit evidence) - complements Atmakosh's
+      runtime enforcement.
+    evidence_url: https://www.saidot.ai/product
+    contact_email: sales@saidot.ai
+    contact_url: https://www.saidot.ai/
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: grc_assurance
+    name: Holistic AI
+    website: https://www.holisticai.com
+    location: London, UK / New York, NY
+    why: Maps controls to EU AI Act, NIST AI RMF and ISO 42001 with 20+ tool integrations - runtime agent enforcement could
+      plug in.
+    evidence_url: https://www.holisticai.com/
+    contact_email: null
+    contact_url: https://www.holisticai.com/demo
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: grc_assurance
+    name: BABL AI
+    website: https://babl.ai
+    location: Rossville, GA
+    why: Independent AI audit firm - a hash-chained, replayable decision trail is verifiable evidence for the audits it performs.
+    evidence_url: https://babl.ai/ai-audits/
+    contact_email: null
+    contact_url: https://babl.ai/contact-us/
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: academic_ethics
+    name: Oxford Institute for Ethics in AI
+    website: https://www.oxford-aiethics.ox.ac.uk
+    location: Oxford, UK
+    why: Runs the Lyceum Project pairing philosophers with AI developers, business and government - fits a multi-worldview
+      deliberation council pilot or teaching case.
+    evidence_url: https://www.oxford-aiethics.ox.ac.uk/lyceum-project-partners
+    contact_email: aiethics@philosophy.ox.ac.uk
+    contact_url: https://www.oxford-aiethics.ox.ac.uk/contact-us
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: academic_ethics
+    name: Stanford HAI
+    website: https://hai.stanford.edu
+    location: Stanford, CA
+    why: Lyceum Project partner with a research, policy and education mandate on human-centred AI.
+    evidence_url: https://www.oxford-aiethics.ox.ac.uk/lyceum-project-partners
+    contact_email: null
+    contact_url: https://hai.stanford.edu/contact-us
+    priority_hint: P2
+    confidence: medium
+    kind: distribution
+  - category: academic_ethics
+    name: ForHumanity
+    website: https://forhumanity.center
+    location: New York, NY (global nonprofit)
+    why: Develops publicly documented independent audit criteria for AI systems - could reference audit-trail and circuit-breaker
+      architecture in its curriculum.
+    evidence_url: https://forhumanity.center/independent-audit-of-ai-systems/
+    contact_email: null
+    contact_url: https://forhumanity.center/contact/
+    priority_hint: P2
+    confidence: medium
+    kind: distribution
+  oratoplus:
+  - category: accelerators
+    name: gener8tor / gBETA
+    website: https://www.gener8tor.com/gbeta
+    location: Madison, WI (Twin Cities programs)
+    why: Free 7-week accelerator ending in an 'Investor Swarm' pitch with 25+ investors - cohorts need repeated hostile-Q&A
+      rehearsal; already runs Twin Cities programs.
+    evidence_url: https://www.gener8tor.com/gbeta
+    contact_email: info@gener8tor.com
+    contact_url: https://www.gener8tor.com/office-hours
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: accelerators
+    name: gBETA St. Thomas
+    website: https://www.gener8tor.com/gbeta/st-thomas
+    location: St. Paul, MN
+    why: Local gener8tor accelerator for University of St. Thomas founders; week 7 includes investor pitch meetings and a
+      live showcase - an ideal home-market pilot cohort.
+    evidence_url: https://www.gener8tor.com/gbeta/st-thomas
+    contact_email: null
+    contact_url: https://www.gener8tor.com/gbeta/st-thomas
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: accelerators
+    name: MN Cup (Holmes Center, Carlson School)
+    website: https://mncup.org
+    location: Minneapolis, MN
+    why: Nation's largest statewide startup competition, run from Carlson's Holmes Center - offer semifinalists Q&A rehearsal
+      before judged finals.
+    evidence_url: https://carlsonschool.umn.edu/MNCup2026Release
+    contact_email: null
+    contact_url: https://carlsonschool.umn.edu/centers-institutes/holmes-center
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: sales_enablement
+    name: Sandler Training - Twin Cities
+    website: https://go.sandler.com/salespro/
+    location: Minneapolis, MN
+    why: Local Sandler franchise delivering sales training to Twin Cities B2B firms - pilot hostile Q&A as objection-handling
+      drills between sessions.
+    evidence_url: https://go.sandler.com/salespro/
+    contact_email: null
+    contact_url: https://www.salespro.sandler.com/requestinfo
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: sales_enablement
+    name: RAIN Group
+    website: https://www.rainsalestraining.com/
+    location: Boston, MA
+    why: Global B2B sales training firm already using AI coaching tools - pilot OratoPlus as reinforcement practice between
+      trained sessions.
+    evidence_url: https://www.rainsalestraining.com/
+    contact_email: null
+    contact_url: https://www.rainsalestraining.com/
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: sales_enablement
+    name: Corporate Visions
+    website: https://corporatevisions.com
+    location: Mesa, AZ
+    why: B2B sales enablement provider running just-in-time reinforcement and coaching - a drill tool between workshop rollouts.
+    evidence_url: https://corporatevisions.com/growth-programs/targeted-solutions/sales-training/
+    contact_email: null
+    contact_url: https://corporatevisions.com/contact/
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: coaches
+    name: Moxie Institute
+    website: https://www.moxieinstitute.com
+    location: La Jolla, CA
+    why: Corporate communication-training firm with 1:1 presentation coaching - OratoPlus as between-session drilling its
+      coaches can recommend.
+    evidence_url: https://www.moxieinstitute.com/
+    contact_email: discover@moxieinstitute.com
+    contact_url: https://www.moxieinstitute.com/
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: coaches
+    name: Speakeasy Inc.
+    website: https://www.speakeasyinc.com
+    location: Atlanta, GA
+    why: 30+ year executive communication training firm with in-person, virtual and self-paced programs - self-paced practice
+      complement.
+    evidence_url: https://www.speakeasyinc.com/we-teach/public-speaking/
+    contact_email: null
+    contact_url: https://www.speakeasyinc.com/
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: coaches
+    name: Institute of Public Speaking
+    website: https://www.instituteofpublicspeaking.com
+    location: Boston, MA
+    why: Executive speech coaching programs emphasising real-world practice - structured practice reps between sessions.
+    evidence_url: https://www.instituteofpublicspeaking.com/executive-speech-coaching/
+    contact_email: null
+    contact_url: https://www.instituteofpublicspeaking.com/
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: speaking_clubs
+    name: Toastmasters International
+    website: https://www.toastmasters.org
+    location: Englewood, CO
+    why: Runs formal partnerships (Rotary, LinkedIn Learning) through a published partnerships channel - a between-meeting
+      practice supplement for members.
+    evidence_url: https://www.toastmasters.org/about/partnerships-collaborations
+    contact_email: partnerships@toastmasters.org
+    contact_url: https://www.toastmasters.org/about/partnerships-collaborations
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: speaking_clubs
+    name: District 6 Toastmasters (Minnesota)
+    website: https://d6tm.org
+    location: Minneapolis-St. Paul, MN
+    why: Local district with 100+ clubs in the home market - low-friction regional distribution.
+    evidence_url: https://d6tm.org/
+    contact_email: null
+    contact_url: https://d6tm.org/contact-us/
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: career_centers
+    name: Carlson School Business Career Center (UMN)
+    website: https://carlsonschool.umn.edu/career-services
+    location: Minneapolis, MN
+    why: Career coaching and interview prep for undergrad, graduate and alumni in the home market (and home of MN Cup).
+    evidence_url: https://carlsonschool.umn.edu/career-services/undergraduate
+    contact_email: null
+    contact_url: https://carlsonschool.umn.edu/contact
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: career_centers
+    name: Kellogg Career Management Center
+    website: https://www.kellogg.northwestern.edu/programs/full-time-mba/career-services/
+    location: Evanston, IL
+    why: Structured mock-interview and elevator-pitch prep across MBA formats - self-serve rehearsal before employer interviews.
+    evidence_url: https://www.kellogg.northwestern.edu/programs/full-time-mba/career-services/
+    contact_email: null
+    contact_url: https://www.kellogg.northwestern.edu/programs/full-time-mba/career-services/
+    priority_hint: P2
+    confidence: medium
+    kind: distribution
+  - category: career_centers
+    name: Wharton MBA Career Management
+    website: https://mba.wharton.upenn.edu/mba-career-services/
+    location: Philadelphia, PA
+    why: Mock interviews via Career Fellows for a large MBA population - pilot interview-style rehearsal.
+    evidence_url: https://mba.wharton.upenn.edu/mba-career-services/
+    contact_email: null
+    contact_url: https://mba.wharton.upenn.edu/mba-career-services/
+    priority_hint: P2
+    confidence: medium
+    kind: distribution
+  weddingos:
+  - category: planners_design
+    name: The Simply Elegant Group
+    website: https://thesimplyelegantgroup.com/
+    location: Houston, TX (also Chicago, Dallas, Minneapolis)
+    why: Full-service Indian/South Asian wedding planner running multi-day weekends across 9+ US metros, including Minneapolis
+      - exactly the multi-event coordination WeddingOS handles.
+    evidence_url: https://thesimplyelegantgroup.com/indian-wedding-planner-houston/
+    contact_email: info@thesimplyelegantgroup.com
+    contact_url: https://thesimplyelegantgroup.com/contact
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: planners_design
+    name: The Marigold Company
+    website: https://themarigoldcompany.com/
+    location: Irvine, CA
+    why: Luxury South Asian and fusion wedding design studio with 10 years of active bookings and 2025-2026 real-wedding features.
+    evidence_url: https://themarigoldcompany.com/
+    contact_email: hello@themarigoldcompany.com
+    contact_url: https://themarigoldcompany.com/contact/
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: planners_design
+    name: Laksa Events
+    website: https://laksaevents.com/
+    location: New Jersey
+    why: South Asian multi-day wedding planning across NJ/NY/PA/CT with vendor coordination and ceremony management.
+    evidence_url: https://laksaevents.com/
+    contact_email: info@laksaevents.com
+    contact_url: https://laksaevents.com/contact-us/
+    priority_hint: P0
+    confidence: medium
+    kind: design_partner
+  - category: planners_design
+    name: JDEventz
+    website: https://jdeventz.com/
+    location: Burr Ridge, IL (Chicago)
+    why: South Asian wedding planning firm coordinating venues, vendors and design for the Chicago-area community.
+    evidence_url: https://jdeventz.com/
+    contact_email: null
+    contact_url: https://jdeventz.com/index.php/contact/
+    priority_hint: P0
+    confidence: medium
+    kind: design_partner
+  - category: planners_design
+    name: Wedding Elegance NYC
+    website: https://www.weddingelegance.nyc/
+    location: New York, NY (NJ, CT, FL, TX)
+    why: South Asian wedding planning (full, partial, day-of) across five states.
+    evidence_url: https://www.weddingelegance.nyc/newjersey
+    contact_email: null
+    contact_url: https://www.weddingelegance.nyc/contact
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: venues
+    name: Brooklake Country Club & Events
+    website: https://brooklakeevents.com/
+    location: Florham Park, NJ
+    why: Dedicated Indian & South Asian wedding page covering baraat, mandap and havan logistics.
+    evidence_url: https://brooklakeevents.com/indian-south-asian-weddings/
+    contact_email: null
+    contact_url: https://brooklakeevents.com/contact/
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: venues
+    name: Citadel Houston
+    website: https://www.citadelhouston.com/
+    location: Houston, TX
+    why: Positions itself as Houston's venue for Indian and Pakistani weddings, with a driveway built for baraat processions.
+    evidence_url: https://www.citadelhouston.com/south-asian-weddings
+    contact_email: sales@citadelhouston.com
+    contact_url: https://www.citadelhouston.com/request-information
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: venues
+    name: Ashyana Banquets
+    website: https://www.ashyanabanquets.com/
+    location: Downers Grove, IL
+    why: Markets itself as Chicago's premier South Asian venue with regional Indian menus.
+    evidence_url: https://www.ashyanabanquets.com/
+    contact_email: null
+    contact_url: https://www.ashyanabanquets.com/contact-us/
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: destination_resorts
+    name: Velas Resorts (Indian Weddings)
+    website: https://www.velasweddings.com/
+    location: Riviera Maya / Los Cabos, Mexico
+    why: Dedicated Indian Weddings program across its Mexico resorts (sangeet, varmala and more).
+    evidence_url: https://www.velasweddings.com/experiences/indian-weddings
+    contact_email: weddings@velasresorts.com
+    contact_url: https://www.velasweddings.com/contact
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: destination_resorts
+    name: Hard Rock Hotel Riviera Maya
+    website: https://hotel.hardrock.com/riviera-maya/
+    location: Riviera Maya, Mexico
+    why: Lists South Asian Weddings as a named ceremony style with Indian Wedding Specialists.
+    evidence_url: https://hotel.hardrock.com/riviera-maya/weddings.aspx
+    contact_email: null
+    contact_url: https://hotel.hardrock.com/riviera-maya/contact-us.aspx
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: vendors_referral
+    name: DecorByPartyAM
+    website: https://partyam.com/
+    location: New Jersey (Northeast)
+    why: Indian wedding and fusion decor (mandaps, florals, stage and lighting) with a 2026 portfolio.
+    evidence_url: https://partyam.com/indian-wedding-decor-company/
+    contact_email: partyamusa@gmail.com
+    contact_url: https://partyam.com/contact-party-am-llc/
+    priority_hint: P2
+    confidence: high
+    kind: referral_affiliate
+  - category: vendors_referral
+    name: Benares Catering
+    website: https://www.benarescatering.com/
+    location: New York, NY
+    why: Indian caterer with wedding and destination-wedding packages across NY/NJ/CT.
+    evidence_url: https://www.benarescatering.com/events/wedding-catering/
+    contact_email: null
+    contact_url: https://www.benarescatering.com/request-for-catering/
+    priority_hint: P2
+    confidence: high
+    kind: referral_affiliate
+  - category: vendors_referral
+    name: Amiya Banquets & Weddings
+    website: https://amiyaweddings.com/
+    location: Jersey City, NJ
+    why: Indian wedding caterer with custom traditional and modern menus in NJ/NYC.
+    evidence_url: https://amiyaweddings.com/
+    contact_email: null
+    contact_url: https://amiyaweddings.com/contact-us/
+    priority_hint: P2
+    confidence: medium
+    kind: referral_affiliate
+  - category: bridal_expos
+    name: Maharani Weddings
+    website: https://www.maharaniweddings.com/
+    location: National (US)
+    why: Leading South Asian wedding media platform and vendor directory with advertiser and platinum-vendor programs.
+    evidence_url: https://www.maharaniweddings.com/advertise-on-this-blog
+    contact_email: hello@maharaniweddings.com
+    contact_url: https://www.maharaniweddings.com/become-a-platinum-vendor
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: bridal_expos
+    name: My Shadi Bridal Expo (Desh-Videsh Media)
+    website: https://myshadibridalexpo.com/
+    location: Fort Lauderdale, FL (Chicago, Atlanta, Orlando expos)
+    why: South Asian bridal expo series with upcoming Chicago, Atlanta and Orlando dates - vendor-facing launch venue.
+    evidence_url: https://www.deshvidesh.com/my-shadi-bridal-expo/
+    contact_email: info@myshadibridalexpo.com
+    contact_url: https://myshadibridalexpo.com/contact/
+    priority_hint: P1
+    confidence: medium
+    kind: distribution
+  jodibana:
+  - category: community_orgs
+    name: India Association of Minnesota (IAM)
+    website: https://iamn.org/
+    location: Minneapolis-St. Paul, MN
+    why: Umbrella organisation serving ~50,000 Indian-Americans in Minnesota (IndiaFest) - home-metro design partner.
+    evidence_url: https://iamn.org/about/
+    contact_email: null
+    contact_url: https://iamn.org/contact/
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: community_orgs
+    name: Gujarati Samaj of Tri-State
+    website: https://www.gstnj.org/
+    location: New Jersey (Tri-State)
+    why: 501(c)(3) Gujarati cultural association with events and a community magazine - a built-in community of families to
+      co-design verified matchmaking with.
+    evidence_url: https://www.gstnj.org/
+    contact_email: feedback@gstnj.org
+    contact_url: https://www.gstnj.org/get-in-touch-with-gujarati-samaj.aspx
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: community_orgs
+    name: Hindu Worship Society (HWS Temple)
+    website: https://www.hwstemple.org/
+    location: Houston, TX
+    why: One of Houston's oldest Hindu temples with active 2025-2026 programming and a multigenerational congregation.
+    evidence_url: https://www.hwstemple.org/
+    contact_email: hws.temple@gmail.com
+    contact_url: https://www.hwstemple.org/
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: community_orgs
+    name: Bengali Association of Greater Atlanta (BAGA)
+    website: https://www.baga.net/
+    location: Atlanta, GA
+    why: 501(c)(3) since 1979 with cultural, youth and school programs and 2026 Durga Puja events.
+    evidence_url: https://www.baga.net/
+    contact_email: info@baga.net
+    contact_url: https://www.baga.net/contact
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: community_orgs
+    name: Bay Area Telugu Association (BATA)
+    website: https://www.bata.org/
+    location: San Francisco Bay Area, CA
+    why: Long-running Telugu cultural organisation running festivals and community programs.
+    evidence_url: https://www.bata.org/about-us-details.html
+    contact_email: null
+    contact_url: https://www.bata.org/
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: wedding_planners
+    name: Marigold Wedding Planners
+    website: https://marigoldweddingplanners.com/
+    location: Hillsborough, NJ & Novi, MI
+    why: South Asian wedding planning firm with NJ and MI offices - can refer engaged families and co-host events.
+    evidence_url: https://marigoldweddingplanners.com/contact/
+    contact_email: null
+    contact_url: https://marigoldweddingplanners.com/contact/
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: wedding_planners
+    name: Sonal J. Shah Event Consultants
+    website: https://sjsevents.com/
+    location: New York, NY / Miami, FL
+    why: 20+ year luxury South Asian and cross-cultural wedding planning brand - co-host and referral fit.
+    evidence_url: https://sjsevents.com/
+    contact_email: null
+    contact_url: https://sjsevents.com/contact/
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: photographers
+    name: House of Talent Studio
+    website: https://www.houseoftalentstudio.com/
+    location: Hicksville, NY
+    why: South Asian wedding photography/videography studio active across NY/NJ/CT/PA.
+    evidence_url: https://www.houseoftalentstudio.com/
+    contact_email: info@houseoftalentstudio.com
+    contact_url: https://www.houseoftalentstudio.com/inquire
+    priority_hint: P2
+    confidence: high
+    kind: referral_affiliate
+  - category: photographers
+    name: Pandya Photography
+    website: https://pandyaphotography.com/
+    location: New Jersey / New York
+    why: NJ Indian wedding photography and cinematography studio with 2025 galleries at major NJ venues.
+    evidence_url: https://pandyaphotography.com/
+    contact_email: null
+    contact_url: https://pandyaphotography.com/contact/
+    priority_hint: P2
+    confidence: medium
+    kind: referral_affiliate
+  - category: venues_banquet
+    name: Royal Albert's Palace
+    website: https://www.royalalbertspalace.com/
+    location: Fords, NJ (Edison area)
+    why: Long-established South Asian banquet venue near Edison's Little India.
+    evidence_url: https://www.royalalbertspalace.com/contact-4
+    contact_email: royalalbertspalace@rap-management.com
+    contact_url: https://www.royalalbertspalace.com/contact-4
+    priority_hint: P2
+    confidence: high
+    kind: co_sell
+  - category: venues_banquet
+    name: Mirage Banquet Hall
+    website: null
+    location: Edison, NJ
+    why: Indian-focused banquet hall on Oak Tree Road, Edison's diaspora hub.
+    evidence_url: https://www.yelp.com/biz/mirage-banquet-hall-edison
+    contact_email: null
+    contact_url: https://www.yelp.com/biz/mirage-banquet-hall-edison
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: destination_resorts
+    name: Lohagarh Fort Resort
+    website: https://www.lohagarhfortresort.in/
+    location: Jaipur, Rajasthan, India
+    why: Heritage-style resort marketing directly to NRI destination weddings (mehendi, sangeet, reception spaces).
+    evidence_url: https://www.lohagarhfortresort.in/the-best-luxury-resort-for-nri-weddings-in-india/
+    contact_email: sales@lohagarhfortresort.com
+    contact_url: https://www.lohagarhfortresort.in/contact-us/
+    priority_hint: P2
+    confidence: high
+    kind: co_sell
+  - category: destination_resorts
+    name: Planet Hollywood Beach Resort Goa
+    website: https://www.planethollywoodgoa.com/
+    location: Goa, India
+    why: Beachfront resort with a dedicated destination-wedding program.
+    evidence_url: https://www.planethollywoodgoa.com/destination-wedding
+    contact_email: enquiries@planethollywoodgoa.com
+    contact_url: https://www.planethollywoodgoa.com/contact-us
+    priority_hint: P2
+    confidence: high
+    kind: co_sell
+  - category: bridal_jewelry
+    name: Tanishq USA (Iselin, NJ)
+    website: https://www.tanishq.com/
+    location: Iselin, NJ
+    why: Tata Group's Tanishq opened its first US store on Oak Tree Road - flagship bridal-jewellery referral partner.
+    evidence_url: https://www.prnewswire.com/news-releases/tanishq-jewelry-brand-by-the-tata-group-launches-first-us-store-in-new-jersey-301724771.html
+    contact_email: null
+    contact_url: https://www.tanishq.com/
+    priority_hint: P2
+    confidence: medium
+    kind: referral_affiliate
+  - category: bridal_jewelry
+    name: Meena Bazaar (Edison)
+    website: https://meenabazaar.us
+    location: Edison, NJ
+    why: Established Indian bridal and ethnic-wear boutique on Oak Tree Road.
+    evidence_url: https://www.yelp.com/biz/meena-bazaar-edison
+    contact_email: null
+    contact_url: https://meenabazaar.us
+    priority_hint: P2
+    confidence: medium
+    kind: referral_affiliate
+  jodiusa:
+  - category: diaspora_associations
+    name: Telugu Association of North America (TANA)
+    website: https://tana.org
+    location: Novi, MI
+    why: Runs its own 'Pellipandiri' matrimonial portal for members - existing appetite for matchmaking it could co-design
+      or refer to.
+    evidence_url: https://tana.org/services/matrimonial
+    contact_email: info@tana.org
+    contact_url: https://tana.org
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: diaspora_associations
+    name: Federation of Gujarati Associations of USA (FOGAUSA)
+    website: https://www.fogausa.org
+    location: Lawrenceville, GA
+    why: National umbrella of Gujarati regional associations offering connections and resources to affiliates.
+    evidence_url: https://fogausa.org/about-us.aspx
+    contact_email: null
+    contact_url: https://fogausa.org/contact.aspx
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: diaspora_associations
+    name: Federation of Tamil Sangams of North America (FeTNA)
+    website: https://fetna.org
+    location: USA (70+ member Sangams)
+    why: Umbrella of 70+ Tamil Sangams - a large aggregated community base.
+    evidence_url: https://fetna.org/
+    contact_email: null
+    contact_url: https://fetna.org/
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: diaspora_associations
+    name: Punjabi-American Cultural Association (PACA)
+    website: https://pacausa.org
+    location: Fairfield, CA
+    why: Active Punjabi-Sikh cultural nonprofit - a route into a diaspora underserved by pan-Indian platforms.
+    evidence_url: https://pacausa.org/
+    contact_email: null
+    contact_url: https://pacausa.org/contact/
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: diaspora_associations
+    name: Non-Resident Nepali Association USA (NRNA USA)
+    website: https://www.nrnausa.org
+    location: USA
+    why: Official US chapter of the global NRNA - a diaspora segment few matchmaking platforms target.
+    evidence_url: https://www.nrnausa.org/
+    contact_email: null
+    contact_url: https://www.nrnausa.org/contact-us
+    priority_hint: P2
+    confidence: medium
+    kind: design_partner
+  - category: alumni_networks
+    name: PanIIT USA
+    website: https://www.iit.org
+    location: USA (city chapters)
+    why: Umbrella network of IIT alumni chapters - career-focused, highly educated segment matching JodiUSA's life-stage positioning.
+    evidence_url: https://www.iit.org/page/about-paniit-usa
+    contact_email: null
+    contact_url: https://www.iit.org/page/about-paniit-usa
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: alumni_networks
+    name: TYE Global (TiE Young Entrepreneurs)
+    website: https://tyeglobal.org/usa/
+    location: Santa Clara, CA
+    why: TiE's national young-entrepreneurs program across US chapters - young South Asian professionals.
+    evidence_url: https://tyeglobal.org/usa/
+    contact_email: tye@tie.org
+    contact_url: https://tyeglobal.org/contact/
+    priority_hint: P2
+    confidence: medium
+    kind: distribution
+  - category: student_associations
+    name: Indian Graduate Students Association - UIUC
+    website: https://indiangrads.web.illinois.edu/
+    location: Urbana-Champaign, IL
+    why: Active organisation for a large Indian graduate population running regular cultural events.
+    evidence_url: https://indiangrads.web.illinois.edu/
+    contact_email: igsauiuc1@gmail.com
+    contact_url: https://indiangrads.web.illinois.edu/
+    priority_hint: P2
+    confidence: high
+    kind: distribution
+  - category: student_associations
+    name: Indian Graduate Students Association - Texas A&M
+    website: https://www.igsatamu.com/
+    location: College Station, TX
+    why: Represents 800+ Indian graduate students and families with mentorship and social programming.
+    evidence_url: https://www.igsatamu.com/
+    contact_email: igsatamuofficial@gmail.com
+    contact_url: https://www.igsatamu.com/
+    priority_hint: P2
+    confidence: high
+    kind: distribution
+  - category: boutique_matchmakers
+    name: Intersections Match
+    website: https://intersectionsmatch.com
+    location: Chicago, IL
+    why: Established South Asian-focused personalised matchmaking firm - AI-assisted introductions can complement high-touch
+      human matchmaking.
+    evidence_url: https://intersectionsmatch.com/south-asian-matchmaker/
+    contact_email: info@intersectionsmatch.com
+    contact_url: https://intersectionsmatch.com/contact/
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: boutique_matchmakers
+    name: DesiJodi
+    website: https://www.desijodi.net
+    location: USA (multi-city)
+    why: Indian/South Asian matchmaking service in major US metros - referral or hybrid AI+human arrangement.
+    evidence_url: https://www.desijodi.net/indian-matchmaker
+    contact_email: null
+    contact_url: https://www.desijodi.net/indian-matchmaker
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
+  - category: diaspora_media
+    name: Brown Girl Magazine
+    website: https://browngirlmagazine.com
+    location: USA
+    why: Established South Asian diaspora outlet with a collaboration inbox - launch storytelling and sponsored content.
+    evidence_url: https://browngirlmagazine.com/contact/
+    contact_email: hello@browngirlmagazine.com
+    contact_url: https://browngirlmagazine.com/contact/
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: diaspora_media
+    name: New India Abroad
+    website: https://www.newindiaabroad.com
+    location: USA
+    why: Multilingual diaspora digital newspaper with a media kit - broad reach beyond a single regional community.
+    evidence_url: https://www.newindiaabroad.com/media-kit
+    contact_email: info@newindiaabroad.com
+    contact_url: https://www.newindiaabroad.com/media-kit
+    priority_hint: P2
+    confidence: high
+    kind: distribution
+  - category: wedding_vendors_us
+    name: BollyWeds
+    website: https://www.bollyweds.com
+    location: Dallas, TX
+    why: AI-powered South Asian wedding planning platform in 45+ North American cities - referral for matched couples.
+    evidence_url: https://www.bollyweds.com/
+    contact_email: null
+    contact_url: https://www.bollyweds.com/contact
+    priority_hint: P2
+    confidence: medium
+    kind: referral_affiliate
+  liqmint:
+  - category: community_design
+    name: Global Anti-Scam Alliance (GASA)
+    website: https://gasa.org
+    location: Amsterdam, NL (North America chapter)
+    why: Multi-tier membership program for organisations collaborating on scam prevention; crypto exchanges and analytics
+      firms are already members - a co-design partner for pre-send safety checks.
+    evidence_url: https://gasa.org/members
+    contact_email: null
+    contact_url: https://gasa.org/members/become-a-member
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: community_design
+    name: Chainabuse (TRM Labs)
+    website: https://chainabuse.com/en
+    location: San Francisco, CA
+    why: Free multi-chain public scam-reporting tool backed by industry players to help retail users avoid fraud - natural
+      co-design partner for safety checks before sending.
+    evidence_url: https://www.circle.com/pressroom/crypto-industry-leaders-champion-free-multi-chain-scam-reporting-tool-chainabuse-to-empower-users-against-crypto-fraud
+    contact_email: null
+    contact_url: https://chainabuse.com/en
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: community_design
+    name: Web3 Antivirus
+    website: https://web3antivirus.io
+    location: Remote / EU
+    why: Consumer pre-transaction phishing and toxic-approval checks, already integrated with MetaMask, Etherscan and OpenSea
+      - complementary safety layer and potential co-build partner.
+    evidence_url: https://cointelegraph.com/press-releases/web3-antivirus-and-cointelegraph-partner-to-launch-free-wallet-security-check-tool
+    contact_email: null
+    contact_url: https://web3antivirus.io/
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: crypto_educators
+    name: CoinLedger Creator Program
+    website: https://coinledger.io/influencer-program
+    location: Kansas City, MO
+    why: Active creator program already used by large beginner-focused crypto educators - a proven route to reach creators
+      who teach safety.
+    evidence_url: https://coinledger.io/influencer-program
+    contact_email: null
+    contact_url: https://affiliates.coinledger.io
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: crypto_educators
+    name: Milk Road
+    website: https://milkroad.com
+    location: USA (remote)
+    why: ~300k-subscriber daily crypto newsletter and podcast with a self-serve sponsorship program and a US retail audience
+      - fits the lesson-to-signup motion.
+    evidence_url: https://milkroad.com/advertise/
+    contact_email: null
+    contact_url: https://link.milkroad.com/advertising
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: crypto_educators
+    name: Coin Bureau
+    website: https://coinbureau.com
+    location: UK (global audience incl. US)
+    why: One of the largest independent crypto education channels with a partnership inquiry route - suited to sponsored stablecoin-safety
+      education.
+    evidence_url: https://coinbureau.com/contact
+    contact_email: null
+    contact_url: https://coinbureau.com/contact/general-inquiries
+    priority_hint: P1
+    confidence: high
+    kind: distribution
+  - category: crypto_educators
+    name: Bankless
+    website: https://www.bankless.com
+    location: USA
+    why: Major US crypto media brand (podcast, newsletter, community) with a public sponsors program and a DeFi-curious retail
+      audience.
+    evidence_url: https://www.bankless.com/partners
+    contact_email: null
+    contact_url: https://www.bankless.com/sponsors
+    priority_hint: P2
+    confidence: medium
+    kind: distribution
+  - category: wallet_providers
+    name: Trust Wallet (Developers Portal)
+    website: https://trustwallet.com
+    location: Global
+    why: Open developer portal with dApp listing guides and an SDK - a documented technical path to surface the safety checks
+      inside a major self-custody wallet.
+    evidence_url: https://developer.trustwallet.com/developer/listing-guide
+    contact_email: null
+    contact_url: https://developer.trustwallet.com/developer
+    priority_hint: P0
+    confidence: high
+    kind: integration
+  - category: wallet_providers
+    name: WalletConnect Network
+    website: https://walletconnect.network
+    location: Zug, Switzerland
+    why: Connectivity layer used by 80,000+ apps and self-custodial wallets with a Certified Program and sales/partnerships
+      channel - reach many wallets at once.
+    evidence_url: https://walletconnect.network/wallets-joining-the-network
+    contact_email: null
+    contact_url: https://walletconnect.network/
+    priority_hint: P0
+    confidence: high
+    kind: integration
+  - category: wallet_providers
+    name: MetaMask (Snaps)
+    website: https://metamask.io/developer/snaps
+    location: USA (Consensys)
+    why: Snaps let third parties add security checks directly into the wallet's transaction flow, with precedent for third-party
+      security Snaps.
+    evidence_url: https://docs.metamask.io/snaps/
+    contact_email: null
+    contact_url: https://metamask.io/developer/snaps
+    priority_hint: P1
+    confidence: high
+    kind: integration
+  - category: tax_portfolio_tools
+    name: Koinly
+    website: https://koinly.io
+    location: London, UK (global)
+    why: Mature affiliate program and 1,000+ wallet integrations with a large retail user base - cross-promotion of a safety
+      layer to the same users.
+    evidence_url: https://koinly.io/affiliate/
+    contact_email: null
+    contact_url: https://app.koinly.io/affiliate/
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: tax_portfolio_tools
+    name: CoinLedger
+    website: https://coinledger.io
+    location: Kansas City, MO
+    why: US crypto tax platform with an active, documented affiliate program and heavy US retail overlap.
+    evidence_url: https://coinledger.io/affiliate-program
+    contact_email: null
+    contact_url: https://affiliates.coinledger.io
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: tax_portfolio_tools
+    name: ZenLedger
+    website: https://zenledger.io
+    location: Bellevue, WA
+    why: US crypto tax software with a public partner page and tiered affiliate program - an active outbound partnership function.
+    evidence_url: https://zenledger.io/partner/
+    contact_email: null
+    contact_url: https://zenledger.io/partner/
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: tax_portfolio_tools
+    name: CoinTracker
+    website: https://www.cointracker.io
+    location: San Francisco, CA
+    why: Major US portfolio/tax tool with a history of wallet integration partnerships (e.g. Coinbase Wallet).
+    evidence_url: https://www.cointracker.com/blog/coinbase-wallet
+    contact_email: null
+    contact_url: https://www.cointracker.io/integrations/wallets
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
