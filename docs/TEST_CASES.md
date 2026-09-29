@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.7.1 · updated 2026-09-28
+Version 0.7.2 · updated 2026-09-28
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -110,7 +110,7 @@ Atmakosh.
 
 ## Fail-proof unit tests (`tests/test_failproof.py`)
 
-Config covers every property and refuses unknown task classes or a non-Monday start; the calendar maps weeks to Fridays; rules are validated; tripwire states (not yet due, amber with no reading, green, tripped); weekly checks need a reading inside their own week; open gates remove blocked tasks and passing them restores them; the task classifier and focus lock; HALT at 3 tripped; the offline premortem has 7 ranked causes.
+Config covers every property and refuses unknown task classes or a non-Monday start; the calendar maps weeks to Fridays; rules are validated; tripwire states (not yet due, amber with no reading, green, tripped); weekly checks need a reading inside their own week; open gates remove blocked tasks and passing them restores them; the task classifier and focus lock; interim-owned delegated properties each have a G-CEO gate due week 16 that blocks paid acquisition; HALT at 3 tripped; the offline premortem has 7 ranked causes.
 
 ## Component tests (`tests/test_vanguard.py`)
 

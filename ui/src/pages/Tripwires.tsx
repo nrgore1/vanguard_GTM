@@ -160,7 +160,7 @@ export default function Tripwires() {
         sub={data ? `Week ${data.week} of the 26-week program (started ${data.program_start}). Checks run on Fridays.` : "Measurable signals that a failure mode is starting, and the gates that must pass before launch."}
         actions={<>
           <Field label="Property"><Select value={selected} onChange={(e) => { const n = new URLSearchParams(sp); n.set("property", e.target.value); setSp(n, { replace: true }); }}>
-            {props.map((p) => <option key={p.property_id} value={p.property_id}>{propName(p.property_id)} — {FOCUS_LABEL[p.focus]}{p.tripped ? ` · ${p.tripped} tripped` : ""}</option>)}
+            {props.map((p) => <option key={p.property_id} value={p.property_id}>{propName(p.property_id)} — {p.interim_owner ? "Interim owner" : FOCUS_LABEL[p.focus]}{p.tripped ? ` · ${p.tripped} tripped` : ""}</option>)}
           </Select></Field>
           <Field label="As of"><Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></Field>
         </>} />
@@ -169,7 +169,7 @@ export default function Tripwires() {
         <>
           <Card className="mb-5 px-5 py-4">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-              <Siren size={14} /> Owner: <span className="text-ink">{current.owner ?? "UNASSIGNED"}</span> · {FOCUS_LABEL[current.focus]}
+              <Siren size={14} /> Owner: <span className="text-ink">{current.owner ?? "UNASSIGNED"}</span> · {current.interim_owner ? "Interim — founder-supervised until a CEO is named" : FOCUS_LABEL[current.focus]}
             </div>
             <p className="mt-2 font-serif text-[17px] leading-snug text-ink">{current.one_sentence}</p>
           </Card>

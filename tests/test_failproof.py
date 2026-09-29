@@ -113,7 +113,8 @@ def test_classifier_and_focus_lock(cfg):
     assert "cold_investor_outreach" in classify_task("Send cold connection requests to VCs", cfg)
     assert "paid_acquisition" in classify_task("Launch paid social campaign on Instagram", cfg)
     assert classify_task("Record a demo of the evidence pack", cfg) == []
-    assert focus_issues(cfg, "weddingos") == []    # delegated and owned
+    issues = focus_issues(cfg, "weddingos")         # founder-supervised until a CEO is named
+    assert len(issues) == 1 and issues[0].startswith("INTERIM_OWNER") and "2027-01-15" in issues[0]
     unowned = cfg.model_copy(deep=True)
     unowned.properties["weddingos"].owner = None
     assert focus_issues(unowned, "weddingos")      # delegated, no owner -> flagged
@@ -133,3 +134,14 @@ def test_offline_premortem_is_complete(cfg):
     pm = asyncio.run(run_premortem(MockLLM(), p, cfg.properties[p.id]))
     assert [c.rank for c in pm.causes] == list(range(1, 8))
     assert len(pm.tripwires) >= 7 and pm.verdict.most_likely == "No evidence to underwrite"
+
+
+def test_interim_owned_properties_need_a_ceo(cfg):
+    delegated = [pid for pid, pf in cfg.properties.items() if pf.focus == "delegated"]
+    assert sorted(delegated) == ["atmakosh", "jodibana", "jodiusa", "oratoplus", "weddingos"]
+    for pid in delegated:
+        pf = cfg.properties[pid]
+        assert pf.interim_owner and pf.owner == "Naren@atmakosh.com"
+        ceo = next(g for g in pf.gates if g.id == "G-CEO")
+        assert ceo.deadline_week == 16 and ceo.blocks == ["paid_acquisition"]
+    assert not any(cfg.properties[p].interim_owner for p in cfg.focus.founder)

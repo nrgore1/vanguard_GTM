@@ -87,6 +87,7 @@ class Gate(BaseModel):
 
 class PropertyFailproof(BaseModel):
     owner: str | None = None
+    interim_owner: bool = Field(default=False, description="Owner is the founder supervising AI agents until a CEO is named")
     focus: Literal["primary", "founder", "delegated"]
     one_sentence: str
     failure_modes: list[FailureMode] = Field(min_length=1)
@@ -347,6 +348,10 @@ def focus_issues(cfg: FailproofConfig, property_id: str) -> list[str]:
         issues.append("FOCUS_LOCK: delegated property has no named owner - assign one in config/failproof.yaml")
     if pf.focus == "delegated" and cfg.focus.founder_name and pf.owner == cfg.focus.founder_name:
         issues.append("FOCUS_LOCK: delegated property is owned by the founder - hand it to a delegate")
+    if pf.focus == "delegated" and pf.interim_owner:
+        ceo = next((g for g in pf.gates if g.id == "G-CEO"), None)
+        due = f" (gate G-CEO due W{ceo.deadline_week}, {week_friday(cfg.program, ceo.deadline_week).isoformat()})" if ceo else ""
+        issues.append(f"INTERIM_OWNER: founder-supervised through AI agents until a CEO is named{due}")
     return issues
 
 
@@ -384,7 +389,7 @@ def tracker(cfg: FailproofConfig, fstore: FailproofStore, as_of: date | None = N
         tripped = sum(1 for t in tws if t["status"] == "tripped")
         halt = tripped >= int(cfg.program.meta_tripwire["max_tripped"])
         props.append({
-            "property_id": pid, "owner": pf.owner, "focus": pf.focus, "one_sentence": pf.one_sentence,
+            "property_id": pid, "owner": pf.owner, "interim_owner": pf.interim_owner, "focus": pf.focus, "one_sentence": pf.one_sentence,
             "tripwires": tws, "gates": gates, "tripped": tripped,
             "amber": sum(1 for t in tws if t["status"] == "amber"),
             "gates_passed": sum(1 for g in gates if g["status"] == "passed"),
@@ -403,7 +408,7 @@ _ICON = {"not_yet_due": "not yet due", "green": "GREEN", "amber": "AMBER", "trip
 def tracker_markdown(t: dict) -> str:
     lines = [f"# Tripwire tracker - as of {t['as_of']} (week {t['week']})", ""]
     for p in t["properties"]:
-        head = f"## {p['property_id']} - owner: {p['owner'] or 'UNASSIGNED'} ({p['focus']})"
+        head = f"## {p['property_id']} - owner: {p['owner'] or 'UNASSIGNED'} ({'interim, founder-supervised' if p.get('interim_owner') else p['focus']})"
         lines += [head, "", f"> {p['one_sentence']}", ""]
         if p["halt"]:
             lines += ["**HALT: 3 or more tripwires tripped - stop and rerun the walk-away gates.**", ""]

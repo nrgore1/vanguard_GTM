@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.2 — 2026-09-28
+
+- **Interim owners:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are marked
+  `interim_owner: true` — founder-supervised through AI agents from Naren@atmakosh.com until a
+  CEO is named. Their plans carry an `INTERIM_OWNER` note.
+- **CEO gate:** each of the five has a `G-CEO` gate due week 16 (Jan 15, 2027). Paid
+  acquisition stays blocked until it passes.
+- The tracker and the Tripwires page show interim status.
+
 ## 0.7.1 — 2026-09-28
 
 - **Owners assigned:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are owned by

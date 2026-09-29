@@ -1,6 +1,6 @@
 # Vanguard-GTM — User Guide
 
-Version 0.7.1 · updated 2026-09-28 · for the team (general users) and admins
+Version 0.7.2 · updated 2026-09-28 · for the team (general users) and admins
 
 Vanguard turns the agent's go-to-market plans into day-to-day work: campaigns you run and
 measure, partners you work through a pipeline, and tasks you tick off. Everyone shares one
@@ -213,5 +213,6 @@ week it is checked (always a Friday) and what to do if it trips.
 - **Gates** are the things that must be true before launch. Only an admin can pass or fail one.
   While a gate is open, the agent will not plan the tasks it blocks (for example investor outreach
   or paid ads).
+- **Interim owner** means the founder is supervising the property through AI agents until a CEO is named. Its "CEO named" gate is due Jan 15, 2027, and paid ads stay blocked until it passes.
 - **HALT** appears when three signals have tripped. Stop, don't adjust the plan, and talk to the
   property owner about the walk-away conditions.

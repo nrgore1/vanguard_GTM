@@ -200,6 +200,7 @@ properties:
   # ================================================================ delegated
   weddingos:
     owner: Naren@atmakosh.com
+    interim_owner: true
     focus: delegated
     one_sentence: >-
       The wedding operating system for multi-event South Asian weddings - one
@@ -214,6 +215,8 @@ properties:
       - {id: FM-4, name: Domain split, cause: weddingos.pro and weddingos.jodibana.com split traffic and trust.,
          assumption: Both domains help., first_warning: Two URLs in the same campaign.}
     gates:
+      - {id: G-CEO, name: CEO named, verify: A named CEO other than the founder owns this property and reports its tripwires.,
+         walk_away_if: No CEO by week 16 - pause the agents and park the property until one is found., deadline_week: 16, blocks: [paid_acquisition]}
       - {id: G1, name: Owner and positioning, verify: Named owner; positioning confirmed from the product itself.,
          walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
       - {id: G2, name: Works for real couples, verify: 10 real couples complete plan + guest list + one vendor invite.,
@@ -230,6 +233,7 @@ properties:
 
   jodibana:
     owner: Naren@atmakosh.com
+    interim_owner: true
     focus: delegated
     one_sentence: >-
       Invite-only, AI-assisted matchmaking for the Indian diaspora - verified
@@ -244,6 +248,8 @@ properties:
       - {id: FM-4, name: Brand cannibalisation, cause: Jodibana and JodiUSA compete for the same US members and budget.,
          assumption: Two brands double reach., first_warning: The same person signs up on both.}
     gates:
+      - {id: G-CEO, name: CEO named, verify: A named CEO other than the founder owns this property and reports its tripwires.,
+         walk_away_if: No CEO by week 16 - pause the agents and park the property until one is found., deadline_week: 16, blocks: [paid_acquisition]}
       - {id: G1, name: Owner and positioning, verify: Named owner; positioning confirmed from the product.,
          walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
       - {id: G2, name: Safety live, verify: Profile verification, report/block and admin review working; privacy policy and terms reviewed.,
@@ -260,6 +266,7 @@ properties:
 
   jodiusa:
     owner: Naren@atmakosh.com
+    interim_owner: true
     focus: delegated
     one_sentence: >-
       The US edition of Jodibana - matchmaking for South Asians in America that
@@ -272,6 +279,8 @@ properties:
       - {id: FM-3, name: Community partner burn, cause: Temples, associations and alumni groups are asked to promote before safety is live.,
          assumption: Community trust is renewable., first_warning: A partner asks about verification and there is no answer.}
     gates:
+      - {id: G-CEO, name: CEO named, verify: A named CEO other than the founder owns this property and reports its tripwires.,
+         walk_away_if: No CEO by week 16 - pause the agents and park the property until one is found., deadline_week: 16, blocks: [paid_acquisition]}
       - {id: G0, name: Brand decision, verify: Written decision on how JodiUSA differs from Jodibana (pool, features or audience) or a merge.,
          walk_away_if: No difference can be written - fold into Jodibana., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
       - {id: G1, name: Owner assigned, verify: Named owner.,
@@ -286,6 +295,7 @@ properties:
 
   oratoplus:
     owner: Naren@atmakosh.com
+    interim_owner: true
     focus: delegated
     one_sentence: >-
       A gym for your voice - rehearse the talk, survive the Q&A, watch yourself
@@ -298,6 +308,8 @@ properties:
       - {id: FM-3, name: Selling Wave 2, cause: Enterprise buyers are promised team seats, SSO or 2FA that are planned, not live.,
          assumption: Roadmap items can close deals., first_warning: An Enterprise proposal lists team features.}
     gates:
+      - {id: G-CEO, name: CEO named, verify: A named CEO other than the founder owns this property and reports its tripwires.,
+         walk_away_if: No CEO by week 16 - pause the agents and park the property until one is found., deadline_week: 16, blocks: [paid_acquisition]}
       - {id: G1, name: Owner assigned, verify: Named owner.,
          walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
       - {id: G2, name: Activation proven, verify: First scored take within 24h at 55%+ on 50 organic sign-ups (PRD target).,
@@ -316,6 +328,7 @@ properties:
 
   atmakosh:
     owner: Naren@atmakosh.com
+    interim_owner: true
     focus: delegated
     one_sentence: >-
       Governance-as-a-service for AI agents - systems call Atmakosh before they
@@ -330,6 +343,8 @@ properties:
       - {id: FM-4, name: Competes with the LiqMint raise, cause: Atmakosh content under the founder's name during the raise blurs his focus.,
          assumption: Thought leadership helps every property., first_warning: Founder-authored Atmakosh posts during weeks 1-26.}
     gates:
+      - {id: G-CEO, name: CEO named, verify: A named CEO other than the founder owns this property and reports its tripwires.,
+         walk_away_if: No CEO by week 16 - pause the agents and park the property until one is found., deadline_week: 16, blocks: [paid_acquisition]}
       - {id: G1, name: Owner assigned, verify: Named owner who publishes under their own name.,
          walk_away_if: No owner by week 4 - freeze the property., deadline_week: 4, blocks: [paid_acquisition, public_launch]}
       - {id: G2, name: Developer path works, verify: An outside developer gets an authorize verdict from the API in under 15 minutes from the docs.,

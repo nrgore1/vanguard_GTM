@@ -1,6 +1,6 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.7.1 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.7.2 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
 > **Rule for every change:** update this manual, `DESIGN.md` (including its §18 change log) and
@@ -194,7 +194,7 @@ The fail-proof plan (DESIGN §17). Top-level keys:
 - `focus`: `founder` (property ids on the founder's calendar), `primary`, `founder_name`.
 - `task_classes`: name → regex. Gates block these classes; the default set is `investor_outreach`,
   `cold_investor_outreach`, `paid_acquisition`, `public_launch`.
-- `properties.<id>`: `owner` (null until delegated), `focus` (`primary`, `founder` or `delegated`),
+- `properties.<id>`: `owner` (null until delegated), `interim_owner` (true while the founder supervises the property through AI agents until a CEO is named; pair it with a `G-CEO` gate), `focus` (`primary`, `founder` or `delegated`),
   `one_sentence`, `failure_modes` (`id`, `name`, `cause`, `assumption`, `first_warning`),
   `gates` (`id`, `name`, `verify`, `walk_away_if`, `deadline_week`, `blocks`),
   `tripwires` (`id`, `failure_mode`, `signal`, `unit`, `checks: [{week, trips_if}]` and/or

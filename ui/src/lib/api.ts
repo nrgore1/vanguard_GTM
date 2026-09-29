@@ -105,7 +105,7 @@ export interface GateRow {
   blocks: string[]; status: "open" | "passed" | "failed"; overdue: boolean; note: string; updated_by: string;
 }
 export interface FailproofProperty {
-  property_id: string; owner: string | null; focus: "primary" | "founder" | "delegated"; one_sentence: string;
+  property_id: string; owner: string | null; interim_owner?: boolean; focus: "primary" | "founder" | "delegated"; one_sentence: string;
   tripwires: TripwireRow[]; gates: GateRow[]; tripped: number; amber: number; gates_passed: number; gates_overdue: number;
   halt: boolean; focus_issues: string[]; blocked_classes: Record<string, string[]>;
   failure_modes: { id: string; name: string; cause: string; assumption: string; first_warning: string }[];

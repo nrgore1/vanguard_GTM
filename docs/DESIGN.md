@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.7.1 |
+| **Version** | 0.7.2 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-09-28 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -778,7 +778,7 @@ failed on reach, so the agent now checks those first and keeps checking them eve
 | Engine 0: forensic premortem | Assumes a plan failed at the horizon and writes the autopsy: 7 ranked causes of death (each traced to a stated fact), month-by-month unfolding, enabling assumption, first warning sign; the verdict (most likely vs most dangerous, the hidden assumption, fatal flaw); the adversary; one tripwire per cause. `--dry-run` builds a $0 premortem from the failure modes on file. | `failproof.run_premortem`, `vanguard premortem` |
 | Engine 5: readiness gates | Each property has pre-launch gates with a verification test and a walk-away condition. A gate lists the task classes it blocks; while it is not passed, the agent removes tasks of those classes from every plan and says so (`GATE_BLOCKED` note). | `failproof.apply_to_playbook`, `vanguard gate` |
 | Engine 6: tripwire monitor | One measurable signal per failure mode, checked on the Friday of a set week (or every week). Missing evidence is amber, never green. Three tripped tripwires on one property raise HALT: stop, do not adjust the plan, rerun the walk-away gates. | `failproof.evaluate_tripwire`, `tracker`, `vanguard tripwires`, UI Tripwires page |
-| Focus lock | The founder's calendar holds LiqMint Institutional (primary), LiqMint retail and Vireoka. Every other property is delegated and must name an owner; a delegated property with no owner (or owned by the founder) carries a `FOCUS_LOCK` note on every playbook. | `failproof.focus_issues` |
+| Focus lock | The founder's calendar holds LiqMint Institutional (primary), LiqMint retail and Vireoka. Every other property is delegated and must name an owner; a delegated property with no owner (or owned by the founder) carries a `FOCUS_LOCK` note on every playbook. A delegated property with `interim_owner: true` is founder-supervised through AI agents until a CEO is named: its playbooks carry an `INTERIM_OWNER` note with the due date of its `G-CEO` gate, which blocks paid acquisition until passed. | `failproof.focus_issues` |
 | Claim discipline | Unchanged lint gate (§7); the website messaging and premortem both rely on it. | `lint_gate.py` |
 
 ### 17.2 Configuration and state
@@ -812,6 +812,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.7.2 | 2026-09-28 | **Interim owners and CEO gate:** the five delegated properties are marked `interim_owner: true` (founder-supervised through AI agents from Naren@atmakosh.com) and each gets a `G-CEO` gate due week 16 (Jan 15, 2027) that blocks paid acquisition until a CEO is named. Playbooks carry an `INTERIM_OWNER` note; the tracker and Tripwires page show the interim status. |
 | 0.7.1 | 2026-09-28 | **Owners assigned:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are owned by Naren@atmakosh.com in `config/failproof.yaml`, which clears their FOCUS_LOCK notes. Tests keep exercising the focus lock with an unowned copy of the config. |
 | 0.7.0 | 2026-09-28 | **Fail-proof layer** (§17): Engine 0 forensic premortem (`vanguard premortem`, `--dry-run` at $0), Engine 5 readiness gates that remove blocked task classes (investor outreach, cold investor outreach, paid acquisition, public launch) from plans until passed, Engine 6 tripwire monitor with Friday checks and HALT at 3 tripped, and the focus lock for delegated properties. `config/failproof.yaml` covers all 8 properties; new tables `tripwire_readings`, `gate_status`, `premortems`; CLI `tripwires`, `record`, `gate`, `premortem`; `/api/failproof…` and machine `GET /failproof`; UI Tripwires page. Tests E2E-29–31, WEB-28 and `tests/test_failproof.py`. |
 | 0.6.0 | 2026-09-28 | **Researched partners** (§15.7): `config/partner_targets.yaml` lists 117 real, source-cited organisations across all 8 properties. `targets.py` imports them idempotently as named partners with inherited 3-step drafts, enriching playbook examples rather than duplicating them, and clamps each score into its priority band. Adds `vanguard partners import`, `POST /api/partners/import-research`, the "Load researched partners" button, researched badges, and clickable source, contact and website links. Tests WEB-26, WEB-27 and UI-15. |
