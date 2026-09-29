@@ -215,9 +215,9 @@ WARM_CONSENT = ("replied", "opted_in", "existing_relationship")
 
 def postmark_used_this_month(ws) -> int:
     a = ws.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE transport='postmark' "
-               "AND strftime('%Y-%m', sent_at)=strftime('%Y-%m','now')")["n"]
+               "AND substr(sent_at,1,7)=?", (_utc_month(),))["n"]
     b = ws.one("SELECT COUNT(*) AS n FROM notification_log WHERE transport='postmark' "
-               "AND strftime('%Y-%m', at)=strftime('%Y-%m','now')")["n"]
+               "AND substr(at,1,7)=?", (_utc_month(),))["n"]
     return a + b
 
 
@@ -244,7 +244,7 @@ def approve(ws, ids: Iterable[int], approver: str) -> dict:
 
 # ---------------------------------------------------------------- sending
 def _sent_today(ws) -> int:
-    return ws.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE date(sent_at)=date('now')")["n"]
+    return ws.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE substr(sent_at,1,10)=?", (_utc_day(),))["n"]
 
 
 def _suppressed(ws, addr: str) -> bool:
@@ -373,7 +373,7 @@ def record_reply(ws, partner_id: int, summary: str, when: date | None = None, ou
     with ws.conn() as c:
         cancelled = c.execute("UPDATE outreach_messages SET status='cancelled', error='partner replied', updated_at=? "
                               "WHERE partner_id=? AND status IN ('draft','approved')", (ts, partner_id)).rowcount
-    ws.insert("partner_interactions", {"partner_id": partner_id, "date": (when or date.today()).isoformat(), "type": kind,
+    ws.insert("partner_interactions", {"partner_id": partner_id, "date": (when or datetime.now(timezone.utc).date()).isoformat(), "type": kind,
                                        "summary": ("Reply: " + summary.strip())[:4000], "outcome": outcome,
                                        "next_step": "Opted out - do not contact" if cls == "optout" else "Respond to reply",
                                        "created_by": actor, "created_at": ts})
@@ -381,7 +381,7 @@ def record_reply(ws, partner_id: int, summary: str, when: date | None = None, ou
     if cls == "optout":
         addr = (from_addr or p["contact_email"] or "").lower()
         if addr:
-            ws.q("INSERT OR REPLACE INTO email_suppression (email, reason, at) VALUES (?,?,?)", (addr, "opt-out", ts))
+            ws.q("INSERT INTO email_suppression (email, reason, at) VALUES (?,?,?) ON CONFLICT(email) DO UPDATE SET reason=excluded.reason, at=excluded.at", (addr, "opt-out", ts))
         upd["next_step"] = "Opted out - do not contact"
     elif p["stage"] in ("identified", "contacted"):
         upd["stage"] = "in_conversation"
@@ -429,7 +429,7 @@ def process_inbound(ws, messages: Iterable[email.message.Message], actor: int | 
             if row:
                 ws.update("outreach_messages", "id", row["id"], {"status": "bounced", "error": "bounced"})
                 if row["to_email"]:
-                    ws.q("INSERT OR REPLACE INTO email_suppression (email, reason, at) VALUES (?,?,?)",
+                    ws.q("INSERT INTO email_suppression (email, reason, at) VALUES (?,?,?) ON CONFLICT(email) DO UPDATE SET reason=excluded.reason, at=excluded.at",
                          (row["to_email"].lower(), "bounce", now()))
                 ws.insert("inbound_emails", {"message_id": mid, "partner_id": row["partner_id"], "outreach_id": row["id"],
                                              "from_addr": from_addr, "subject": msg.get("Subject", ""),
@@ -485,10 +485,10 @@ def sync_replies(ws, cfg: EmailConfig | None = None, fetch: Callable[[EmailConfi
 
 
 def queue_stats(ws) -> dict:
-    s = ws.one("SELECT SUM(status='draft') AS draft, SUM(status='approved') AS approved, SUM(status='sent') AS sent, "
-               "SUM(status='replied') AS replied, SUM(status='cancelled') AS cancelled, SUM(status='failed') AS failed, "
-               "SUM(status='bounced') AS bounced, SUM(sent_at IS NOT NULL) AS ever_sent, "
-               "SUM(lint_status='blocked' AND status='draft') AS blocked FROM outreach_messages m "
+    s = ws.one("SELECT SUM(CASE WHEN status='draft' THEN 1 ELSE 0 END) AS draft, SUM(CASE WHEN status='approved' THEN 1 ELSE 0 END) AS approved, SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END) AS sent, "
+               "SUM(CASE WHEN status='replied' THEN 1 ELSE 0 END) AS replied, SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) AS cancelled, SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) AS failed, "
+               "SUM(CASE WHEN status='bounced' THEN 1 ELSE 0 END) AS bounced, SUM(CASE WHEN sent_at IS NOT NULL THEN 1 ELSE 0 END) AS ever_sent, "
+               "SUM(CASE WHEN lint_status='blocked' AND status='draft' THEN 1 ELSE 0 END) AS blocked FROM outreach_messages m "
                "JOIN partners p ON p.id=m.partner_id WHERE COALESCE(p.is_segment,0)=0")
     s = {k: (v or 0) for k, v in s.items()}
     contacted = ws.one("SELECT COUNT(DISTINCT partner_id) AS n FROM outreach_messages WHERE sent_at IS NOT NULL")["n"]
@@ -569,3 +569,12 @@ def send_digest(ws, cfg: EmailConfig | None = None, client=None) -> dict:
 
 def dumps(o) -> str:
     return json.dumps(o, default=str)
+
+
+def _utc_day() -> str:
+    from datetime import datetime as _dt, timezone as _tz
+    return _dt.now(_tz.utc).date().isoformat()
+
+
+def _utc_month() -> str:
+    return _utc_day()[:7]

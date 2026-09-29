@@ -1,15 +1,39 @@
 # Deploy to /opt/vanguard-gtm on the Hostinger VPS, next to the other stacks.
+# Two containers: the app, and its own PostgreSQL. The database is on a private network only the
+# app can reach; nothing publishes its port. Data lives in ./pgdata on the host.
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: vanguard-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vanguard
+      POSTGRES_USER: vanguard
+      POSTGRES_PASSWORD: ${VANGUARD_DB_PASSWORD:?set VANGUARD_DB_PASSWORD in .env}
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vanguard -d vanguard"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
   vanguard:
     build: .
     container_name: vanguard-gtm
     restart: unless-stopped
     env_file: .env
+    environment:
+      VANGUARD_DATABASE_URL: postgresql://vanguard:${VANGUARD_DB_PASSWORD}@db:5432/vanguard
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
-      - ./data:/app/data
+      - ./data:/app/data            # the old SQLite file stays here for `vanguard db copy-from-sqlite`
       - ./output:/app/output
       - ./config:/app/config:ro      # edit positioning / lint rules without rebuilding
-    networks: [edge]
+    networks: [edge, internal]
     # Local model on the VPS host (optional): Ollama listening on the host
     extra_hosts: ["host.docker.internal:host-gateway"]
 
@@ -17,3 +41,4 @@ networks:
   edge:
     external: true
     name: ${TRAEFIK_NETWORK:-edge}   # the network your Traefik edge container is on
+  internal: {}

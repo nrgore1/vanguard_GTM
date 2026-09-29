@@ -1,6 +1,6 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.7.3 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.8.0 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
 > **Rule for every change:** update this manual, `DESIGN.md` (including its §18 change log) and
@@ -79,6 +79,9 @@ vanguard-gtm/
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `VANGUARD_DATABASE_URL` | empty (SQLite) | `postgresql://user:pass@host:5432/db` to use PostgreSQL for every table. Docker Compose sets it. |
+| `VANGUARD_DB_PASSWORD` | — | Compose only: password for the bundled PostgreSQL; the app's URL is built from it |
+| `VANGUARD_CONFIG_DIR` | repo `config/`, else `./config` | Where `properties.yaml`, `lint_gate.yaml`, `failproof.yaml` and the partner files live. The Docker image sets `/app/config`. |
 | `VANGUARD_PROVIDER` | `local` | `local`: local model first, Claude only as a capped fallback. `claude`: Claude only (paid). |
 | `VANGUARD_LOCAL_MODEL` | `qwen3.6:27b` | Ollama tag or server model id (for example `qwen3.8:27b` or `llama3.1:8b`) |
 | `VANGUARD_LOCAL_API` | `ollama` | `ollama`, or `openai` for LM Studio, llama.cpp `llama-server` or vLLM |
@@ -236,6 +239,8 @@ the database, not this file.
 | `vanguard record <property> <tripwire> <value> [--date D] [--note N] [--by NAME]` | Records a tripwire reading (default date today) | No |
 | `vanguard gate <property> <gate> pass\|fail\|open [--by NAME] [--note N]` | Sets a readiness gate. `pass` needs `--by`. `fail` prints the walk-away condition. | No |
 | `vanguard premortem <property> [--plan FILE] [--dry-run] [--provider local\|claude] [--out FILE]` | Engine 0: writes a forensic premortem (7 causes, verdict, adversary, tripwires) and stores it. `--dry-run` is $0 from the failure modes on file. | Only through the capped Claude fallback |
+| `vanguard db info` | Shows which database is in use (PostgreSQL URL with the password hidden, or the SQLite file) and row counts | No |
+| `vanguard db copy-from-sqlite FILE [--replace]` | Copies every table from an old SQLite file into the configured database. Tables that already hold rows are skipped unless `--replace`. | No |
 | `vanguard demo-data [--purge]` | Loads, or removes, clearly labelled `[DEMO]` campaigns, partners, results and a demo run | No |
 
 `--run` defaults to the latest run.
@@ -387,7 +392,8 @@ Keep SMTP set too if you want cold first touches to go from your own mailbox. Co
 ## 7. Testing
 
 ```bash
-pytest -q                                  # everything offline, $0
+pytest -q                                  # everything offline, $0 (SQLite)
+VANGUARD_TEST_DATABASE_URL=postgresql://postgres@localhost:5432/postgres pytest -q   # same suite on PostgreSQL
 pytest tests/test_e2e.py -q                # end-to-end only
 VANGUARD_LIVE_LOCAL=1 pytest -k live_03 -s  # one property on YOUR local model, $0
 VANGUARD_LIVE=1 pytest -k live_01 -s       # real Claude smoke test: one property on Haiku, capped at $0.50

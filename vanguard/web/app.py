@@ -370,7 +370,7 @@ def list_campaigns(property_id: str | None = None, status: str | None = None, u:
         sql += " AND c.property_id=?"; args.append(property_id)
     if status:
         sql += " AND c.status=?"; args.append(status)
-    return store().q(sql + " GROUP BY c.id ORDER BY c.updated_at DESC", args)
+    return store().q(sql + " GROUP BY c.id, uo.name ORDER BY c.updated_at DESC", args)
 
 
 @api.post("/campaigns", status_code=201)
@@ -504,7 +504,7 @@ def patch_partner(pid: int, body: PartnerPatch, u: dict = Depends(current_user))
     if data.get("email_consent") == "opted_out":      # never email them again
         row = s.one("SELECT contact_email FROM partners WHERE id=?", (pid,))
         if row and row["contact_email"]:
-            s.q("INSERT OR REPLACE INTO email_suppression (email, reason, at) VALUES (?,?,?)",
+            s.q("INSERT INTO email_suppression (email, reason, at) VALUES (?,?,?) ON CONFLICT(email) DO UPDATE SET reason=excluded.reason, at=excluded.at",
                 (row["contact_email"].lower(), "opted-out (manual)", now()))
         with s.conn() as c:
             c.execute("UPDATE outreach_messages SET status='cancelled', error='partner opted out' WHERE partner_id=? "

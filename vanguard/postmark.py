@@ -131,7 +131,7 @@ def _find_outreach(ws, event: dict) -> dict | None:
 
 def _suppress(ws, addr: str, reason: str):
     if addr:
-        ws.q("INSERT OR REPLACE INTO email_suppression (email, reason, at) VALUES (?,?,?)", (addr.lower(), reason, now()))
+        ws.q("INSERT INTO email_suppression (email, reason, at) VALUES (?,?,?) ON CONFLICT(email) DO UPDATE SET reason=excluded.reason, at=excluded.at", (addr.lower(), reason, now()))
 
 
 def handle_event(ws, event: dict) -> dict:

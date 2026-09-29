@@ -522,6 +522,28 @@ def cmd_premortem(a, store: Store):
         print(md)
 
 
+def cmd_db(a, store: Store):
+    """`db info` shows which database is in use; `db copy-from-sqlite FILE` moves data into it."""
+    if a.action == "info":
+        print(store.db.describe())
+        with store.conn() as c:
+            for t in ("runs", "tasks", "users", "partners", "outreach_messages", "tripwire_readings"):
+                try:
+                    n = c.execute(f"SELECT COUNT(*) AS n FROM {t}").fetchone()["n"]
+                    print(f"  {t:20} {n}")
+                except Exception:
+                    print(f"  {t:20} (not created yet)")
+        return
+    if not a.file:
+        sys.exit("give the SQLite file to copy from, e.g. vanguard db copy-from-sqlite data/vanguard.db")
+    from .db import copy_from_sqlite
+    if store.db.path and Path(a.file).resolve() == Path(store.db.path).resolve() and not store.postgres:
+        sys.exit("source and destination are the same SQLite file")
+    print(f"Copying {a.file} -> {store.db.describe()}")
+    for table, result in copy_from_sqlite(Path(a.file), store, replace=a.replace).items():
+        print(f"  {table:24} {result}")
+
+
 def _utf8_console() -> None:
     """Windows consoles and pipes may default to cp1252; never crash printing names like 'Mandap & Co · P0'."""
     for stream in (sys.stdout, sys.stderr):
@@ -602,6 +624,10 @@ def main(argv=None):
     s.add_argument("property"); s.add_argument("--plan", help="text/markdown file with the plan to test")
     s.add_argument("--dry-run", action="store_true", help="$0 offline premortem from config/failproof.yaml")
     s.add_argument("--provider", choices=["local", "claude"]); s.add_argument("--out"); s.set_defaults(fn=cmd_premortem)
+    s = sub.add_parser("db", help="database: info | copy-from-sqlite FILE [--replace] (moves SQLite data into PostgreSQL)")
+    s.add_argument("action", choices=["info", "copy-from-sqlite"]); s.add_argument("file", nargs="?")
+    s.add_argument("--replace", action="store_true", help="overwrite tables that already hold rows")
+    s.set_defaults(fn=cmd_db)
     s = sub.add_parser("serve"); s.add_argument("--host", default="0.0.0.0"); s.add_argument("--port", type=int, default=8080)
     s.set_defaults(fn=cmd_serve)
 

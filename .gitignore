@@ -19,3 +19,4 @@ _to_delete/
 *.zip
 ~$*
 /SETUP_NOTION_AND_KEYS.md
+pgdata/

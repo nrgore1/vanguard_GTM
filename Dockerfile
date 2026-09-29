@@ -17,7 +17,8 @@ COPY --from=ui /ui/dist ./ui/dist
 ENV VANGUARD_DB=/app/data/vanguard.db \
     VANGUARD_OUTPUT=/app/output \
     VANGUARD_NOTION_CONFIG=/app/data/notion.json \
-    VANGUARD_UI_DIST=/app/ui/dist
+    VANGUARD_UI_DIST=/app/ui/dist \
+    VANGUARD_CONFIG_DIR=/app/config
 VOLUME ["/app/data", "/app/output"]
 EXPOSE 8080
 CMD ["vanguard", "serve", "--port", "8080"]

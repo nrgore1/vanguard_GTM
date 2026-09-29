@@ -1,6 +1,7 @@
 """Tables for the web app: users, campaigns + results, partners + interactions, targets, audit log.
 
-Lives in the same SQLite file as runs/playbooks/tasks (store.py) so the agent and the UI share one database.
+Lives in the same database as runs/playbooks/tasks (store.py) so the agent and the UI share one database
+(SQLite by default, PostgreSQL when VANGUARD_DATABASE_URL is set).
 """
 from __future__ import annotations
 
@@ -92,12 +93,12 @@ METRICS = ["sent", "opens", "clicks", "replies", "meetings", "signups", "convers
 
 
 class WebStore(Store):
-    def __init__(self, path=None):
-        super().__init__(path)
+    def __init__(self, path=None, url=None):
+        super().__init__(path, url)
         with self.conn() as c:
             c.executescript(WEB_DDL)
             for table, new_cols in MIGRATIONS.items():
-                cols = {r["name"] for r in c.execute(f"PRAGMA table_info({table})")}
+                cols = self.columns(c, table)
                 for col, ddl in new_cols:
                     if col not in cols:
                         c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
@@ -258,7 +259,9 @@ class WebStore(Store):
 
     # dashboard -------------------------------------------------------------
     def dashboard(self, property_ids: list[str], latest_run: str | None) -> dict:
+        from datetime import date as _d, timedelta as _td
         totals_sql = ", ".join(f"COALESCE(SUM(r.{m}),0) AS {m}" for m in METRICS)
+        since30 = (_d.today() - _td(days=30)).isoformat()
         out_props = []
         for pid in property_ids:
             t = self.one("SELECT * FROM targets WHERE property_id=?", (pid,)) or {"arr_target_usd": 2_000_000,
@@ -266,20 +269,23 @@ class WebStore(Store):
             funnel = self.one(f"SELECT {totals_sql} FROM campaign_results r JOIN campaigns c ON c.id=r.campaign_id "
                               f"WHERE c.property_id=?", (pid,))
             last30 = self.one("SELECT COALESCE(SUM(r.revenue_usd),0) AS rev FROM campaign_results r JOIN campaigns c "
-                              "ON c.id=r.campaign_id WHERE c.property_id=? AND r.date >= date('now','-30 day')", (pid,))
-            camp = self.one("SELECT COUNT(*) AS total, SUM(status='active') AS active FROM campaigns WHERE property_id=?",
+                              "ON c.id=r.campaign_id WHERE c.property_id=? AND r.date >= ?", (pid, since30))
+            camp = self.one("SELECT COUNT(*) AS total, SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) AS active "
+                            "FROM campaigns WHERE property_id=?",
                             (pid,))
             stages = {r["stage"]: r["n"] for r in self.q(
                 "SELECT stage, COUNT(*) AS n FROM partners WHERE property_id=? GROUP BY stage", (pid,))}
-            tasks = self.one("SELECT COUNT(*) AS total, SUM(status='Done') AS done FROM tasks WHERE property_id=? "
+            tasks = self.one("SELECT COUNT(*) AS total, SUM(CASE WHEN status='Done' THEN 1 ELSE 0 END) AS done FROM tasks WHERE property_id=? "
                              "AND (run_id=? OR run_id='manual')", (pid, latest_run or ""))
             pb = self.one("SELECT lint_status, approved_by FROM playbooks WHERE run_id=? AND property_id=?",
                           (latest_run or "", pid))
             agr = {r["agreement_status"] or "none": r["n"] for r in self.q(
                 "SELECT agreement_status, COUNT(*) AS n FROM partners WHERE property_id=? GROUP BY agreement_status", (pid,))}
             outreach = self.one(
-                "SELECT SUM(m.status='draft') AS drafts, SUM(m.status='approved') AS approved, "
-                "SUM(m.sent_at IS NOT NULL) AS sent, SUM(m.status='replied') AS replied "
+                "SELECT SUM(CASE WHEN m.status='draft' THEN 1 ELSE 0 END) AS drafts, "
+                "SUM(CASE WHEN m.status='approved' THEN 1 ELSE 0 END) AS approved, "
+                "SUM(CASE WHEN m.sent_at IS NOT NULL THEN 1 ELSE 0 END) AS sent, "
+                "SUM(CASE WHEN m.status='replied' THEN 1 ELSE 0 END) AS replied "
                 "FROM outreach_messages m JOIN partners p ON p.id=m.partner_id WHERE p.property_id=?", (pid,))
             out_props.append({
                 "property_id": pid, "arr_target_usd": t["arr_target_usd"],
@@ -292,8 +298,19 @@ class WebStore(Store):
                 "agreements": {k: agr.get(k, 0) for k in AGREEMENT_STATUSES},
                 "outreach": {k: (outreach[k] or 0) for k in ("drafts", "approved", "sent", "replied")},
             })
-        series = self.q("SELECT strftime('%Y-W%W', r.date) AS week, MIN(r.date) AS start, "
-                        "SUM(r.revenue_usd) AS revenue_usd, SUM(r.conversions) AS conversions, "
-                        "SUM(r.meetings) AS meetings, SUM(r.signups) AS signups "
-                        "FROM campaign_results r GROUP BY strftime('%Y-%W', r.date) ORDER BY start")
-        return {"properties": out_props, "weekly": series, "latest_run": latest_run}
+        return {"properties": out_props, "weekly": self._weekly_series(), "latest_run": latest_run}
+
+    def _weekly_series(self) -> list[dict]:
+        """Results bucketed by week (Monday-based, like SQLite's %W), computed in Python so any database works."""
+        from datetime import date as _d
+        buckets: dict[str, dict] = {}
+        for r in self.q("SELECT r.date, SUM(r.revenue_usd) AS revenue_usd, SUM(r.conversions) AS conversions, "
+                        "SUM(r.meetings) AS meetings, SUM(r.signups) AS signups FROM campaign_results r "
+                        "GROUP BY r.date ORDER BY r.date"):
+            d = _d.fromisoformat(str(r["date"])[:10])
+            week = f"{d.year}-W{int(d.strftime('%W')):02d}"
+            b = buckets.setdefault(week, {"week": week, "start": r["date"], "revenue_usd": 0, "conversions": 0,
+                                          "meetings": 0, "signups": 0})
+            for k in ("revenue_usd", "conversions", "meetings", "signups"):
+                b[k] += r[k] or 0
+        return sorted(buckets.values(), key=lambda b: b["start"])

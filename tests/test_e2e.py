@@ -706,3 +706,20 @@ def test_e2e_premortem_dry_run(env, tmp_path):
     cli(env, "premortem", "liqmint-institutional", "--dry-run", "--plan", str(plan), "--out", str(out))
     md = out.read_text(encoding="utf-8")
     assert md.count("### #") == 7 and "## Verdict" in md and "## Adversary" in md and "## Tripwires" in md
+
+
+def test_e2e_db_copy_from_sqlite(env, tmp_path):
+    """E2E-32: `vanguard db copy-from-sqlite` copies every table from an old SQLite file into the configured
+    database, skips tables that already hold rows on a second run, and new rows continue after the copied ids."""
+    old = dict(env, VANGUARD_DB=str(tmp_path / "old.db"))
+    old.pop("VANGUARD_DATABASE_URL", None)
+    cli(old, "seed-users", "--admin-email", "a@x.com", "--user-email", "u@x.com")
+    cli(old, "record", "liqmint-institutional", "TW-3", "8", "--date", "2026-10-15")
+    new = dict(env, VANGUARD_DB=str(tmp_path / "new.db"))
+    out = cli(new, "db", "copy-from-sqlite", str(tmp_path / "old.db")).stdout
+    assert "users" in out and "copied 2 rows" in out and "tripwire_readings" in out
+    again = cli(new, "db", "copy-from-sqlite", str(tmp_path / "old.db")).stdout
+    assert "skipped (2 rows already there" in again
+    assert "users                2" in cli(new, "db", "info").stdout
+    assert "(id 3)" in cli(new, "create-user", "--email", "n@x.com", "--name", "N", "--password", "longpassword123").stdout
+    assert cli(new, "db", "copy-from-sqlite", check=False).returncode != 0

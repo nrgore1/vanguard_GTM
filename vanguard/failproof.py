@@ -218,8 +218,9 @@ class FailproofStore:
 
     def set_gate(self, property_id: str, gate_id: str, status: GateStatus, note: str = "", by: str = "") -> None:
         with self.store.conn() as c:
-            c.execute("INSERT OR REPLACE INTO gate_status(property_id, gate_id, status, note, updated_by, updated_at) "
-                      "VALUES (?,?,?,?,?,?)", (property_id, gate_id, status, note, by,
+            c.execute("INSERT INTO gate_status(property_id, gate_id, status, note, updated_by, updated_at) "
+                      "VALUES (?,?,?,?,?,?) ON CONFLICT(property_id, gate_id) DO UPDATE SET status=excluded.status, "
+                      "note=excluded.note, updated_by=excluded.updated_by, updated_at=excluded.updated_at", (property_id, gate_id, status, note, by,
                                                 datetime.now(timezone.utc).isoformat(timespec="seconds")))
 
     def gates(self, property_id: str) -> dict[str, dict]:

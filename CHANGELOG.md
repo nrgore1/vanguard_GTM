@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.0 — 2026-09-28
+
+### Added: PostgreSQL
+- **`VANGUARD_DATABASE_URL`** switches every table (agent, web app, fail-proof) to PostgreSQL. SQLite
+  stays the default for local use and tests.
+- **Docker Compose** now runs PostgreSQL 16 (`vanguard-db`) next to the app, on a private network with
+  no published port. Data lives in `./pgdata`. Set `VANGUARD_DB_PASSWORD` in `.env`.
+- **`vanguard db info`** and **`vanguard db copy-from-sqlite FILE [--replace]`** to move an existing
+  SQLite database across. A second run never duplicates data.
+- The whole test suite runs on PostgreSQL with `VANGUARD_TEST_DATABASE_URL` (a fresh database per test).
+
+### Fixed
+- **Config not found in Docker** (`FileNotFoundError …/site-packages/config/partner_targets.yaml`): config
+  is read from `VANGUARD_CONFIG_DIR`, else the repo, else `./config`. The image sets `/app/config`.
+- **Replies sorted before the email they answered** in the evening (US time): replies used the local
+  date, sends used UTC. Both use UTC now. This was the WEB-19 failure after midnight UTC.
+- `.dockerignore` keeps `data/`, `pgdata/`, `.env`, `node_modules` and `.git` out of the build.
+
 ## 0.7.3 — 2026-09-28
 
 - **Fix: the Docker image could not start the web app** (`ModuleNotFoundError: No module named

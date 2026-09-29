@@ -243,8 +243,14 @@ vanguard demo-data       # optional: [DEMO] sample records so the screens aren't
 vanguard serve           # then open http://localhost:8080
 ```
 - Sign in as the admin. **Admin → Users** is where you add your team.
-- On the VPS, `docker compose up -d --build` builds the UI into the image. Add a
-  `VANGUARD_JWT_SECRET=<long random string>` line to `.env` so sign-ins survive restarts.
+- On the VPS, `docker compose up -d --build` builds the UI into the image and starts the app with its
+  own PostgreSQL. Before the first start, put these in `.env`:
+  `VANGUARD_JWT_SECRET=<long random string>` (sign-ins survive restarts),
+  `VANGUARD_DB_PASSWORD=<long random string>` (the database password; use hex, e.g. `openssl rand -hex 24`),
+  and `TRAEFIK_NETWORK=<your Traefik network>`.
+- Database files live in `/opt/vanguard-gtm/pgdata`. Back up with
+  `docker exec vanguard-db pg_dump -U vanguard vanguard > vanguard-$(date +%F).sql`.
+- Moving from an earlier SQLite install: `docker exec vanguard-gtm vanguard db copy-from-sqlite /app/data/vanguard.db`.
 - With the Traefik route in `deploy/`, the app is at `https://gtm.vireoka.com`.
 
 How to use each screen is in `docs/USER_GUIDE.md`.

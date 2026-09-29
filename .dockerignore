@@ -1,0 +1,10 @@
+.git
+pgdata/
+data/
+output/
+ui/node_modules/
+.venv/
+.pytest_cache/
+.pytest_tmp/
+**/__pycache__
+.env

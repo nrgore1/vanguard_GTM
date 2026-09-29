@@ -1,13 +1,14 @@
-"""SQLite persistence: runs, playbooks, tasks, approvals, Notion page ids."""
+"""Persistence for runs, playbooks, tasks, approvals and Notion page ids.
+
+SQLite by default; PostgreSQL when VANGUARD_DATABASE_URL is set (see db.py)."""
 from __future__ import annotations
 
 import json
 import os
-import sqlite3
-from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .db import Database
 from .schema import Playbook
 
 DB_PATH = Path(os.getenv("VANGUARD_DB", "data/vanguard.db"))
@@ -35,24 +36,23 @@ def now() -> str:
 
 
 class Store:
-    def __init__(self, path: Path | None = None):
-        self.path = Path(path or DB_PATH)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, path: Path | None = None, url: str | None = None):
+        self.db = Database(Path(path or DB_PATH), url)
+        self.path = self.db.path
         with self.conn() as c:
             c.executescript(DDL)
-            cols = {r["name"] for r in c.execute("PRAGMA table_info(runs)")}
-            if "usage" not in cols:  # databases created by v0.1
+            if "usage" not in self.columns(c, "runs"):  # databases created by v0.1
                 c.execute("ALTER TABLE runs ADD COLUMN usage TEXT DEFAULT '{}'")
 
-    @contextmanager
+    @property
+    def postgres(self) -> bool:
+        return self.db.postgres
+
     def conn(self):
-        c = sqlite3.connect(self.path)
-        c.row_factory = sqlite3.Row
-        try:
-            yield c
-            c.commit()
-        finally:
-            c.close()
+        return self.db.conn()
+
+    def columns(self, c, table: str) -> set[str]:
+        return self.db.columns(c, table)
 
     # runs --------------------------------------------------------------
     def create_run(self, run_id: str, property_ids: list[str]):
@@ -86,10 +86,13 @@ class Store:
     def save_playbook(self, pb: Playbook):
         body = pb.model_dump_json()
         with self.conn() as c:
-            c.execute("INSERT OR REPLACE INTO playbooks(run_id, property_id, lint_status, body, created_at) VALUES (?,?,?,?,?)",
+            # replace semantics (a re-saved playbook starts unapproved), portable to SQLite and PostgreSQL
+            c.execute("DELETE FROM playbooks WHERE run_id=? AND property_id=?", (pb.run_id, pb.property_id))
+            c.execute("INSERT INTO playbooks(run_id, property_id, lint_status, body, created_at) VALUES (?,?,?,?,?)",
                       (pb.run_id, pb.property_id, pb.lint_status, body, now()))
+            c.execute("DELETE FROM tasks WHERE run_id=? AND property_id=?", (pb.run_id, pb.property_id))
             for t in pb.daily_task_registry:
-                c.execute("INSERT OR REPLACE INTO tasks(run_id, property_id, task_id, day, priority, owner, body) "
+                c.execute("INSERT INTO tasks(run_id, property_id, task_id, day, priority, owner, body) "
                           "VALUES (?,?,?,?,?,?,?)",
                           (pb.run_id, pb.property_id, t.task_id, t.day, t.priority, t.owner, t.model_dump_json()))
 

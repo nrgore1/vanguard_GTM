@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.7.3 · updated 2026-09-28
+Version 0.8.0 · updated 2026-09-28
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -42,6 +42,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | E2E-29 | Fail-proof CLI flow | `record`, `gate` and `tripwires` from the CLI | A reading shows GREEN; `gate pass` without `--by` is refused; `gate fail` prints the walk-away condition; three tripped tripwires make `tripwires` exit 2 with HALT; `--json` covers all 8 properties; an unknown tripwire is refused. |
 | E2E-30 | Gates remove blocked tasks from a run | Dry run where one institutional task emails seed investors | That task is gone, dependants no longer point at it, a `GATE_BLOCKED` note names it, and a WeddingOS playbook run with its owner removed carries a `FOCUS_LOCK` note. |
 | E2E-31 | Premortem at $0 | `premortem liqmint-institutional --dry-run --plan plan.md --out pm.md` | The markdown has 7 ranked causes, a verdict, an adversary and a tripwire table. |
+| E2E-32 | Move SQLite data into the configured database | Old SQLite file with two users and a tripwire reading; `db copy-from-sqlite` into the configured database | Every table is copied; a second run skips tables that already hold rows; `db info` shows 2 users; the next new user gets id 3; the command without a file is refused. On PostgreSQL this is a real SQLite-to-PostgreSQL copy. |
 
 ## Live smoke cases (opt-in)
 
@@ -107,6 +108,12 @@ Atmakosh.
 | UI-14 | Email permission + digest | Uma opens Shaadi Squad Events: permission "none" with the cold-routing note. She sets "Opted out", sees the toast, and all 3 messages show cancelled. The admin clicks "Email approval digest" and gets "Digest emailed to 1 admin (outbox)". |
 | UI-15 | Load researched partners | The admin clicks "Load researched partners" and gets a toast. India Association of Minnesota opens with the "researched organisation" badge, a clickable iamn.org website and contact link, and 3 drafts titled "… + Jodibana: a small pilot idea". |
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
+
+## Database tests (`tests/test_db.py`)
+
+`?` placeholders and `%` signs are translated for PostgreSQL without touching quoted text; DDL gets `BIGSERIAL`, `DOUBLE PRECISION` and the `rowid` column only where needed; the engine is chosen from `VANGUARD_DATABASE_URL`; passwords are hidden in `db info`.
+
+**Running everything on PostgreSQL:** set `VANGUARD_TEST_DATABASE_URL` to a server where you can create databases. `tests/conftest.py` gives each test a fresh database and drops it afterwards. Verified on PostgreSQL 16: the full suite passes.
 
 ## Fail-proof unit tests (`tests/test_failproof.py`)
 

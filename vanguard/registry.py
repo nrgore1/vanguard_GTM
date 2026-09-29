@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
 
-CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+def _config_dir() -> Path:
+    """VANGUARD_CONFIG_DIR, else the repo's config/ (source checkout), else ./config (installed package, e.g. Docker)."""
+    if os.getenv("VANGUARD_CONFIG_DIR"):
+        return Path(os.environ["VANGUARD_CONFIG_DIR"])
+    repo = Path(__file__).resolve().parent.parent / "config"
+    return repo if repo.is_dir() else Path.cwd() / "config"
+
+
+CONFIG_DIR = _config_dir()
 
 
 class Property(BaseModel):

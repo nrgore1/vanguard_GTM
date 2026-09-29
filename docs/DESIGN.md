@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.7.3 |
+| **Version** | 0.8.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-09-28 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -112,7 +112,8 @@ flowchart TB
 | `cost.py` | Price table, usage meter, spend cap, estimate | `Meter`, `BudgetExceeded`, `estimate` |
 | `orchestrator.py` | Parallel fan-out, per-property error isolation, run bookkeeping, then the fail-proof layer | `run_portfolio` |
 | `failproof.py` | Engine 0 premortem, Engine 5 readiness gates, Engine 6 tripwire monitor, focus lock (§17) | `load_failproof`, `evaluate_tripwire`, `tracker`, `apply_to_playbook`, `run_premortem`, `FailproofStore` |
-| `store.py` | SQLite persistence: runs (with usage), playbooks, tasks, approvals, Notion ids | `Store` |
+| `store.py` | Persistence: runs (with usage), playbooks, tasks, approvals, Notion ids | `Store` |
+| `db.py` | SQLite or PostgreSQL connections, SQL translation for PostgreSQL, SQLite-to-PostgreSQL copy (§10) | `Database`, `copy_from_sqlite` |
 | `notion_sync.py` | Database setup, idempotent upsert, rate limiting, playbook page body | `Notion`, `playbook_blocks` |
 | `exporters.py` | Approval-gated sequence CSVs; task backlog CSV/JSON | `export_sequences`, `export_tasks` |
 | `web/app.py` | Web app: `/api` for the UI (auth, roles, CRUD, dashboard, agent actions), serves `ui/dist`, mounts `/machine` | `create_app`, `current_user`, `admin_user` |
@@ -333,7 +334,23 @@ approving it.
 
 ## 10. Persistence
 
-SQLite at `VANGUARD_DB` (default `data/vanguard.db`).
+One database holds the agent's tables (below), the web tables (§14.3) and the fail-proof tables (§17.2).
+
+- **SQLite** at `VANGUARD_DB` (default `data/vanguard.db`) unless `VANGUARD_DATABASE_URL` is set. Used by
+  tests and local runs.
+- **PostgreSQL** when `VANGUARD_DATABASE_URL` is a `postgresql://` URL. `docker-compose.yml` runs its own
+  PostgreSQL 16 (`vanguard-db`, data in `./pgdata`) on a private network only the app can reach, and
+  sets the URL from `VANGUARD_DB_PASSWORD`.
+
+Application SQL is written once, with `?` placeholders, in the subset both engines accept (upserts use
+`ON CONFLICT … DO UPDATE`; date arithmetic is done in Python; `SUM(CASE WHEN …)` instead of summing a
+boolean). `db.py` adapts the rest for PostgreSQL: placeholders and `%` escaping, `BIGSERIAL` for
+auto-increment keys, `DOUBLE PRECISION` for `REAL`, an explicit `rowid` column on `runs`, `playbooks`
+and `tasks`, `RETURNING *` for inserted ids, `information_schema` for column checks, and `PRAGMA`
+statements skipped. `vanguard db copy-from-sqlite FILE` moves an existing SQLite database across
+(tables that already hold rows are skipped unless `--replace`; id sequences are advanced past the
+copied ids). The test suite runs on either engine (`VANGUARD_TEST_DATABASE_URL`, fresh database per
+test).
 
 | Table | Key | Columns |
 |---|---|---|
@@ -812,6 +829,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.8.0 | 2026-09-28 | **PostgreSQL** (§10): `VANGUARD_DATABASE_URL` switches every table to PostgreSQL through `db.py`; SQL made portable (upserts, dates, boolean sums, `GROUP BY`); Docker Compose runs PostgreSQL 16 on a private network; `vanguard db info` and `vanguard db copy-from-sqlite`; the suite runs on PostgreSQL with `VANGUARD_TEST_DATABASE_URL`. **Config path fix:** an installed package (Docker) looked for `config/` inside site-packages; now `VANGUARD_CONFIG_DIR`, else the repo, else `./config`. **Reply-date fix:** replies were dated by the server's local date while sends used UTC, so late-evening replies sorted before the email they answered (WEB-19 failed after midnight UTC); both now use UTC. `.dockerignore` added. Tests E2E-32 and `tests/test_db.py`. |
 | 0.7.3 | 2026-09-28 | **Docker fix:** `pyproject.toml` listed only the `vanguard` package, so a non-editable install (the Docker image) left out `vanguard.web` and `vanguard serve` failed with `ModuleNotFoundError`. Both packages are now listed, and `tests/test_docs_sync.py` fails if a package under `vanguard/` is missing from the build list. |
 | 0.7.2 | 2026-09-28 | **Interim owners and CEO gate:** the five delegated properties are marked `interim_owner: true` (founder-supervised through AI agents from Naren@atmakosh.com) and each gets a `G-CEO` gate due week 16 (Jan 15, 2027) that blocks paid acquisition until a CEO is named. Playbooks carry an `INTERIM_OWNER` note; the tracker and Tripwires page show the interim status. |
 | 0.7.1 | 2026-09-28 | **Owners assigned:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are owned by Naren@atmakosh.com in `config/failproof.yaml`, which clears their FOCUS_LOCK notes. Tests keep exercising the focus lock with an unowned copy of the config. |
