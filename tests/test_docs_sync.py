@@ -45,3 +45,11 @@ def test_versions_and_change_log_are_current():
                        ("CHANGELOG", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))):
         assert __version__ in text, f"{name} does not mention version {__version__}"
     assert re.search(rf"^\| {re.escape(__version__)} \|", DESIGN, re.M), "add a DESIGN §17 change-log row"
+
+
+def test_every_python_package_is_in_the_build():
+    """A non-editable install (the Docker image) only ships packages listed in pyproject.toml."""
+    import tomllib
+    listed = set(tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["setuptools"]["packages"])
+    on_disk = {".".join(p.parent.relative_to(ROOT).parts) for p in (ROOT / "vanguard").rglob("__init__.py")}
+    assert on_disk <= listed, f"add these to [tool.setuptools] packages in pyproject.toml: {sorted(on_disk - listed)}"

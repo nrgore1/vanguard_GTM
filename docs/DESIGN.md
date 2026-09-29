@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.7.2 |
+| **Version** | 0.7.3 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-09-28 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -812,6 +812,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.7.3 | 2026-09-28 | **Docker fix:** `pyproject.toml` listed only the `vanguard` package, so a non-editable install (the Docker image) left out `vanguard.web` and `vanguard serve` failed with `ModuleNotFoundError`. Both packages are now listed, and `tests/test_docs_sync.py` fails if a package under `vanguard/` is missing from the build list. |
 | 0.7.2 | 2026-09-28 | **Interim owners and CEO gate:** the five delegated properties are marked `interim_owner: true` (founder-supervised through AI agents from Naren@atmakosh.com) and each gets a `G-CEO` gate due week 16 (Jan 15, 2027) that blocks paid acquisition until a CEO is named. Playbooks carry an `INTERIM_OWNER` note; the tracker and Tripwires page show the interim status. |
 | 0.7.1 | 2026-09-28 | **Owners assigned:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are owned by Naren@atmakosh.com in `config/failproof.yaml`, which clears their FOCUS_LOCK notes. Tests keep exercising the focus lock with an unowned copy of the config. |
 | 0.7.0 | 2026-09-28 | **Fail-proof layer** (§17): Engine 0 forensic premortem (`vanguard premortem`, `--dry-run` at $0), Engine 5 readiness gates that remove blocked task classes (investor outreach, cold investor outreach, paid acquisition, public launch) from plans until passed, Engine 6 tripwire monitor with Friday checks and HALT at 3 tripped, and the focus lock for delegated properties. `config/failproof.yaml` covers all 8 properties; new tables `tripwire_readings`, `gate_status`, `premortems`; CLI `tripwires`, `record`, `gate`, `premortem`; `/api/failproof…` and machine `GET /failproof`; UI Tripwires page. Tests E2E-29–31, WEB-28 and `tests/test_failproof.py`. |

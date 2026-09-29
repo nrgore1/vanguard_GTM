@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.3 — 2026-09-28
+
+- **Fix: the Docker image could not start the web app** (`ModuleNotFoundError: No module named
+  'vanguard.web'`). `pyproject.toml` now lists both `vanguard` and `vanguard.web`.
+- New check in `tests/test_docs_sync.py`: every package under `vanguard/` must be in the build list.
+
 ## 0.7.2 — 2026-09-28
 
 - **Interim owners:** WeddingOS, Jodibana, JodiUSA, OratoPlus and Atmakosh are marked
