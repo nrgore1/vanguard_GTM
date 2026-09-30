@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.8.0 |
+| **Version** | 0.8.1 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-09-28 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -652,8 +652,21 @@ organisation's own site or recent news.
 - `contact_url`: a contact page, partner program or application form;
 - `priority_hint` (P0–P2) and `confidence` (high or medium).
 
-**Privacy:** the file holds no personal emails, phone numbers or named individuals. Contacts
-are organisation channels only.
+Optional (v0.8.1): `how_to_reach` (the best route in), `contacts` (people who **publicly** hold
+the relevant role, each with the `source` that shows it and a `confidence`), and `recent_hook` +
+`recent_hook_url` (why now). On import the first named person becomes `contact_name` unless one
+was entered by hand; the route and people go into `how_to_find`, the hook into `rationale`.
+
+**Privacy:** the file holds no personal emails, phone numbers or home details. `contact_email`
+is only an inbox the organisation itself publishes; named contacts are public role holders with a
+source, and their emails are never guessed.
+
+**Mid-market first (v0.8.1).** LiqMint Institutional has four categories aimed at partners that can
+sign a paid proof-of-value within about 90 days: `stablecoin_banks`, `stablecoin_fintechs`,
+`wallet_compliance_infra` and `midsize_advisory`. Their higher access and speed factors rank them
+above tier-1 banks and the Big Four, which remain as relationship targets (P1/P2). A category can
+override the design-partner wording with `middle` / `follow` (for example a paid proof-of-value
+instead of "no cost"). Import creates segments for categories added after the first import.
 
 **Import:** `import_targets` (`vanguard partners import`, `POST /api/partners/import-research`,
 or the "Load researched partners" button) works as follows:
@@ -829,6 +842,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.8.1 | 2026-09-29 | **Partner contacts and mid-market targets** (§15.7): `partner_targets.yaml` gains `how_to_reach`, sourced `contacts` and `recent_hook`; contacts refreshed for 12 LiqMint Institutional partners; 24 new mid-market targets in four new categories (stablecoin banks, stablecoin fintechs, wallet/compliance infrastructure, mid-size advisory); tier-1 banks and Coinbase Prime moved to P1; categories may override draft wording (`middle`, `follow`); import creates segments for newly added categories. **Fix:** design-partner drafts contained `{company}` instead of the `{{company}}` merge tag (str.format collapsed the braces), so emails would have shown a literal placeholder; drafts now keep the tag and sending also fills `{company}` in drafts written earlier. Test WEB-29. |
 | 0.8.0 | 2026-09-28 | **PostgreSQL** (§10): `VANGUARD_DATABASE_URL` switches every table to PostgreSQL through `db.py`; SQL made portable (upserts, dates, boolean sums, `GROUP BY`); Docker Compose runs PostgreSQL 16 on a private network; `vanguard db info` and `vanguard db copy-from-sqlite`; the suite runs on PostgreSQL with `VANGUARD_TEST_DATABASE_URL`. **Config path fix:** an installed package (Docker) looked for `config/` inside site-packages; now `VANGUARD_CONFIG_DIR`, else the repo, else `./config`. **Reply-date fix:** replies were dated by the server's local date while sends used UTC, so late-evening replies sorted before the email they answered (WEB-19 failed after midnight UTC); both now use UTC. `.dockerignore` added. Tests E2E-32 and `tests/test_db.py`. |
 | 0.7.3 | 2026-09-28 | **Docker fix:** `pyproject.toml` listed only the `vanguard` package, so a non-editable install (the Docker image) left out `vanguard.web` and `vanguard serve` failed with `ModuleNotFoundError`. Both packages are now listed, and `tests/test_docs_sync.py` fails if a package under `vanguard/` is missing from the build list. |
 | 0.7.2 | 2026-09-28 | **Interim owners and CEO gate:** the five delegated properties are marked `interim_owner: true` (founder-supervised through AI agents from Naren@atmakosh.com) and each gets a `G-CEO` gate due week 16 (Jan 15, 2027) that blocks paid acquisition until a CEO is named. Playbooks carry an `INTERIM_OWNER` note; the tracker and Tripwires page show the interim status. |

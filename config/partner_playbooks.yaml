@@ -312,6 +312,54 @@ properties:
         angle: "stablecoin balances are appearing on treasury desks outside the usual controls"
         offer: "an integration discussion"
         examples: ["Kyriba"]
+      - id: stablecoin_banks
+        label: "Community, regional & new banks running stablecoin or tokenized-deposit programs"
+        kind: design_partner
+        why: "Smaller and newer banks with a live stablecoin or tokenized-deposit flow can sign a scoped proof-of-value without a tier-1 vendor-risk process, and examiners will ask them for evidence."
+        value_exchange: "Bank gets documented policy enforcement and examiner-ready evidence for one workflow; LiqMint gets a first bank reference."
+        deal_structure: "6-week paid proof-of-value on one workflow, fee credited to a first annual contract"
+        where_to_find: "Head of digital assets / stablecoins, chief innovation or business-architecture officer, CEO at small banks; state bankers-association innovation programs"
+        factors: {fit: 5, reach: 3, access: 4, strategic: 4, speed: 4}
+        angle: "your stablecoin and tokenized-deposit flows are live, and examiners will want to see the policy and approval trail behind each one"
+        offer: "a 6-week proof-of-value on one of your stablecoin workflows, starting read-only"
+        middle: "We're working with a small number of design partners, and {{company}} looks like a strong fit. What I'd propose: {offer}. It's scoped to one workflow, your custodian or wallet stays the signer, and you decide at week six whether it continues."
+        follow: "To make it concrete: week one is read-only, we agree your policy set with your team, and at week six you get a written go/no-go and an evidence pack your risk and audit teams can review. Happy to send a one-page outline first."
+        examples: []
+      - id: stablecoin_fintechs
+        label: "Stablecoin payment, issuance & treasury fintechs"
+        kind: design_partner
+        why: "Fintechs running stablecoin payouts, issuance or treasury for business clients move fast, buy from startups, and are being asked by their bank and enterprise clients for policy and audit evidence."
+        value_exchange: "Fintech gets an evidence pack it can hand to its bank and enterprise clients; LiqMint gets a live design-partner workflow."
+        deal_structure: "6-week paid proof-of-value, or an embedded integration with revenue share"
+        where_to_find: "Founder / CEO, head of product, head of compliance or risk"
+        factors: {fit: 5, reach: 3, access: 4, strategic: 4, speed: 5}
+        angle: "your business clients are starting to ask who approved each stablecoin movement and where the evidence lives"
+        offer: "a short proof-of-value that puts policy checks and an evidence pack around one of your stablecoin flows"
+        middle: "We're working with a small number of design partners, and {{company}} looks like a strong fit. What I'd propose: {offer}. Your wallet or custodian stays the signer; we add simulation, policy validation and settlement verification, and you decide at week six whether it continues."
+        follow: "To make it concrete: one flow, read-only first, your policy set agreed with your team, and an evidence pack you could show a bank partner or auditor. I can send a one-page outline first."
+        examples: []
+      - id: wallet_compliance_infra
+        label: "Wallet, MPC & compliance infrastructure (integration partners)"
+        kind: integration
+        why: "Wallet, issuance and compliance vendors enforce signing rules or screening; LiqMint adds pre-execution simulation, cross-wallet validation, settlement verification and the evidence pack, which they do not provide."
+        value_exchange: "Partner's customers get governance evidence on top of its platform; LiqMint gets integration-led distribution."
+        deal_structure: "Technology integration + co-marketing; referral fee where customers buy both"
+        where_to_find: "Partnerships / BD lead, head of product, founders at smaller companies"
+        factors: {fit: 4, reach: 4, access: 3, strategic: 4, speed: 3}
+        angle: "your customers enforce signing rules on your platform, and their auditors now also ask for simulation, settlement verification and an evidence trail across wallets"
+        offer: "an integration where LiqMint turns your policy and signing events into an audit-ready evidence pack"
+        examples: []
+      - id: midsize_advisory
+        label: "Mid-size advisory, audit & bank-regulatory firms"
+        kind: co_sell
+        why: "Mid-size firms serve community and regional banks and fintechs preparing for GENIUS Act rules, partner with startups more readily than the Big Four, and need tooling that makes controls evidenceable. Firms that attest a client's reserves can refer but not co-sell to that client."
+        value_exchange: "Firm gets an implementation tool for its stablecoin readiness work; LiqMint gets referrals into mid-market banks and fintechs."
+        deal_structure: "Referral or implementation alliance (advisory side only where the firm is the client's auditor)"
+        where_to_find: "Digital-asset / blockchain practice leader, financial-services risk & regulatory leader, alliances lead"
+        factors: {fit: 4, reach: 4, access: 4, strategic: 4, speed: 3}
+        angle: "your clients preparing for the GENIUS Act rules will need evidence that their stablecoin controls actually ran, transaction by transaction"
+        offer: "a referral or implementation alliance where your team designs the controls and LiqMint evidences them"
+        examples: []
 
   vireoka:
     product_line: "Cognitive Governance for AI - governing how AI agents reason, with auditability and risk controls"

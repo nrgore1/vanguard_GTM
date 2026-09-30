@@ -35,11 +35,15 @@ def _templates(ws, prop) -> dict[str, dict]:
          "AND EXISTS (SELECT 1 FROM outreach_messages m WHERE m.partner_id=p.id) "
          "ORDER BY p.is_segment DESC, (p.parent_id IS NULL) DESC, COALESCE(p.priority_score,0) DESC")
     rows = ws.q(q, (prop.id,))
-    if not any(r["is_segment"] for r in rows):
+    from .partners import property_playbook
+    wanted = {c["id"] for c in property_playbook(prop.id)["categories"]}
+    missing = wanted - {r["category"] for r in rows}
+    if missing:  # first import, or categories added to the playbook since the last one
         from .lint_gate import LintGate
         from .partners import plan_partners
         for r in asyncio.run(plan_partners(None, prop, None, LintGate())):
-            ws.upsert_recommendation(prop.id, r, None, None)
+            if r.get("category") in missing:
+                ws.upsert_recommendation(prop.id, r, None, None)
         rows = ws.q(q, (prop.id,))
     out: dict[str, dict] = {}
     for r in rows:
@@ -69,9 +73,16 @@ def _fields(t: dict, seg: dict) -> dict:
     src = f"\nSource: {t['evidence_url']}" if t.get("evidence_url") else ""
     conf = f" (research confidence: {t.get('confidence', 'medium')})"
     contact = [f"Contact: {t['contact_url']}"] if t.get("contact_url") else []
+    if t.get("how_to_reach"):
+        contact.append(f"Route: {t['how_to_reach']}")
+    for c in t.get("contacts") or []:            # publicly named role holders, each with its source
+        conf_c = f", {c['confidence']}" if c.get("confidence") else ""
+        contact.append(f"Person: {c['name']} - {c['title']} ({c.get('source', 'no source')}{conf_c})")
     if t.get("location"):
         contact.append(f"Location: {t['location']}")
-    return {"rationale": (t.get("why") or seg.get("rationale") or "") + src + conf,
+    hook = f"\nTimely hook: {t['recent_hook']}" + (f" ({t['recent_hook_url']})" if t.get("recent_hook_url") else "") \
+        if t.get("recent_hook") else ""
+    return {"rationale": (t.get("why") or seg.get("rationale") or "") + src + hook + conf,
             "how_to_find": " | ".join(contact) or seg.get("how_to_find"),
             "priority": hint, "priority_score": score, "website": t.get("website")}
 
@@ -114,10 +125,14 @@ def import_targets(ws, path: Path | str | None = None, user_id: int | None = Non
                 upd = f | {"updated_at": now(), "source": "research"}
                 if email and not row["contact_email"]:
                     upd["contact_email"] = email
+                lead = (t.get("contacts") or [{}])[0].get("name")
+                if lead and not row.get("contact_name"):   # never overwrite a name someone entered
+                    upd["contact_name"] = lead
                 ws.update("partners", "id", row["id"], upd)
                 stats["updated"] += 1
             else:
-                new = ws.add_target(seg["id"], {"name": name, "contact_email": email} | f, user_id)
+                lead = (t.get("contacts") or [{}])[0].get("name")
+                new = ws.add_target(seg["id"], {"name": name, "contact_email": email, "contact_name": lead} | f, user_id)
                 ws.update("partners", "id", new, {"source": "research", "priority": f["priority"],
                                                    "priority_score": f["priority_score"],
                                                    "parent_id": seg["id"] if seg["is_segment"] else None})

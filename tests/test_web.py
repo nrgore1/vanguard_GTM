@@ -797,6 +797,11 @@ def test_web_27_researched_targets_file_quality(tmp_path):
             assert t["why"] and t["priority_hint"] in ("P0", "P1", "P2") and t["confidence"] in ("high", "medium")
             if t.get("contact_email"):
                 assert re.fullmatch(r"[^@\s]+@[^@\s]+\.[a-z]{2,}", t["contact_email"].lower())
+            for person in t.get("contacts") or []:      # named people always carry the source that shows the role
+                assert person["name"] and person["title"] and person["source"].startswith("https://"), t["name"]
+                assert person["confidence"] in ("high", "medium") and "@" not in str(person)
+            if t.get("recent_hook"):
+                assert t["recent_hook_url"].startswith("https://"), t["name"]
     e = {k: v for k, v in os.environ.items()} | {"VANGUARD_DB": str(tmp_path / "c.db"), "PYTHONPATH": str(ROOT)}
     r = subprocess.run([sys.executable, "-m", "vanguard", "partners", "import"], cwd=ROOT, env=e, capture_output=True, text=True)
     assert r.returncode == 0 and "researched organisations added" in r.stdout and "problem" not in r.stdout, r.stdout + r.stderr
@@ -821,3 +826,38 @@ def test_failproof_tracker_readings_and_gates(env):
     assert r.status_code == 200 and "consulting" in r.json()["walk_away_if"]
     assert c.put("/api/failproof/liqmint-institutional/gates/G9", json={"status": "passed"}, headers=A).status_code == 404
     assert c.get("/api/failproof/liqmint-institutional/premortem", headers=U).status_code == 404
+
+
+def test_web_29_contacts_new_categories_and_merge_tags(env):
+    """WEB-29: researched contacts land on the partner (first named person as contact_name, route and people in
+    how_to_find, timely hook in the rationale) without overwriting a hand-entered name; categories added to the
+    playbook after a first import get their segment on the next import; drafts keep the {{company}} merge tag and
+    sending also fills {company} left in drafts written before v0.8.1."""
+    c, A, s = env["c"], env["A"], env["s"]
+    assert c.post("/api/partners/import-research", headers=A).json()["errors"] == []
+    lead = s.one("SELECT * FROM partners WHERE property_id='liqmint-institutional' AND name='Lead Bank'")
+    assert lead["contact_name"] == "Eleni Steinman" and lead["category"] == "stablecoin_banks"
+    assert "Person: Eleni Steinman - Head of Stablecoins" in lead["how_to_find"] and "Route:" in lead["how_to_find"]
+    assert "Timely hook:" in lead["rationale"] and lead["priority"] == "P0"
+    body = s.one("SELECT body FROM outreach_messages WHERE partner_id=? AND step=1", (lead["id"],))["body"]
+    assert "{{company}}" in body and "{company}" not in body.replace("{{company}}", "")
+    assert s.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE body LIKE '%{company}%' "
+                 "AND body NOT LIKE '%{{company}}%'")["n"] == 0
+    # tier-1 banks are relationships, not first design partners
+    assert s.one("SELECT priority FROM partners WHERE name='BNY (Bank of New York Mellon)'")["priority"] == "P1"
+    # a hand-entered name survives a re-import
+    c.patch(f"/api/partners/{lead['id']}", json={"contact_name": "Someone Else"}, headers=A)
+    c.post("/api/partners/import-research", headers=A)
+    assert s.one("SELECT contact_name FROM partners WHERE id=?", (lead["id"],))["contact_name"] == "Someone Else"
+    # a category added after the first import: delete its segment and partners, re-import, it comes back
+    seg = s.one("SELECT id FROM partners WHERE category='midsize_advisory' AND is_segment=1")
+    for r in s.q("SELECT id FROM partners WHERE category='midsize_advisory'"):
+        s.delete("partners", "id", r["id"])
+    assert c.post("/api/partners/import-research", headers=A).json()["errors"] == []
+    assert s.one("SELECT COUNT(*) AS n FROM partners WHERE category='midsize_advisory' AND is_segment=1")["n"] == 1
+    assert s.one("SELECT COUNT(*) AS n FROM partners WHERE name='Protiviti'")["n"] == 1 and seg
+    # old drafts with single braces still render correctly
+    from vanguard.outreach import EmailConfig, render
+    out = render("Hi {{first_name}} at {company} / {{company}}", {"contact_name": "Eleni Steinman", "name": "Lead Bank"},
+                 EmailConfig.from_env())
+    assert out == "Hi Eleni at Lead Bank / Lead Bank"

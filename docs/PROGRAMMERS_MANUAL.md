@@ -1,6 +1,6 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.8.0 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.8.1 · updated 2026-09-28 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
 > **Rule for every change:** update this manual, `DESIGN.md` (including its §18 change log) and
@@ -155,7 +155,9 @@ property:
   - `angle`, which completes the sentence "I'm reaching out because…";
   - `offer`, the concrete proposal;
   - optional `examples`: named organisations to research, which become individual
-    recommendations.
+    recommendations;
+  - optional `middle` and `follow`: replace the default wording of the first email's pitch and
+    the follow-up for that category. `{offer}` is filled in; keep merge tags as `{{company}}`.
 
 Every property needs at least one `design_partner` and one `co_sell` category.
 
@@ -176,6 +178,9 @@ has these fields:
 | `priority_hint` | `P0`, `P1` or `P2` |
 | `confidence` | `high` or `medium` |
 | `kind` | Informational; the category decides the real kind |
+| `how_to_reach` | Optional: the best route in (form, program, warm-intro angle, caveats) |
+| `contacts` | Optional list of `{name, title, source, confidence}` for people who publicly hold the relevant role; `source` is the https page that shows it. No emails. The first becomes `contact_name` unless one was entered by hand. |
+| `recent_hook`, `recent_hook_url` | Optional: a recent development that makes outreach timely, and its source |
 
 Edit the file freely and re-run `vanguard partners import`. It is idempotent: existing partners
 are refreshed, never duplicated, and hand-entered emails are kept. `tests/test_web.py::WEB-27`

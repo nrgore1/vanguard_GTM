@@ -126,8 +126,11 @@ class EmailConfig:
 # ---------------------------------------------------------------- rendering
 def render(text: str, partner: dict, cfg: EmailConfig) -> str:
     first = (partner.get("contact_name") or "").split(" ")[0] or "there"
-    return (text.replace("{{first_name}}", first).replace("{{company}}", partner["name"])
-            .replace("{{sender_name}}", cfg.sender_name or "The Vireoka team"))
+    values = {"first_name": first, "company": partner["name"], "sender_name": cfg.sender_name or "The Vireoka team"}
+    for tag, value in values.items():
+        # {{tag}} is the merge-tag format; {tag} also appears in drafts written before v0.8.1
+        text = text.replace("{{" + tag + "}}", value).replace("{" + tag + "}", value)
+    return text
 
 
 def footer(cfg: EmailConfig) -> str:

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.8.1 — 2026-09-29
+
+### Partner contacts and mid-market targets (LiqMint Institutional)
+- **Contacts for 12 partners:** Fireblocks, BitGo, Anchorage, Coinbase Prime, BNY, U.S. Bank, PwC, Deloitte,
+  KPMG, EY, Securitize and Ondo now carry the best route in, publicly named role holders (each with a
+  source) and a timely hook. Only inboxes the organisations publish are used; no email is guessed.
+- **24 new targets a startup can actually sign:** stablecoin banks (Vantage Bank, Custodia, Lead Bank,
+  Cross River, Erebor, Western Alliance, Cari), stablecoin fintechs (Brale, Conduit, Borderless, M0, Agora),
+  wallet and compliance infrastructure (Utila, Elliptic, zerohash, Dfns) and mid-size advisory firms
+  (Forvis Mazars, Crowe, Protiviti, Wolf & Company, Grant Thornton, Baker Tilly, Klaros, Guidehouse).
+- They now rank above tier-1 banks and the Big Four; BNY, U.S. Bank and Coinbase Prime moved to P1.
+- New optional fields in `partner_targets.yaml`: `how_to_reach`, `contacts`, `recent_hook`,
+  `recent_hook_url`. Categories can set `middle` / `follow` to change the draft wording.
+- Re-running `vanguard partners import` adds segments for categories added since the first import.
+
+### Fixed
+- **Emails would have shown "{company}".** Design-partner drafts lost the `{{company}}` merge tag's
+  braces. New drafts keep it, and sending now also fills `{company}` in drafts already stored.
+
 ## 0.8.0 — 2026-09-28
 
 ### Added: PostgreSQL

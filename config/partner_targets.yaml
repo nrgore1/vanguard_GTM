@@ -3,10 +3,13 @@
 # Each target becomes a named partner under its category segment and gets its own copy of the
 # segment's 3-step email drafts, which still need admin approval before anything is sent.
 #
-# Researched 2026-09-28 from public sources (evidence_url). Contacts are ORGANISATION channels only:
+# Researched 2026-09-28 from public sources (evidence_url); LiqMint Institutional contacts refreshed 2026-09-29.
+# Contacts are ORGANISATION channels:
 # a generic inbox published on the org's own site, or its contact / partner-program page. Where
 # contact_email is empty, use the contact_url (often a form or partner application) or find the right
 # person yourself and add their business email on the partner page. Re-verify before outreach.
+# Optional per target: how_to_reach (best route in), contacts (people who PUBLICLY hold the relevant role,
+# each with the source that shows it - never guessed emails), recent_hook + recent_hook_url (why now).
 # priority_hint: P0 approach first. confidence: high = current first-party evidence; medium = check first.
 researched: '2026-09-28'
 properties:
@@ -19,8 +22,14 @@ properties:
       goals - the governed, auditable treasury-workflow gap LiqMint Institutional targets. Same metro as Vireoka.
     evidence_url: https://www.usbank.com/about-us-bank/news-and-stories/article-library/us-bank-launches-usbdc-stablecoin.html
     contact_email: null
-    contact_url: https://www.usbank.com/about-us-bank/contact-us.html
-    priority_hint: P0
+    contact_url: https://www.usbank.com/corporate-and-commercial-banking/contact-us.html
+    how_to_reach: "No startup/design-partner intake exists. Best route: a warm introduction to Jamie Walker (U.S. Bank is headquartered in Minneapolis, your metro). Otherwise the corporate contact form or the Connected Partnership Network (https://partnerdirectory.usbank.com/partner-with-us). No partnerships email published."
+    contacts:
+    - {name: "Jamie Walker", title: "Head of Digital Assets and Money Movement", source: "https://www.usbank.com/about-us-bank/news-and-stories/article-library/us-bank-launches-usbdc-stablecoin.html", confidence: high}
+    - {name: "Dominic Venturo", title: "Senior EVP and Chief Digital Officer (Walker's manager as of Oct 2025)", source: "https://www.usbank.com/about-us-bank/news-and-stories/article-library/us-bank-resumes-bitcoin-crypto-custody-services-for-institutional-investment-managers.html", confidence: high}
+    recent_hook: "Sep 9, 2026: USBDC stablecoin launched on Stellar; the live pilot tested minting, redemption, freeze and clawback controls"
+    recent_hook_url: "https://www.usbank.com/about-us-bank/news-and-stories/article-library/us-bank-launches-usbdc-stablecoin.html"
+    priority_hint: P1
     confidence: high
     kind: design_partner
   - category: institutional_design
@@ -31,8 +40,14 @@ properties:
       needs governed treasury workflows and evidence packs.
     evidence_url: https://www.bny.com/corporate/global/en/about-us/newsroom/press-release/bny-expands-relationship-circle-adds-institutional-grade-stablecoin-enablement-services.html
     contact_email: null
-    contact_url: https://www.bny.com/corporate/global/en/contact-us/business-inquiries.html
-    priority_hint: P0
+    contact_url: https://www.bny.com/corporate/global/en/about-us/technology-innovation/strategic-partnerships-and-innovation.html
+    how_to_reach: "SPIN page 'Join now' form adds you to the BNY FinTech Library. The Ascent PoC program needs Series A and paying customers, so not yet. Business inquiries: https://www.bny.com/corporate/global/en/contact-us/business-inquiries.html. No partnerships email published. BNY's Global Head of Digital Assets seat has no public holder since May 2025."
+    contacts:
+    - {name: "Carolyn Weinberg", title: "Chief Product and Innovation Officer (quoted on every 2026 digital-asset release)", source: "https://www.bny.com/corporate/global/en/about-us/newsroom/press-release/bny-expands-relationship-circle-adds-institutional-grade-stablecoin-enablement-services.html", confidence: high}
+    - {name: "Emily Portney", title: "Global Head of Asset Servicing", source: "https://www.bny.com/corporate/global/en/about-us/newsroom/press-release/bny-launches-global-digital-transfer-agency-capabilities-extending-leadership-in-fund-servicing-to-digital-market.html", confidence: medium}
+    recent_hook: "Jun 29, 2026: USDC became the first stablecoin on BNY Digital Asset Custody (store, transfer, mint, burn), with more issuers planned"
+    recent_hook_url: "https://www.bny.com/corporate/global/en/about-us/newsroom/press-release/bny-expands-relationship-circle-adds-institutional-grade-stablecoin-enablement-services.html"
+    priority_hint: P1
     confidence: high
     kind: design_partner
   - category: institutional_design
@@ -79,7 +94,13 @@ properties:
       and services partner tracks to co-sell governance and evidence tooling through.
     evidence_url: https://www.fireblocks.com/partners/
     contact_email: null
-    contact_url: https://www.fireblocks.com/partners/
+    contact_url: https://www.fireblocks.com/solutions/partners
+    how_to_reach: "Apply as a Technology Partner on the partner page. The page also shows a partnership-inquiries email behind Cloudflare protection - open it in a browser to copy it."
+    contacts:
+    - {name: "Ran Goldi", title: "SVP Payments & Network", source: "https://www.prnewswire.com/news-releases/fireblocks-launches-flow-stablecoin-acceptance-for-psps-and-fintechs-302788865.html", confidence: high}
+    - {name: "Michael Shaulov", title: "Co-Founder and CEO", source: "https://www.prnewswire.com/news-releases/major-european-bank-consortium-qivalis-plans-to-leverage-fireblocks-to-power-micar-compliant-euro-denominated-stablecoin-302748775.html", confidence: high}
+    recent_hook: "Apr 2026: 12-bank Qivalis consortium chose Fireblocks for a MiCAR euro stablecoin, stressing role-based governance and audit-ready reporting"
+    recent_hook_url: "https://www.prnewswire.com/news-releases/major-european-bank-consortium-qivalis-plans-to-leverage-fireblocks-to-power-micar-compliant-euro-denominated-stablecoin-302748775.html"
     priority_hint: P0
     confidence: high
     kind: co_sell
@@ -91,7 +112,13 @@ properties:
       work.
     evidence_url: https://www.bitgo.com/company/partnerships/
     contact_email: null
-    contact_url: https://www.bitgo.com/company/partnerships/
+    contact_url: https://go.bitgo.info/bitgo-partnership
+    how_to_reach: "BitGo Partner Program form - choose the Technology track. No partnerships email is published."
+    contacts:
+    - {name: "Ben Reynolds", title: "Managing Director of Stablecoins (as of May 2025 - confirm)", source: "https://www.coindesk.com/consensus-toronto-2025-coverage/2025/05/14/banks-exploring-stablecoin-amid-fears-of-losing-market-share-bitgo-executive-says", confidence: medium}
+    - {name: "Mike Belshe", title: "CEO and Co-founder", source: "https://www.businesswire.com/news/home/20260402135558/en/BitGo-Launches-BitGo-Mint-Native-Stablecoin-Minting-and-Redemption-for-Institutions", confidence: high}
+    recent_hook: "Apr 2026: BitGo Mint launched - stablecoin mint and redemption inside BitGo, relying on its policy controls and in-platform reporting"
+    recent_hook_url: "https://www.businesswire.com/news/home/20260402135558/en/BitGo-Launches-BitGo-Mint-Native-Stablecoin-Minting-and-Redemption-for-Institutions"
     priority_hint: P1
     confidence: high
     kind: co_sell
@@ -102,8 +129,14 @@ properties:
     why: Federally chartered digital-asset bank expanding institutional custody/settlement partnerships in 2026 (incl. State
       Street's stablecoin reserve fund) - a co-sell partner for governed workflows on its rails.
     evidence_url: https://www.crowdfundinsider.com/2026/05/281427-anchorage-digital-chosen-by-3iq-as-infrastructure-custody-partner-for-digital-assets-investment-platform/
-    contact_email: null
+    contact_email: partnerships@anchorage.com
     contact_url: https://www.anchorage.com/get-in-touch
+    how_to_reach: "partnerships@ is published in Anchorage's own 2022 release (may be dated); the current form has 'Agentic banking' and 'Stablecoin issuance' interest boxes - use both."
+    contacts:
+    - {name: "Sergio Mello", title: "Head of Stablecoins (as of Jun 2025 - confirm)", source: "https://www.anchorage.com/press-room/anchorage-digital-and-stablecoin-standard-unite-to-accelerate-stablecoin-innovation", confidence: medium}
+    - {name: "Nathan McCauley", title: "Co-Founder and CEO", source: "https://www.anchorage.com/insights/anchorage-digital-and-m0-partner-to-power-the-next-wave-of-stablecoin-builders", confidence: high}
+    recent_hook: "May 2026: Anchorage launched Agentic Banking with Google Cloud - AI agents transacting under spending-policy enforcement and pre-settlement compliance controls"
+    recent_hook_url: "https://www.anchorage.com/press-room/anchorage-digital-launches-agentic-banking-and-partners-with-google-cloud-to-power-the-operating-layer-for-ai-and-capital"
     priority_hint: P1
     confidence: medium
     kind: co_sell
@@ -115,7 +148,13 @@ properties:
       need audit-grade treasury evidence.
     evidence_url: https://kpmg.com/us/en/capabilities-services/financial-services-industry/kpmg-digital-assets-consulting.html
     contact_email: null
-    contact_url: https://kpmg.com/us/en/capabilities-services/financial-services-industry/kpmg-digital-assets-consulting.html
+    contact_url: https://kpmg.com/us/en/capabilities-services/alliances.html
+    how_to_reach: "Alliances contact form (choose Request for Services / Proposal). Precedent: KPMG's 2024 alliance with the crypto-accounting startup Cryptio. Caution: KPMG audits Tether's USDT reserves (Mar 2026), so auditor-independence rules may limit co-selling to audit clients. No partnerships email published."
+    contacts:
+    - {name: "Brian Consolvo", title: "Digital Assets Consulting Leader (led the Cryptio alliance)", source: "https://kpmg.com/kpmg-us/content/dam/kpmg/pdf/2026/fintech-da-q2-2026.pdf", confidence: high}
+    - {name: "Rob Sledge", title: "Co-Fintech and Digital Assets Audit Leader", source: "https://kpmg.com/kpmg-us/content/dam/kpmg/pdf/2026/fintech-da-q2-2026.pdf", confidence: high}
+    recent_hook: "Mar 2026: Tether hired KPMG to audit USDT reserves; Jun 2026 KPMG guide on stablecoins and tokenization for banking leaders"
+    recent_hook_url: "https://www.coindesk.com/markets/2026/03/27/tether-hires-kpmg-for-usdt-audit-brings-in-pwc-as-it-gears-up-for-u-s-expansion"
     priority_hint: P1
     confidence: high
     kind: co_sell
@@ -127,7 +166,13 @@ properties:
       GENIUS Act.
     evidence_url: https://the-cfo.io/2026/01/07/pwcs-digital-asset-expansion-puts-focus-on-treasury-plumbing/
     contact_email: null
-    contact_url: https://www.pwc.com/us/en/contact-us.html
+    contact_url: https://www.pwc.com/us/en/technology/alliances.html
+    how_to_reach: "US technology-alliances inquiry form (no startup program). The practice page has per-leader contact forms: https://www.pwc.com/us/en/services/digital-assets.html. No partnerships email published."
+    contacts:
+    - {name: "Cheryl Lesnik", title: "Partner, Digital Asset Audit Strategy & Growth Leader (best fit for audit evidence)", source: "https://www.pwc.com/us/en/services/digital-assets.html", confidence: high}
+    - {name: "Matt Blumenfeld", title: "Global and US Digital Assets Lead", source: "https://www.pwc.com/us/en/services/digital-assets.html", confidence: high}
+    recent_hook: "Jan 2026: PwC expanding crypto audit and consulting on the GENIUS Act and stablecoin rulemaking"
+    recent_hook_url: "https://www.theblock.co/post/384223/pwc-to-deepen-crypto-engagement-citing-us-regulatory-shift-ft"
     priority_hint: P2
     confidence: medium
     kind: co_sell
@@ -139,7 +184,13 @@ properties:
       for governance tooling.
     evidence_url: https://www.deloitte.com/us/en/dbriefs-webcasts/from-hype-to-utility-how-stablecoins-redefine-financial-infrastructure.html
     contact_email: null
-    contact_url: https://www2.deloitte.com/us/en/pages/about-deloitte/solutions/blockchain-digital-assets-solutions.html
+    contact_url: https://www.deloitte.com/us/en/alliances/deloitte-alliances.html
+    how_to_reach: "Ecosystems & Alliances form (no startup program). Practice page: https://www.deloitte.com/us/en/what-we-do/capabilities/blockchain-digital-assets.html. No partnerships email published."
+    contacts:
+    - {name: "Brian P. Hansen", title: "US Audit & Assurance Blockchain & Digital Assets Leader (best fit for audit evidence)", source: "https://www.deloitte.com/us/en/what-we-do/capabilities/blockchain-digital-assets.html", confidence: high}
+    - {name: "Tim Davis", title: "Principal, US Consulting Blockchain & Digital Assets Leader", source: "https://www.deloitte.com/us/en/about/people/profiles.timdavis%2Bd9e09063.html", confidence: high}
+    recent_hook: "May 2026: Deloitte forecast stablecoins could carry over $200B a year of US retail payments by 2030"
+    recent_hook_url: "https://www.prnewswire.com/news-releases/deloitte-predicts-ai-stablecoins-and-expansion-of-private-markets-may-reshape-financial-services-by-2030-302776944.html"
     priority_hint: P2
     confidence: medium
     kind: co_sell
@@ -151,7 +202,13 @@ properties:
       into LiqMint's governed settlement workflows.
     evidence_url: https://www.nasdaq.com/press-release/securitize-becomes-registered-investment-adviser-2026-07-27
     contact_email: null
-    contact_url: https://securitize.io/institutional-tokenization
+    contact_url: https://securitize.io/partner-ecosystem
+    how_to_reach: "Partner-ecosystem page (renders only in a browser - form not verified). Fund Services, which partnered with Upshift on audit-ready reporting in Apr 2026, is the closest team. No partnerships email published."
+    contacts:
+    - {name: "Graham Ferguson", title: "Head of Ecosystem", source: "https://cryptobriefing.com/securitize-tokenized-securities-clarity-act-resilience/", confidence: medium}
+    - {name: "Mikhail Davidyan", title: "Head of Fund Services", source: "https://www.prnewswire.com/news-releases/securitize-fund-services-and-upshift-partner-to-deliver-institutional-grade-reporting-for-onchain-vaults-302749745.html", confidence: high}
+    recent_hook: "Jul 2026 NYSE listing (SECZ); Q2 2026 results cite FINRA approval for tokenized-securities custody and atomic settlement"
+    recent_hook_url: "https://www.prnewswire.com/news-releases/securitize-reports-second-quarter-2026-results-302850119.html"
     priority_hint: P1
     confidence: high
     kind: integration
@@ -162,8 +219,14 @@ properties:
     why: Issues OUSG, one of the largest tokenized US Treasury funds, with a formal partner ecosystem - tokenized treasury
       collateral for governed institutional workflows.
     evidence_url: https://ondo.finance/ousg
-    contact_email: null
-    contact_url: https://ondo.finance/contact
+    contact_email: support@ondo.finance
+    contact_url: https://ondo.finance/ecosystem
+    how_to_reach: "Ecosystem partner form ('Join Our Network of Top-Tier Partners'). Ondo's docs route partnership inquiries to support@. Timing risk: since the founder's death in May 2026 there is a control dispute (acting CEO limited to day-to-day operations by court order) - expect slow decisions."
+    contacts:
+    - {name: "Katie Wheeler", title: "Managing Director, Global Partnerships", source: "https://ondo.finance/team", confidence: high}
+    - {name: "Min Lin", title: "Managing Director, Head of Global Business Development", source: "https://ondo.finance/team", confidence: high}
+    recent_hook: "Sep 24, 2026: onchain portfolio tokens based on BlackRock model portfolios (non-US investors)"
+    recent_hook_url: "https://www.theblock.co/news/markets/2026-09-24-ondo-launches-onchain-portfolio-tokens-based-blackrock-developed-strategies-416260"
     priority_hint: P1
     confidence: high
     kind: integration
@@ -203,6 +266,432 @@ properties:
     priority_hint: P2
     confidence: medium
     kind: integration
+  - category: custodians
+    name: "Coinbase Prime (Coinbase Institutional)"
+    website: "https://www.coinbase.com/prime"
+    location: "San Francisco, CA (remote-first)"
+    why: "Already a named LiqMint Institutional adapter; Coinbase is widening corporate fiat-to-stablecoin payments with Citi, which needs approval and evidence controls on each flow."
+    evidence_url: "https://www.theblock.co/news/business/2026-09-28-citi-coinbase-stablecoin-payments-corporate-clients-417082"
+    contact_email: null
+    contact_url: https://coinbase.az1.qualtrics.com/jfe/form/SV_3KjMYrpOim1tzgO
+    how_to_reach: "No open technology-partner program for Prime (the old Partner Network page now redirects). Use the Crypto-as-a-Service contact form, or a warm introduction. Coinbase publishes AMER_sales@coinbase.com, but that is a sales inbox, not a partnerships channel."
+    contacts:
+    - {name: "Alec Lovett", title: "Head of Infrastructure Product (best fit for an integration pitch)", source: "https://www.blockhead.co/2026/09/29/coinbase-teams-up-with-citi-on-fiat-to-stablecoin-business-payments-wins-cftc-clearinghouse-approval/", confidence: medium}
+    - {name: "Brett Tejpaul", title: "Head of Coinbase Institutional", source: "https://www.coinbase.com/institutional/about", confidence: high}
+    recent_hook: "Sep 28, 2026: Citi and Coinbase launch fiat-to-stablecoin corporate payments in the US"
+    recent_hook_url: "https://www.theblock.co/news/business/2026-09-28-citi-coinbase-stablecoin-payments-corporate-clients-417082"
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: advisory_firms
+    name: "EY US - Blockchain & Digital Assets"
+    website: "https://www.ey.com/en_us/industries/financial-services/digital-assets-and-crypto"
+    location: "New York, NY"
+    why: "EY's digital-asset practice builds privacy and audit tooling for institutions on public chains; a governance and evidence layer complements its client work."
+    evidence_url: "https://www.theblock.co/amp/news/ecosystems/2026-02-17-starkware-integrates-ey-built-nightfall-privacy-tech-into-starknet-to-provide-confidential-institutional-transactions-on-public-blockchains-390129"
+    contact_email: null
+    contact_url: https://www.ey.com/en_us/functional/forms/contact/contact-ey-alliances-team
+    how_to_reach: "EY Alliances contact form (meant for alliance discussions). Blockchain contact: https://blockchain.ey.com/contactus. No partnerships email published. Global blockchain leadership changed recently (interim leader)."
+    contacts:
+    - {name: "Matt Hatch", title: "Digital Assets Solution Leader (US)", source: "https://www.ey.com/en_us/industries/financial-services/digital-assets-and-crypto", confidence: medium}
+    - {name: "Mark Nichols", title: "Principal, co-leader of EY digital assets consulting", source: "https://www.coindesk.com/business/2026/01/28/forget-the-bank-account-ey-warns-firms-they-must-own-the-wallet-to-keep-their-customers", confidence: medium}
+    recent_hook: "Feb 2026: StarkWare integrated EY's Nightfall privacy layer for auditable confidential institutional transactions"
+    recent_hook_url: "https://www.theblock.co/amp/news/ecosystems/2026-02-17-starkware-integrates-ey-built-nightfall-privacy-tech-into-starknet-to-provide-confidential-institutional-transactions-on-public-blockchains-390129"
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: stablecoin_banks
+    name: "Vantage Bank Texas"
+    website: "https://www.vantage.bank"
+    location: "San Antonio, TX"
+    why: "Co-issuer of the live Avit/Hazel tokenized-deposit-plus-stablecoin token (Ethereum mainnet since Mar 2026, full availability Q4 2026); a community bank without a tier-1 vendor process. Its compliance screening and operational controls around each deposit-to-stablecoin conversion are exactly LiqMint's workflow."
+    evidence_url: "https://custodiabank.com/press/new-live-infrastructure-for-banks-and-credit-unions-introduces-a-unified-token/"
+    contact_email: null
+    contact_url: https://www.hazelnetwork.com/demo-request
+    how_to_reach: "Pitch Vantage and Custodia as one joint deal: a yes opens the Hazel consortium. Warm route: the Texas Bankers Association 'Innovation Magnet' tokenized-deposit pilot. Bank contact page: https://www.vantage.bank/contact-us"
+    contacts:
+    - {name: "Shawn Main", title: "Chief Business Architect (named contact for Hazel consortium onboarding)", source: "https://www.texasbankers.com/tba-to-offer-pilot-access-for-tokenized-deposit-capabilities-following-vantage-bank-launch/", confidence: high}
+    - {name: "Jeff Sinnott", title: "President & CEO", source: "https://www.prnewswire.com/news-releases/vantage-bank-and-custodia-release-white-paper-unveiling-hazel-network-302804851.html", confidence: high}
+    recent_hook: "Jun 18, 2026 Hazel Network white paper: 4-6 week integration for member banks, full availability Q4 2026"
+    recent_hook_url: "https://www.prnewswire.com/news-releases/vantage-bank-and-custodia-release-white-paper-unveiling-hazel-network-302804851.html"
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: stablecoin_banks
+    name: "Custodia Bank"
+    website: "https://custodiabank.com"
+    location: "Wyoming (SPDI charter)"
+    why: "The other co-issuer of Avit/Hazel, live on Ethereum mainnet; a small founder-led Wyoming bank whose positioning is compliance-first, so independent policy evidence per conversion fits its story."
+    evidence_url: "https://finance.yahoo.com/news/custodia-vantage-expand-pilot-live-212809514.html"
+    contact_email: info@custodiabank.com
+    contact_url: https://custodiabank.com
+    how_to_reach: "Short note to the published general inbox, or to Caitlin Long, who is publicly active on X and LinkedIn. Pair with the Vantage Bank pitch."
+    contacts:
+    - {name: "Caitlin Long", title: "Founder & CEO", source: "https://www.prnewswire.com/news-releases/vantage-bank-and-custodia-release-white-paper-unveiling-hazel-network-302804851.html", confidence: high}
+    recent_hook: "Jun 18, 2026: Hazel white paper with Vantage Bank ('six years in the making')"
+    recent_hook_url: "https://custodiabank.com/press/new-live-infrastructure-for-banks-and-credit-unions-introduces-a-unified-token/"
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: stablecoin_banks
+    name: "Lead Bank"
+    website: "https://www.lead.bank"
+    location: "Kansas City, MO"
+    why: "Live USDC settlement with Visa, stablecoin-backed cards and on/off-ramps; a VC-backed community bank that buys from startups and has a Head of Stablecoins. Caveat: it builds some agent and payment controls itself."
+    evidence_url: "https://www.lead.bank/blog-posts/banks-blockchains-and-the-new-rail-on-the-block"
+    contact_email: null
+    contact_url: https://www.lead.bank/contact
+    how_to_reach: "Contact Eleni Steinman directly, referencing Lead's Sep 29, 2026 'Moving Money with Agents' post - its call for agent authority that is 'specific, visible, and revocable' matches LiqMint's approval and evidence chain. No partnerships inbox published."
+    contacts:
+    - {name: "Eleni Steinman", title: "Head of Stablecoins", source: "https://www.lead.bank/blog-posts/banks-blockchains-and-the-new-rail-on-the-block", confidence: high}
+    - {name: "Jackie Reses", title: "Co-founder & CEO", source: "https://www.lead.bank/blog/moving-money-with-agents", confidence: high}
+    recent_hook: "Sep 29, 2026: 'Moving Money with Agents' - bounded agent authority, Know-Your-Agent, enforcement before funds leave the bank"
+    recent_hook_url: "https://www.lead.bank/blog/moving-money-with-agents"
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: stablecoin_banks
+    name: "Cross River Bank"
+    website: "https://www.crossriver.com"
+    location: "Fort Lee, NJ"
+    why: "Live stablecoin payments on its COS core, stablecoin-enabled accounts and early Visa USDC settlement; a mid-size fintech-partner bank with a Head of Crypto. Vendor review is real but not tier-1."
+    evidence_url: "https://www.crossriver.com/newsroom/cross-river-launches-stablecoin-payments-with-infrastructure-to-power-the-future-of-onchain-finance"
+    contact_email: null
+    contact_url: https://www.crossriver.com/contact-us
+    how_to_reach: "Reach Luca Cosentino with one PoV workflow (fintech-partner stablecoin payouts or prefunding) and an evidence pack that supports scaling 'without compromising on regulatory expectations'."
+    contacts:
+    - {name: "Luca Cosentino", title: "Head of Crypto (as of Nov 2025 - confirm)", source: "https://www.crossriver.com/newsroom/cross-river-launches-stablecoin-payments-with-infrastructure-to-power-the-future-of-onchain-finance", confidence: medium}
+    - {name: "Gilles Gade", title: "Founder, President & CEO", source: "https://usa.visa.com/about-visa/newsroom/press-releases.releaseId.21951.html", confidence: high}
+    recent_hook: "Dec 2025: named an early US bank in Visa's USDC settlement"
+    recent_hook_url: "https://usa.visa.com/about-visa/newsroom/press-releases.releaseId.21951.html"
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: stablecoin_banks
+    name: "Erebor Bank"
+    website: "https://erebor.bank"
+    location: "Columbus, OH / New York, NY"
+    why: "Stablecoin-native bank (opened Feb 2026) with live stablecoin-to-fiat conversion and plans to issue its own stablecoin. Its Sep 2026 conversion-arbitrage episode is a concrete policy-enforcement gap. Well funded, so a harder sale."
+    evidence_url: "https://fintechobserver.substack.com/p/erebor"
+    contact_email: null
+    contact_url: https://erebor.bank
+    how_to_reach: "Approach the Chief Strategy Officer about conversion-policy controls and evidence ahead of stablecoin issuance; investor-network (Founders Fund, 8VC) introductions are the likeliest warm path. Verify the domain before use - lookalike domains exist."
+    contacts:
+    - {name: "Jacob Hirshman", title: "Chief Strategy Officer", source: "https://fintechobserver.substack.com/p/erebor", confidence: medium}
+    - {name: "Owen Rapaport", title: "CEO", source: "https://fintechobserver.substack.com/p/erebor", confidence: medium}
+    recent_hook: "Sep 15, 2026: Erebor restricted free stablecoin-to-cash conversion after trading firms used it for peg arbitrage"
+    recent_hook_url: "https://cryptobriefing.com/erebor-bank-tightens-stablecoin-conversion-terms/"
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: stablecoin_banks
+    name: "Western Alliance Bank (Digital Assets Group)"
+    website: "https://www.westernalliancebancorporation.com"
+    location: "Phoenix, AZ"
+    why: "WA VenueX (Jul 2026) offers 24/7 USD settlement and stablecoin mint/redeem, with tokenization and custody phasing in. A large public regional, so expect a full vendor review; a narrow PoV on mint/redeem operations is the opening."
+    evidence_url: "https://www.westernalliancebancorporation.com/news/western-alliance-bank-launches-venuex-institutional-financial-platform"
+    contact_email: null
+    contact_url: https://www.westernalliancebancorporation.com/expertise/blockchain-and-digital-assets
+    how_to_reach: "Approach David Fragale about governance and evidence for VenueX mint/redeem operations as phases roll out."
+    contacts:
+    - {name: "David Fragale", title: "Senior Managing Director, Digital Assets Group", source: "https://www.westernalliancebancorporation.com/news/western-alliance-bank-launches-venuex-institutional-financial-platform", confidence: high}
+    recent_hook: "Jul 24, 2026: WA VenueX always-on institutional liquidity hub launched"
+    recent_hook_url: "https://www.businesswire.com/news/home/20260724077921/en/Western-Alliance-Bank-Launches-WA-VenueX-Always-On-Institutional-Liquidity-Hub-and-Financial-Platform-for-the-On-Chain-Economy"
+    priority_hint: P2
+    confidence: medium
+    kind: design_partner
+  - category: stablecoin_banks
+    name: "The Cari Network"
+    website: "https://www.cari.com"
+    location: "United States"
+    why: "Bank-governed tokenized-deposit network (ZKsync Prividium) whose members include First Horizon, Huntington, KeyBank and M&T. The members are too large to sign directly; Cari is the channel to a per-bank PoV."
+    evidence_url: "https://www.ledgerinsights.com/us-tokenized-deposit-network-cari-raises-32-5-million-from-banks/"
+    contact_email: null
+    contact_url: https://www.cari.com/
+    how_to_reach: "Offer LiqMint as a per-member governance and evidence module: a partner PoV with one member bank. The ABA Premier Partner Network (Cari joined Jul 2026) is another way in."
+    contacts:
+    - {name: "Gene Ludwig", title: "CEO", source: "https://www.coindesk.com/business/2026/03/17/u-s-regional-banks-building-tokenized-deposit-network-on-zksync-to-rival-stablecoins", confidence: high}
+    recent_hook: "Sep 2026: raised $32.5M from member banks; 40 more banks in discussions"
+    recent_hook_url: "https://www.sullcrom.com/About/News-and-Events/Highlights/2026/September/SC-Advises-The-Cari-Network-Strategic-Investment-Consortium-Banks"
+    priority_hint: P2
+    confidence: medium
+    kind: design_partner
+  - category: stablecoin_fintechs
+    name: "Brale"
+    website: "https://brale.xyz"
+    location: "Des Moines, IA"
+    why: "Stablecoin issuer-as-a-service running 300+ programs, now selling to community banks and credit unions; every branded program needs mint, burn and transfer policy controls and auditor evidence."
+    evidence_url: "https://brale.xyz/blog/august-2026-product-updates"
+    contact_email: null
+    contact_url: https://brale.xyz/contact
+    how_to_reach: "Contact form, framed as a governance and evidence add-on for Brale's bank and credit-union program customers; a short, specific note to Ben Milne may also land."
+    contacts:
+    - {name: "Ben Milne", title: "Founder & CEO", source: "https://usa.visa.com/about-visa/newsroom/press-releases.releaseId.22481.html", confidence: high}
+    recent_hook: "Jul 29, 2026: ION Protocol for cross-chain mint/burn; Jun 2026 Visa proof of concept on the Canton Network"
+    recent_hook_url: "https://www.coindesk.com/business/2026/07/29/stablecoin-firm-brale-says-new-protocol-can-remove-a-major-hurdle-to-scaling-custom-tokens"
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: stablecoin_fintechs
+    name: "Conduit"
+    website: "https://conduitpay.com"
+    location: "Boston, MA"
+    why: "B2B cross-border payments and treasury over stablecoins and fiat rails for 100+ business clients; payouts for fintechs such as Onafriq need approval policies and per-payment settlement evidence."
+    evidence_url: "https://www.businesswire.com/news/home/20250528156066/en/Conduit-Raises-$36-Million-Series-A-to-Scale-Use-of-Stablecoins-for-Cross-Border-Payments"
+    contact_email: null
+    contact_url: https://conduitpay.com/get-a-demo
+    how_to_reach: "Demo form, framed around pre-settlement policy checks and evidence packs Conduit can hand to its fintech and PSP clients; a follow-up to the CEO is realistic at Series A."
+    contacts:
+    - {name: "Kirill Gertman", title: "Founder & CEO", source: "https://techcabal.com/2026/02/11/onafriq-joins-africas-stablecoin-shift-in-cross-border-payments/", confidence: high}
+    recent_hook: "Feb 2026: Onafriq (40 African countries) chose Conduit for USDC funding, treasury and payouts"
+    recent_hook_url: "https://techcabal.com/2026/02/11/onafriq-joins-africas-stablecoin-shift-in-cross-border-payments/"
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: stablecoin_fintechs
+    name: "Borderless.xyz"
+    website: "https://borderless.xyz"
+    location: "New York, NY (unconfirmed)"
+    why: "Stablecoin on/off-ramp orchestration across 90+ countries, piloting a 'single-audit compliance model' with Mastercard; a portable policy-and-evidence layer supports that model directly."
+    evidence_url: "https://www.pymnts.com/cryptocurrency/2026/mastercard-borderlessxyz-team-cross-border-stablecoin-payments/"
+    contact_email: null
+    contact_url: https://nw9cv9euu8n.typeform.com/to/TAn3auwj
+    how_to_reach: "Contact form (linked from borderless.xyz/press); pitch LiqMint's evidence pack as the audit artifact behind their single-audit model, citing the CEO's public comments that compliance 'doesn't scale'."
+    contacts:
+    - {name: "Kevin Lehtiniitty", title: "Co-Founder & CEO", source: "https://www.prnewswire.com/news-releases/mastercard-taps-borderlessxyz-for-crypto-partner-program-as-stablecoins-move-into-mainstream-adoption-302713335.html", confidence: high}
+    recent_hook: "Aug 5, 2026: Mastercard Crypto Credential for cross-border stablecoin flows under a single-audit model"
+    recent_hook_url: "https://www.pymnts.com/cryptocurrency/2026/mastercard-borderlessxyz-team-cross-border-stablecoin-payments/"
+    priority_hint: P0
+    confidence: high
+    kind: design_partner
+  - category: stablecoin_fintechs
+    name: "M0"
+    website: "https://www.m0.org"
+    location: "Unverified"
+    why: "Modular stablecoin-issuance infrastructure behind PYUSDx, MGUSD and Anchorage's issuance platform; every issuer on M0 needs policy-controlled mint, redeem and distribution plus auditor evidence."
+    evidence_url: "https://www.coindesk.com/business/2026/04/30/regulated-crypto-custody-firm-anchorage-partners-with-stablecoin-tech-provider-m0"
+    contact_email: null
+    contact_url: https://www.m0.org/contact-us
+    how_to_reach: "Contact form; propose LiqMint as an application-layer governance module M0 issuers can plug in. Coordinate with the Anchorage pitch to avoid channel conflict."
+    contacts:
+    - {name: "Luca Prosperi", title: "Co-founder & CEO", source: "https://www.coindesk.com/business/2026/04/30/regulated-crypto-custody-firm-anchorage-partners-with-stablecoin-tech-provider-m0", confidence: high}
+    recent_hook: "Jun 2026: MoneyGram launched MGUSD on M0; Apr 2026 Anchorage partnership"
+    recent_hook_url: "https://www.m0.org/newsroom"
+    priority_hint: P1
+    confidence: high
+    kind: design_partner
+  - category: stablecoin_fintechs
+    name: "Agora (AUSD)"
+    website: "https://www.agora.finance"
+    location: "New York, NY (planned trust bank)"
+    why: "Stablecoin API and white-label issuer moving into enterprise payroll and B2B payments, building a national trust bank that needs documented policy enforcement and audit evidence from day one."
+    evidence_url: "https://www.coindesk.com/business/2026/01/24/agora-s-nick-van-eck-bets-on-stablecoin-boom-in-enterprise-payments"
+    contact_email: null
+    contact_url: https://www.agora.finance
+    how_to_reach: "Demo form toward the new Head of Operations; pitch governance and evidence for the trust bank's settlement and custody operations while they are being set up for the OCC."
+    contacts:
+    - {name: "Tanya Denisova", title: "Head of Operations (proposed COO of the trust bank)", source: "https://www.coindesk.com/business/2026/06/23/former-robinhood-crypto-coo-tanya-denisova-joins-stablecoin-issuer-agora-as-head-of-operations", confidence: high}
+    - {name: "Nick van Eck", title: "Co-founder & CEO", source: "https://www.pymnts.com/cryptocurrency/2026/agora-seeks-us-bank-charter-to-scale-digital-dollars/", confidence: high}
+    recent_hook: "Apr 2026 OCC trust-charter application; conditional approval reported Sep 2026 (date unverified)"
+    recent_hook_url: "https://coingeek.com/stablecoin-banks-get-us-licenses-even-if-customers-are-robots/"
+    priority_hint: P1
+    confidence: medium
+    kind: design_partner
+  - category: wallet_compliance_infra
+    name: "Utila"
+    website: "https://utila.io"
+    location: "New York, NY"
+    why: "MPC wallet and stablecoin-operations platform for 200+ PSPs, neobanks and issuers; its new Licensed Partner Network brings in fintechs that will need governance evidence. Overlap: Utila has its own policy engine, so pitch simulation and evidence on top of it."
+    evidence_url: "https://www.prnewswire.com/news-releases/utila-triples-valuation-in-six-months-as-stablecoin-infrastructure-demand-triggers-22m-extension-round-302545722.html"
+    contact_email: null
+    contact_url: https://utila.io/contact
+    how_to_reach: "Contact form; ask to join the integration partners or the Licensed Partner Network as the governance-and-evidence partner for its fintechs."
+    contacts:
+    - {name: "Bentzi Rabi", title: "Co-founder & CEO", source: "https://utila.io/blog/utila-licensed-partner-network-for-fintechs", confidence: high}
+    recent_hook: "Sep 1, 2026: Licensed Partner Network launched (Fipto, CoinGate, Balance, Surus)"
+    recent_hook_url: "https://utila.io/blog/utila-licensed-partner-network-for-fintechs"
+    priority_hint: P1
+    confidence: high
+    kind: integration
+  - category: wallet_compliance_infra
+    name: "Elliptic"
+    website: "https://www.elliptic.co"
+    location: "London, UK"
+    why: "Blockchain analytics and KYT with a growing stablecoin-issuer focus and a new Agentic Design Partner Program; LiqMint's pre-execution checks and evidence packs sit next to Elliptic's screening."
+    evidence_url: "https://channellife.com.au/story/elliptic-adds-circle-affiliate-to-design-partner-scheme"
+    contact_email: null
+    contact_url: https://www.elliptic.co/partners
+    how_to_reach: "Apply to Partner Connect as an integration partner, and separately ask to join the Agentic Design Partner Program. Growth-stage, so a slower cycle."
+    contacts:
+    - {name: "Simone Maini", title: "CEO", source: "https://www.coindesk.com/business/2026/05/12/elliptic-raises-usd120-million-backed-by-nasdaq-deutsche-bank-as-ai-reshapes-crypto-security", confidence: high}
+    recent_hook: "May 2026: $120M raise to build compliance agents; Jul 2026 Agentic Design Partner Program with Circle"
+    recent_hook_url: "https://www.coindesk.com/business/2026/05/12/elliptic-raises-usd120-million-backed-by-nasdaq-deutsche-bank-as-ai-reshapes-crypto-security"
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: wallet_compliance_infra
+    name: "zerohash"
+    website: "https://zerohash.com"
+    location: "Chicago, IL"
+    why: "Stablecoin issuance and payments infrastructure for Morgan Stanley, Interactive Brokers and Stripe, with an OCC trust charter pending; better as a partner whose clients add LiqMint than as a quick buyer."
+    evidence_url: "https://www.coindesk.com/policy/2026/03/05/zerohash-applies-for-national-trust-bank-charter-to-expand-regulated-stablecoin-services"
+    contact_email: null
+    contact_url: https://zerohash.com
+    how_to_reach: "Partnership or integration angle: LiqMint as the governance layer zerohash's bank and fintech clients put on top. Contact page not verified."
+    contacts:
+    - {name: "Edward Woodford", title: "Founder & CEO", source: "https://www.globenewswire.com/news-release/2026/01/21/3223036/0/en/zerohash-releases-the-2026-stablecoin-momentum-report-demonstrating-stablecoins-have-become-core-financial-infrastructure.html", confidence: high}
+    recent_hook: "Jan 2026 Stablecoin Momentum Report: stablecoin customers up 146%, volume up 690% year over year"
+    recent_hook_url: "https://www.globenewswire.com/news-release/2026/01/21/3223036/0/en/zerohash-releases-the-2026-stablecoin-momentum-report-demonstrating-stablecoins-have-become-core-financial-infrastructure.html"
+    priority_hint: P2
+    confidence: medium
+    kind: integration
+  - category: wallet_compliance_infra
+    name: "Dfns"
+    website: "https://dfns.co"
+    location: "Paris, France"
+    why: "Non-custodial wallet and custody infrastructure for 400+ institutions, repositioned as a core banking platform for digital assets. High overlap with its own policy engine - only worth it as an integration where LiqMint consumes Dfns policy and signing events for simulation, settlement verification and evidence."
+    evidence_url: "https://highways.today/2026/06/06/dfns-banking-on-blockchain/"
+    contact_email: null
+    contact_url: https://dfns.co/contact
+    how_to_reach: "Contact form (they say they reply within one business day); propose an evidence-export integration, not policy enforcement."
+    contacts:
+    - {name: "Clarisse Hagège", title: "CEO & Founder", source: "https://highways.today/2026/06/06/dfns-banking-on-blockchain/", confidence: high}
+    recent_hook: "Jun 2026: repositioned as a core banking platform for digital assets"
+    recent_hook_url: "https://highways.today/2026/06/06/dfns-banking-on-blockchain/"
+    priority_hint: P2
+    confidence: medium
+    kind: integration
+  - category: midsize_advisory
+    name: "Forvis Mazars US"
+    website: "https://www.forvismazars.us"
+    location: "Springfield, MO"
+    why: "Named Blockchain & Digital Assets practice plus a financial-services risk and regulatory team, publishing GENIUS Act and OCC-rule guidance; a large community and regional bank client base - LiqMint's mid-market buyer."
+    evidence_url: "https://www.forvismazars.us/forsights/2025/11/stablecoin-reserve-attestations-key-considerations-for-compliance"
+    contact_email: null
+    contact_url: https://www.forvismazars.us/contact-us
+    how_to_reach: "Go to the risk and regulatory consulting side, not attest: LiqMint's evidence packs feed the monthly GENIUS reserve reporting. Where Forvis Mazars attests a client's reserves it can refer but not co-sell."
+    contacts:
+    - {name: "Nik Fahrer", title: "Blockchain & Digital Assets Practice Leader", source: "https://www.forvismazars.us/forsights/2025/10/stablecoin-insights-the-genius-act-its-implications", confidence: high}
+    - {name: "Bobby Bean", title: "Managing Director, Financial Services Risk & Regulatory Consulting", source: "https://www.forvismazars.us/forsights/2025/10/stablecoin-insights-the-genius-act-its-implications", confidence: high}
+    recent_hook: "Mar 2026: analysis of the OCC's proposed GENIUS rule - custody safeguards, monthly reserve reports, Jan 18, 2027 effective date"
+    recent_hook_url: "https://www.forvismazars.us/forsights/2026/03/preliminary-insights-on-the-occs-proposed-stablecoin-framework"
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: midsize_advisory
+    name: "Crowe LLP"
+    website: "https://www.crowe.com"
+    location: "Chicago, IL"
+    why: "Combined blockchain and digital-asset practice (consulting, stablecoin attestation, SOC readiness) with a deep bank client base and a formal technology alliance program; its Feb 2026 LogicGate bank-GRC alliance is the same shape as a LiqMint partnership."
+    evidence_url: "https://www.crowe.com/insights/asset/2/2026-future-of-fintech-payments-baas-and-blockchain"
+    contact_email: null
+    contact_url: https://www.crowe.com/about-us/alliances
+    how_to_reach: "Approach Tom Lazard's consulting team with LiqMint as an accelerator for digital-asset controls at banks (Crowe's own line: 'transparency does not automatically equal auditability'). Co-selling is barred at Crowe's attest clients."
+    contacts:
+    - {name: "Tom Lazard", title: "Partner, Consulting, Crowe Advisory LLC", source: "https://www.crowe.com/insights/take-into-account/genius-act-a-defining-moment-for-stablecoin-regulation", confidence: high}
+    - {name: "Sara Krople", title: "Partner, Audit & Assurance", source: "https://www.crowe.com/insights/take-into-account/genius-act-a-defining-moment-for-stablecoin-regulation", confidence: high}
+    recent_hook: "Feb 24, 2026: Crowe and LogicGate strategic alliance for bank GRC accelerators"
+    recent_hook_url: "https://www.prnewswire.com/news-releases/crowe-and-logicgate-form-strategic-alliance-to-deliver-financial-services-grc-accelerators-302695327.html"
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: midsize_advisory
+    name: "Protiviti"
+    website: "https://www.protiviti.com/us-en"
+    location: "Menlo Park, CA"
+    why: "Consulting-only (no financial-statement audits, so no independence limits) with a US Digital Assets & Blockchain practice producing 2025-26 stablecoin and tokenized-deposit work, and a formal Technology Partners program."
+    evidence_url: "https://www.protiviti.com/us-en/whitepaper/crypto-compliance-in-focus-regulatory-view"
+    contact_email: null
+    contact_url: https://www.protiviti.com/us-en/technology-partners
+    how_to_reach: "Technology-partner inquiry form naming Claudia Kuzma; in parallel, pitch the financial-services risk and compliance leaders with LiqMint as the controls-plus-evidence layer. The cleanest co-sell path on the list."
+    contacts:
+    - {name: "Claudia Kuzma", title: "Ecosystem & Strategic Alliance Leader", source: "https://www.protiviti.com/us-en/technology-partners", confidence: high}
+    - {name: "Carol Beaumier", title: "Senior Managing Director, Risk & Compliance", source: "https://blog.protiviti.com/2025/11/07/north-american-banks-begin-offering-tokenized-deposits-what-it-means-for-the-industry-and-its-customers/", confidence: high}
+    recent_hook: "Mar 2026 (Forbes): Protiviti MD Jim DeLoach urges CFOs adopting stablecoins to redesign controls and blueprint treasury flows"
+    recent_hook_url: "https://www.forbes.com/sites/jimdeloach/2026/03/02/from-stablecoin-to-the-rise-of-intelligent-money-movement-what-cfos-should-know-and-do-now/"
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: midsize_advisory
+    name: "Wolf & Company"
+    website: "https://www.wolfandco.com"
+    location: "Boston, MA"
+    why: "PCAOB-registered, about ten years of digital-asset work with stablecoin issuers and custodians as clients, banking roots and a fintech practice; published a GENIUS monthly reserve-exam guide in Sep 2026 and is growing fast."
+    evidence_url: "https://www.wolfandco.com/resources/insights/preparing-for-the-genius-act-monthly-stablecoin-reserve-examinations/"
+    contact_email: null
+    contact_url: https://www.wolfandco.com/industries/digital-assets/
+    how_to_reach: "Offer LiqMint's evidence packs as the audit-ready data source behind the readiness questions in their Sep 2026 guide; frame as referral and readiness, not co-sell, where they examine the issuer's reserves."
+    contacts:
+    - {name: "Brandon J. Chasse", title: "Manager, author of the GENIUS reserve-exam guide", source: "https://www.wolfandco.com/resources/insights/preparing-for-the-genius-act-monthly-stablecoin-reserve-examinations/", confidence: high}
+    recent_hook: "Aug 2026: ranked the #1 fastest-growing organic accounting firm; new Dallas and Miami offices"
+    recent_hook_url: "https://www.wolfandco.com/resources/news/wolf-company-named-1-fastest-growing-organic-accounting-firm-with-multiple-2026-list-recognitions/"
+    priority_hint: P0
+    confidence: high
+    kind: co_sell
+  - category: midsize_advisory
+    name: "Grant Thornton (US)"
+    website: "https://www.grantthornton.com"
+    location: "Chicago, IL"
+    why: "National Blockchain, Digital Assets & Web3 practice (stablecoin attestation, custody SOC reports, forensic tooling) whose leader also runs Northeast Financial Institutions - a direct route to banks."
+    evidence_url: "https://www.grantthornton.com/insights/articles/banking/2025/genius-act-means-for-banks"
+    contact_email: null
+    contact_url: https://www.grantthornton.com/request-a-meeting
+    how_to_reach: "Request a meeting via the digital-assets practice asking for Markus Veith; pitch the advisory and forensic side. Issuers it attests are off-limits for co-selling."
+    contacts:
+    - {name: "Markus Veith", title: "Partner; National Industry Leader, Blockchain, Digital Assets & Web3", source: "https://www.grantthornton.com/people/new-york/nyc/veith-markus", confidence: high}
+    recent_hook: "Nov 2025: GENIUS Act analysis for banks - deposit flight, affiliate yield, monthly attestations"
+    recent_hook_url: "https://www.grantthornton.com/insights/articles/banking/2025/genius-act-means-for-banks"
+    priority_hint: P1
+    confidence: high
+    kind: co_sell
+  - category: midsize_advisory
+    name: "Baker Tilly US"
+    website: "https://www.bakertilly.com"
+    location: "Chicago, IL"
+    why: "Digital Assets service line (controls, audit, BSA/AML, SOC) and a large financial-institutions base, enlarged by the Moss Adams combination; stablecoin depth is thinner than Crowe's or Forvis Mazars'."
+    evidence_url: "https://www.bakertilly.com/insights/the-genius-act-what-businesses-need-to-know-about"
+    contact_email: null
+    contact_url: https://www.bakertilly.com/services/digital-assets
+    how_to_reach: "Contact the Risk Advisory digital-asset principals; pitch LiqMint as the control and evidence layer for bank clients' stablecoin due diligence. Standard independence limits at audit clients."
+    contacts:
+    - {name: "Christopher J. Tait", title: "Principal, Risk Advisory (digital assets)", source: "https://www.bakertilly.com/contact/directory/christopher-tait", confidence: high}
+    recent_hook: "Nov 2025: new senior leadership team after the Moss Adams combination"
+    recent_hook_url: "https://www.bakertilly.com/news/baker-tilly-announces-new-senior-leadership-team"
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: midsize_advisory
+    name: "Klaros Group"
+    website: "https://www.klaros.com"
+    location: "Washington, DC (unverified)"
+    why: "Bank and fintech regulatory boutique with a dedicated stablecoin issuer strategy and operations service; handles charters and launches for the exact issuers and banks LiqMint targets, with no audit practice to limit referrals."
+    evidence_url: "https://www.klaros.com/stablecoin-issuer-strategy-operations"
+    contact_email: hello@klaros.com
+    contact_url: https://www.klaros.com/contact
+    how_to_reach: "Email the published general inbox, positioning LiqMint as the governance and evidence stack its stablecoin and charter clients need for examiner review; Klaros Capital (its investing arm) is a second route."
+    contacts:
+    - {name: "Konrad Alt", title: "Co-founder", source: "https://www.klaros.com/post/2025-was-a-heckuva-year-for-klaros-2026-is-looking-even-better", confidence: medium}
+    recent_hook: "Jan 2026: added six partners and expanded its product-launch practice to stablecoin work"
+    recent_hook_url: "https://www.klaros.com/post/2025-was-a-heckuva-year-for-klaros-2026-is-looking-even-better"
+    priority_hint: P1
+    confidence: medium
+    kind: co_sell
+  - category: midsize_advisory
+    name: "Guidehouse"
+    website: "https://guidehouse.com"
+    location: "McLean, VA"
+    why: "Financial-services consultancy publishing quarterly 2026 digital-asset insights for banks on stablecoin payments and tokenization compliance; consulting-only, but serves large banks and regulators and has no startup alliance program."
+    evidence_url: "https://guidehouse.com/insights/financial-services/2026/q2-digital-asset"
+    contact_email: null
+    contact_url: https://guidehouse.com
+    how_to_reach: "Reach the article authors via LinkedIn or a general inquiry; pitch LiqMint as part of the orchestration layer Guidehouse describes for banks. Lower probability."
+    contacts:
+    - {name: "Jason Park", title: "Director, Financial Services", source: "https://guidehouse.com/insights/financial-services/2026/digital-assets-inflection", confidence: high}
+    recent_hook: "Jul 2026: 'An inflection point for digital assets' urging banks to build compliance frameworks now"
+    recent_hook_url: "https://guidehouse.com/insights/financial-services/2026/digital-assets-inflection"
+    priority_hint: P2
+    confidence: medium
+    kind: co_sell
   vireoka:
   - category: enterprise_design
     name: U.S. Bancorp (U.S. Bank)

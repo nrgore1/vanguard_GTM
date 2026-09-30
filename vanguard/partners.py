@@ -73,9 +73,10 @@ def draft_messages(p: Property, cat: dict, kind: str) -> list[OutreachStep]:
     delays = playbooks()["message_rules"]["default_delays_days"]
     subj = f"{{{{company}}}} + {p.name}: {'a small pilot idea' if kind == 'design_partner' else 'partnership idea'}"
     intro = (f"Hi {{{{first_name}}}},\n\nI'm {{{{sender_name}}}}, and I'm building {p.name} - {line}.\n\n"
-             f"I'm reaching out because {cat['angle']}. " + _MIDDLE[kind].format(offer=cat["offer"]) +
+             f"I'm reaching out because {cat['angle']}. " + cat.get("middle", _MIDDLE[kind]).replace("{offer}", cat["offer"]) +
              "\n\nWould a 20-minute call in the next two weeks be worth it?\n\nThanks,\n{{sender_name}}")
-    follow = f"Hi {{{{first_name}}}},\n\nFollowing up briefly on my note about {p.name}. {_FOLLOW[kind]}\n\n{{{{sender_name}}}}"
+    follow = (f"Hi {{{{first_name}}}},\n\nFollowing up briefly on my note about {p.name}. {cat.get('follow', _FOLLOW[kind])}"
+              "\n\n{{sender_name}}")
     close = (f"Hi {{{{first_name}}}},\n\nI don't want to crowd your inbox, so this is my last note for now. If "
              f"{cat['offer']} becomes interesting later, just reply here and I'll pick it up.\n\nAll the best,\n{{{{sender_name}}}}")
     return [OutreachStep(step=1, delay_days=delays[0], subject=subj, body=intro),

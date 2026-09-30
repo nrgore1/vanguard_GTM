@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.8.0 · updated 2026-09-28
+Version 0.8.1 · updated 2026-09-28
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -84,6 +84,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-26 | Import researched partners | Users get 403. The admin import has no errors and creates or updates every organisation in the YAML (`source=research`). Fireblocks and KPMG enrich the playbook examples with no duplicates. India Association of Minnesota sits under the community_orgs segment as a P0 design partner with website, contact URL and 3 draft emails (merge tags kept). No message leaves draft. A re-run creates nothing and keeps a hand-entered email. |
 | WEB-27 | Targets file quality | Every item has a known property and category, https evidence, contact and website links, a valid inbox format, a why, a priority hint and a confidence. No duplicate names; at least 10 per property. `vanguard partners import` runs at $0 with no problems. |
 | WEB-28 | Tripwires and gates in the web API | Users see the tracker for all 8 properties (week 3 on Oct 16) and record readings; unknown tripwires get 422; users get 403 on gates; admins fail G1 and get its walk-away condition; unknown gates 404; no premortem yet 404. |
+| WEB-29 | Contacts, new categories and merge tags | Import the researched file, then re-import after removing a category's partners | Lead Bank gets contact_name Eleni Steinman, a Route and Person line, a timely hook and P0 in stablecoin_banks; drafts keep `{{company}}` and none contain a bare `{company}`; BNY is P1; a hand-entered name survives re-import; the removed category's segment and partners come back; `render` fills both `{{company}}` and `{company}`. WEB-27 also checks every named contact has an https source and no email. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
