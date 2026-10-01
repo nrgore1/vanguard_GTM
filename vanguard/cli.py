@@ -338,6 +338,103 @@ def cmd_partners(a, store: Store):
                   f"{' (segment - find named targets)' if r['is_segment'] else ''}{flag}")
 
 
+def cmd_campaign(a, store: Store):
+    """Campaigns and the partners whose outreach counts towards them."""
+    from .campaign_link import attach_partners, campaign_outreach, detach_partner, outreach_totals_by_campaign
+    from .web.db import WebStore
+    ws = WebStore(store.path)
+
+    def resolve(cid: int, refs: list[str]) -> list[int]:
+        c = ws.one("SELECT property_id FROM campaigns WHERE id=?", (cid,))
+        if not c:
+            sys.exit(f"no campaign {cid}")
+        ids = []
+        for r in refs:
+            if r.isdigit():
+                ids.append(int(r)); continue
+            row = ws.one("SELECT id FROM partners WHERE property_id=? AND lower(name)=lower(?)", (c["property_id"], r))
+            if not row:
+                sys.exit(f"no partner named '{r}' in {c['property_id']}")
+            ids.append(row["id"])
+        return ids
+
+    if a.action == "list":
+        q, args = "SELECT id, property_id, name, status FROM campaigns", []
+        if a.property:
+            q += " WHERE property_id=?"; args.append(a.property)
+        rows = ws.q(q + " ORDER BY property_id, id", args)
+        auto = outreach_totals_by_campaign(ws, [r["id"] for r in rows])
+        for r in rows:
+            o = auto[r["id"]]
+            print(f"  {r['id']:>4}  {r['property_id']:24} {r['status']:10} {r['name']}  "
+                  f"[{o['targets']} partners · {o['emails_sent']} emails · {o['social_touches']} LinkedIn/X · "
+                  f"{o['replies']} replied · {o['meetings']} meetings]")
+        return
+    if a.campaign is None:
+        sys.exit("give a campaign id")
+    if a.action == "show":
+        c = ws.one("SELECT * FROM campaigns WHERE id=?", (a.campaign,))
+        if not c:
+            sys.exit(f"no campaign {a.campaign}")
+        o = campaign_outreach(ws, a.campaign)
+        t, qd = o["totals"], o["queue"]
+        print(f"{c['name']} ({c['property_id']}, {c['status']})")
+        print(f"  partners {t['targets']} · touched {t['touched']} · emails sent {t['emails_sent']} · LinkedIn/X "
+              f"{t['social_touches']} · replied {t['replies']} · meetings {t['meetings']} · in conversation+ "
+              f"{t['in_conversation']} · pilot {t['pilot']} · signed {t['signed']}")
+        print(f"  queue: {qd['drafts']} drafts to approve · {qd['approved']} approved · {qd['missing_email']} partners "
+              f"need a contact email · next due {qd['next_due'] or '-'}")
+        for p in o["partners"]:
+            print(f"    {p['priority'] or '--':3} {p['name'][:34]:34} {p['stage']:16} {p['contact_email'] or 'no email':30} "
+                  f"emails {p['emails_sent']}/{p['steps']} · social {p['social_touches']} · last {p['last_touch'] or '-'}")
+    elif a.action == "attach":
+        res = attach_partners(ws, a.campaign, resolve(a.campaign, a.partners))
+        for x in res["attached"]:
+            print(f"attached  {x['name']}")
+        for x in res["moved"]:
+            print(f"moved     {x['name']} (was in '{x['from']}')")
+        for x in res["refused"]:
+            print(f"refused   {x.get('name', x['id'])}: {x['reason']}")
+    elif a.action == "detach":
+        for pid in resolve(a.campaign, a.partners):
+            print(("detached  " if detach_partner(ws, a.campaign, pid) else "not in campaign  ") + str(pid))
+
+
+def cmd_linkedin(a, store: Store):
+    """Load LinkedIn's Connections.csv (Settings > Data privacy > Get a copy of your data) and match it to partners."""
+    from .linkedin import import_connections, partners_with_connections
+    from .web.db import WebStore
+    ws = WebStore(store.path)
+    if a.action == "import":
+        if not a.file:
+            sys.exit("give the path to Connections.csv")
+        uid = None
+        if a.by:
+            u = ws.user_by_email(a.by)
+            if not u:
+                sys.exit(f"no user {a.by}")
+            uid = u["id"]
+        try:
+            res = import_connections(ws, Path(a.file).read_text(encoding="utf-8-sig"), uid)
+        except ValueError as e:
+            sys.exit(str(e))
+        print(f"{res['connections']} connections ({res['added']} new, {res['refreshed']} refreshed) · "
+              f"{res['partners_with_connections']} partners where you know someone")
+        for n in res["contacts_connected"]:
+            print(f"  connected: named contact at {n}")
+        for n in res["emails_filled"]:
+            print(f"  email added from LinkedIn: {n}")
+        return
+    known = partners_with_connections(ws)
+    q, args = "SELECT id, name, property_id, priority FROM partners WHERE COALESCE(is_segment,0)=0", []
+    if a.property:
+        q += " AND property_id=?"; args.append(a.property)
+    for p in ws.q(q + " ORDER BY property_id, COALESCE(priority_score,0) DESC", args):
+        for c in known.get(p["id"], []):
+            print(f"  {p['priority'] or '--':3} {p['name'][:30]:30} {c['first_name']} {c['last_name']} · "
+                  f"{c['position'] or ''}{' (named contact)' if c['is_contact'] else ''} · via {c['owner_name'] or 'cli'}")
+
+
 def cmd_outreach(a, store: Store):
     from .outreach import EmailConfig, approve, queue_stats, send_due, sync_replies
     from .web.db import WebStore
@@ -610,6 +707,15 @@ def main(argv=None):
     s.add_argument("action", choices=["status", "approve", "send", "sync-replies", "digest", "postmark-sync", "postmark-check"])
     s.add_argument("ids", nargs="*", help="message ids (approve)"); s.add_argument("--by")
     s.set_defaults(fn=cmd_outreach)
+    s = sub.add_parser("campaign", help="campaigns and their partners: list | show ID | attach ID PARTNER.. | detach ID PARTNER..")
+    s.add_argument("action", choices=["list", "show", "attach", "detach"])
+    s.add_argument("campaign", nargs="?", type=int, help="campaign id")
+    s.add_argument("partners", nargs="*", help="partner ids or exact names (attach/detach)")
+    s.add_argument("--property", help="list: only this property"); s.set_defaults(fn=cmd_campaign)
+    s = sub.add_parser("linkedin", help="LinkedIn connections from LinkedIn's own data export: import FILE --by EMAIL | matches")
+    s.add_argument("action", choices=["import", "matches"]); s.add_argument("file", nargs="?")
+    s.add_argument("--by", help="import: the user these connections belong to (email)")
+    s.add_argument("--property", help="matches: only this property"); s.set_defaults(fn=cmd_linkedin)
     s = sub.add_parser("tripwires", help="fail-proof tracker: tripwire status + gates per property (exit 2 on HALT)")
     s.add_argument("--property", help="id or comma list (default all)"); s.add_argument("--as-of", help="YYYY-MM-DD")
     s.add_argument("--json", action="store_true"); s.add_argument("--out"); s.set_defaults(fn=cmd_tripwires)

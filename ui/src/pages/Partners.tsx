@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Handshake, Plus, CalendarClock, MessageSquare, Sparkles, LayoutGrid, ListOrdered, FileSignature, Microscope } from "lucide-react";
+import { Handshake, Plus, CalendarClock, MessageSquare, Sparkles, LayoutGrid, ListOrdered, FileSignature, Microscope, Linkedin } from "lucide-react";
+import { ImportLinkedIn } from "../components/LinkedInPanels";
 import { api, type Partner, type PartnerStage } from "../lib/api";
 import { useAuth, useLoad } from "../lib/auth";
 import { label, PARTNER_KINDS, relTime, shortDate, STAGES } from "../lib/format";
@@ -27,7 +28,7 @@ export function PartnerForm({ open, onClose, initial, onSaved }: { open: boolean
   const save = async () => {
     setBusy(true); setError(null);
     const body: Record<string, unknown> = { ...f };
-    for (const k of ["id", "owner_name", "interactions", "last_contact", "created_by", "updated_at", "source_run_id", "created_at"]) delete body[k];
+    for (const k of ["id", "owner_name", "interactions", "last_contact", "created_by", "updated_at", "source_run_id", "created_at", "connections", "campaign_id", "campaign_name", "outreach", "targets"]) delete body[k];
     if (body.owner_id) body.owner_id = Number(body.owner_id);
     try {
       const id = initial?.id ? (await api.updatePartner(initial.id, body), initial.id) : (await api.createPartner(body)).id;
@@ -126,6 +127,7 @@ export default function Partners() {
   };
 
   const [importing, setImporting] = useState(false);
+  const [linkedIn, setLinkedIn] = useState(false);
   const importResearch = async () => {
     setImporting(true);
     try {
@@ -143,6 +145,7 @@ export default function Partners() {
     <>
       <PageHeader eyebrow="Relationships" title="Partners" sub="Design partners, co-selling partners and distribution channels. Drag a card to move it through the pipeline; open it to log calls and emails."
         actions={<>
+          <Button icon={<Linkedin size={15} />} onClick={() => setLinkedIn(true)}>Import LinkedIn connections</Button>
           {isAdmin && <Button icon={<Microscope size={15} />} loading={importing} onClick={importResearch}>Load researched partners</Button>}
           {isAdmin && <Button icon={<Sparkles size={15} />} onClick={() => setRecommending(true)}>Recommend partners</Button>}
           <Button variant="primary" icon={<Plus size={15} />} onClick={() => setAdding(true)}>Add partner</Button></>} />
@@ -164,9 +167,9 @@ export default function Partners() {
       ) : view === "priority" ? (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto scroll-thin">
-            <table className="w-full min-w-[980px] text-sm">
+            <table className="w-full min-w-[1040px] text-sm">
               <thead><tr className="border-b border-line text-left text-xs text-muted">
-                {["#", "Priority", "Partner", "Type", "Property", "Stage", "Agreement", "Contact", "Last touch"].map((h) => <th key={h} className="px-3 py-2.5 font-medium">{h}</th>)}</tr></thead>
+                {["#", "Priority", "Partner", "Type", "Property", "Stage", "Agreement", "Contact", "Known", "Last touch"].map((h) => <th key={h} className="px-3 py-2.5 font-medium">{h}</th>)}</tr></thead>
               <tbody>
                 {(data ?? []).map((p, i) => (
                   <tr key={p.id} onClick={() => nav(`/partners/${p.id}`)} className="cursor-pointer border-b border-line align-top last:border-0 hover:bg-surface-2">
@@ -181,6 +184,8 @@ export default function Partners() {
                     <td className="px-3 py-3"><Badge tone={statusTone(p.stage)}>{label(p.stage)}</Badge></td>
                     <td className="px-3 py-3">{p.agreement_status && p.agreement_status !== "none" ? <Badge tone={AGREEMENT_TONE[p.agreement_status]}><FileSignature size={11} />{p.agreement_status}</Badge> : <span className="text-faint">–</span>}</td>
                     <td className="px-3 py-3 text-xs text-muted">{p.contact_email ?? (p.is_segment ? "" : <span className="text-amber">needed</span>)}</td>
+                    <td className="px-3 py-3">{typeof p.connections === "number" && p.connections > 0
+                      ? <Badge tone="sky"><Linkedin size={11} />{p.connections}</Badge> : <span className="text-faint">–</span>}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-xs text-faint">{relTime(p.last_contact)}</td>
                   </tr>))}
               </tbody>
@@ -230,6 +235,7 @@ export default function Partners() {
       <RecommendModal open={recommending} onClose={() => setRecommending(false)} onDone={(pid) => { setFilter("property", pid); reload(); }} />
       <PartnerForm open={adding} onClose={() => setAdding(false)} initial={property ? { property_id: property, kind: "design_partner", stage: "identified" } : undefined}
         onSaved={(id) => nav(`/partners/${id}`)} />
+      <ImportLinkedIn open={linkedIn} onClose={() => setLinkedIn(false)} onDone={reload} />
     </>
   );
 }

@@ -1,14 +1,16 @@
 import { Fragment, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Mail, Phone, Users, Presentation, FileText, StickyNote, Check } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Mail, Phone, Users, Presentation, FileText, StickyNote, Check, Linkedin, AtSign, Megaphone } from "lucide-react";
 import { api, type PartnerStage } from "../lib/api";
 import { useAuth, useLoad } from "../lib/auth";
 import { label, relTime, shortDate, STAGES, today } from "../lib/format";
 import { Badge, Button, Card, CardHeader, Confirm, ErrorNote, Field, Input, Select, Spinner, Textarea, cx, kindTone, statusTone, useToast } from "../components/ui";
 import { KIND_HELP, PartnerForm } from "./Partners";
 import { AgreementCard, PriorityCard, SequenceCard, TargetsCard } from "../components/PartnerPanels";
+import { ConnectionsCard } from "../components/LinkedInPanels";
 
-const TYPE_ICON: Record<string, typeof Mail> = { email: Mail, call: Phone, meeting: Users, demo: Presentation, proposal: FileText, note: StickyNote };
+const TYPE_ICON: Record<string, typeof Mail> = { email: Mail, linkedin: Linkedin, x: AtSign, call: Phone, meeting: Users, demo: Presentation, proposal: FileText, note: StickyNote };
+const TYPE_LABEL: Record<string, string> = { linkedin: "LinkedIn", x: "X (Twitter)" };
 
 export default function PartnerDetail() {
   const { id } = useParams();
@@ -51,6 +53,7 @@ export default function PartnerDetail() {
             {(p.source_run_id || p.source?.startsWith("agent")) && <Badge tone="violet">suggested by agent</Badge>}
             {p.source === "research" && <Badge tone="sky">researched organisation</Badge>}
             {p.is_segment ? <Badge tone="amber">segment</Badge> : null}
+            {p.campaign_id && <Link to={`/campaigns/${p.campaign_id}`} className="inline-flex items-center gap-1 text-vireo hover:underline"><Megaphone size={12} />{p.campaign_name}</Link>}
           </div>
           <h1 className="font-serif text-[26px] font-semibold leading-tight">{p.name}</h1>
           <p className="mt-1 text-sm text-muted">{KIND_HELP[p.kind]}{p.partner_type ? ` · ${p.partner_type}` : ""}
@@ -88,6 +91,7 @@ export default function PartnerDetail() {
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_1.3fr]">
         <div className="space-y-4">
+          {Array.isArray(p.connections) && <ConnectionsCard people={p.connections} />}
           <TargetsCard p={p} onAdded={reload} />
           <SequenceCard p={p} onChanged={reload} />
           <Card>
@@ -101,11 +105,11 @@ export default function PartnerDetail() {
             {p.mutual_value && <div className="border-t border-line px-5 py-4 text-sm"><div className="mb-1 text-xs text-muted">Why both sides win</div><p className="whitespace-pre-line leading-relaxed">{p.mutual_value}</p></div>}
           </Card>
           <Card>
-            <CardHeader title="Log an interaction" sub="Emails, calls, meetings, demos, proposals" />
+            <CardHeader title="Log an interaction" sub="LinkedIn and X messages, calls, meetings, demos, proposals. Emails sent from Outreach are logged for you." />
             <form onSubmit={log} className="grid gap-3 p-5 sm:grid-cols-2">
               <ErrorNote error={formErr} />
               <Field label="Date"><Input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
-              <Field label="Type"><Select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>{Object.keys(TYPE_ICON).map((t) => <option key={t} value={t}>{label(t)}</option>)}</Select></Field>
+              <Field label="Type"><Select value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>{Object.keys(TYPE_ICON).map((t) => <option key={t} value={t}>{TYPE_LABEL[t] ?? label(t)}</option>)}</Select></Field>
               <Field label="What happened" className="sm:col-span-2"><Textarea required value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} placeholder="Discussed pilot scope, they want…" /></Field>
               <Field label="Outcome"><Select value={f.outcome} onChange={(e) => setF({ ...f, outcome: e.target.value })}>{["positive", "neutral", "negative", "none"].map((o) => <option key={o} value={o}>{label(o)}</option>)}</Select></Field>
               <Field label="Move stage to"><Select value={f.stage} onChange={(e) => setF({ ...f, stage: e.target.value })}><option value="">Keep: {label(p.stage)}</option>{STAGES.map((s) => <option key={s} value={s}>{label(s)}</option>)}</Select></Field>
@@ -126,7 +130,7 @@ export default function PartnerDetail() {
                     <span className="z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-line-strong bg-surface-2 text-vireo"><Icon size={13} /></span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="font-medium text-ink">{label(i.type)}</span>
+                        <span className="font-medium text-ink">{TYPE_LABEL[i.type] ?? label(i.type)}</span>
                         <Badge tone={statusTone(i.outcome)}>{i.outcome}</Badge>
                         <span className="text-faint">{shortDate(i.date)} · {relTime(i.date)}{i.by_name ? ` · ${i.by_name}` : ""}</span>
                         {(isAdmin || i.created_by === user?.id) && <button onClick={() => delInteraction(i.id)} className="ml-auto text-faint hover:text-rose" aria-label="Delete interaction"><Trash2 size={12} /></button>}

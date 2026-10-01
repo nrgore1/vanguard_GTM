@@ -17,10 +17,11 @@ export default function Outreach() {
   const { isAdmin, properties, propName } = useAuth();
   const toast = useToast();
   const [sp, setSp] = useSearchParams();
-  const tabRaw = sp.get("tab") ?? "draft", property = sp.get("property") ?? "";
+  const tabRaw = sp.get("tab") ?? "draft", property = sp.get("property") ?? "", campaign = sp.get("campaign") ?? "";
+  const campaigns = useLoad(() => api.campaigns({ property_id: property || undefined }), [property]);
   const tab = tabRaw === "all" ? "" : tabRaw;
   const stats = useLoad(api.outreachStats);
-  const { data, error, loading, reload } = useLoad(() => api.outreach({ property_id: property || undefined }), [property]);
+  const { data, error, loading, reload } = useLoad(() => api.outreach({ property_id: property || undefined, campaign_id: campaign ? Number(campaign) : undefined }), [property, campaign]);
   const [sel, setSel] = useState<number[]>([]);
   const [open, setOpen] = useState<OutreachMessage | null>(null);
   const [busy, setBusy] = useState("");
@@ -123,6 +124,8 @@ export default function Outreach() {
         </div>
         <Select value={property} onChange={(e) => setFilter("property", e.target.value)} className="w-auto" aria-label="Filter by property">
           <option value="">All properties</option>{properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select>
+        <Select value={campaign} onChange={(e) => setFilter("campaign", e.target.value)} className="w-auto" aria-label="Filter by campaign">
+          <option value="">All campaigns</option>{(campaigns.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
         {isAdmin && tab === "draft" && (
           <div className="ml-auto flex items-center gap-2">
             <Button size="sm" variant="ghost" onClick={() => setSel(sel.length ? [] : approvable.map((m) => m.id))}>{sel.length ? "Clear" : `Select all ${approvable.length}`}</Button>
@@ -152,7 +155,8 @@ export default function Outreach() {
                           onChange={(e) => setSel(e.target.checked ? [...sel, m.id] : sel.filter((x) => x !== m.id))} className="accent-[var(--vireo)]" /></td>}
                       <td className="whitespace-nowrap px-3 py-3"><Badge tone={statusTone(m.priority ?? "P2")}>{m.priority ?? "–"}</Badge> <span className="num text-xs text-muted">{m.priority_score ?? ""}</span></td>
                       <td className="max-w-[260px] px-3 py-3"><Link to={`/partners/${m.partner_id}`} onClick={(e) => e.stopPropagation()} className="line-clamp-2 font-medium hover:text-vireo">{m.partner_name}</Link>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint"><Badge tone={kindTone(m.partner_kind ?? "")}>{label(m.partner_kind ?? "")}</Badge>{propName(m.property_id ?? "")}</div></td>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint"><Badge tone={kindTone(m.partner_kind ?? "")}>{label(m.partner_kind ?? "")}</Badge>{propName(m.property_id ?? "")}</div>
+                        {m.campaign_name && <div className="mt-0.5 truncate text-[11px] text-vireo">{m.campaign_name}</div>}</td>
                       <td className="num px-3 py-3 text-muted">{m.step}</td>
                       <td className="max-w-[320px] px-3 py-3"><div className="truncate">{preview(m.subject, m)}</div>{m.lint_status !== "pass" && <Badge tone={statusTone(m.lint_status)}>claims: {m.lint_status}</Badge>}</td>
                       <td className="px-3 py-3 text-xs">{noContact ? <span className="text-amber">needs contact email</span> : <span className="text-muted">{m.to_email ?? m.contact_email}</span>}</td>

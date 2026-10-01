@@ -63,6 +63,10 @@ CREATE TABLE IF NOT EXISTS inbound_emails (
 CREATE TABLE IF NOT EXISTS notification_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, transport TEXT, to_addr TEXT, subject TEXT, kind TEXT
 );
+CREATE TABLE IF NOT EXISTS linkedin_connections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id INTEGER, profile_url TEXT NOT NULL, first_name TEXT, last_name TEXT,
+  email TEXT, company TEXT, company_norm TEXT, position TEXT, connected_on TEXT, imported_at TEXT, updated_at TEXT
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, user_id INTEGER, action TEXT, entity TEXT, entity_id TEXT,
   detail TEXT
@@ -75,7 +79,8 @@ MIGRATIONS = {
                  ("priority", "TEXT"), ("factors", "TEXT"), ("rationale", "TEXT"), ("deal_structure", "TEXT"),
                  ("how_to_find", "TEXT"), ("website", "TEXT"), ("source", "TEXT DEFAULT 'manual'"),
                  ("agreement_status", "TEXT DEFAULT 'none'"), ("agreement_signed_date", "TEXT"),
-                 ("agreement_notes", "TEXT"), ("parent_id", "INTEGER"), ("email_consent", "TEXT DEFAULT 'none'")],
+                 ("agreement_notes", "TEXT"), ("parent_id", "INTEGER"), ("email_consent", "TEXT DEFAULT 'none'"),
+                 ("campaign_id", "INTEGER")],
     "outreach_messages": [("transport", "TEXT"), ("pm_message_id", "TEXT"), ("delivered_at", "TEXT"),
                           ("opened_at", "TEXT")],
 }

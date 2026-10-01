@@ -861,3 +861,87 @@ def test_web_29_contacts_new_categories_and_merge_tags(env):
     out = render("Hi {{first_name}} at {company} / {{company}}", {"contact_name": "Eleni Steinman", "name": "Lead Bank"},
                  EmailConfig.from_env())
     assert out == "Hi Eleni at Lead Bank / Lead Bank"
+
+
+def test_web_30_campaign_outreach_link(env):
+    """WEB-30: partners attach to a campaign (a segment brings its named organisations; another property is
+    refused; attaching again moves, not duplicates); sent emails, LinkedIn/X touches, replies and meetings for
+    attached partners count towards the campaign automatically and add to hand-logged results; the outreach list
+    filters by campaign; deleting the campaign keeps the partners."""
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    assert c.post("/api/partners/import-research", headers=A).json()["errors"] == []
+    cid = _campaign(env, U, property_id="liqmint-institutional", name="Q4 design partners", goal_metric="replies", goal_value=5)
+    cid2 = _campaign(env, U, property_id="liqmint-institutional", name="Advisory co-sell")
+    lead = s.one("SELECT id, contact_name FROM partners WHERE name='Lead Bank' AND property_id='liqmint-institutional'")["id"]
+    prot = s.one("SELECT id FROM partners WHERE name='Protiviti'")["id"]
+    seg = s.one("SELECT id FROM partners WHERE category='midsize_advisory' AND is_segment=1")["id"]
+    other = s.one("SELECT id FROM partners WHERE property_id!='liqmint-institutional' LIMIT 1")["id"]
+    r = c.post(f"/api/campaigns/{cid}/partners", json={"partner_ids": [lead, other]}, headers=U).json()
+    assert [a["id"] for a in r["attached"]] == [lead] and r["refused"][0]["id"] == other
+    r = c.post(f"/api/campaigns/{cid2}/partners", json={"partner_ids": [seg]}, headers=U).json()
+    kids = {k["id"] for k in s.q("SELECT id FROM partners WHERE parent_id=?", (seg,))}
+    assert {a["id"] for a in r["attached"]} == kids and prot in kids
+    r = c.post(f"/api/campaigns/{cid}/partners", json={"partner_ids": [prot]}, headers=U).json()
+    assert r["moved"][0]["from"] == "Advisory co-sell"
+    assert c.post("/api/campaigns/999/partners", json={"partner_ids": [lead]}, headers=U).status_code == 404
+    # activity on attached partners
+    c.post(f"/api/partners/{lead}/interactions", json={"date": "2026-10-01", "type": "linkedin",
+           "summary": "LinkedIn connection request sent", "stage": "contacted"}, headers=U)
+    c.post(f"/api/partners/{prot}/interactions", json={"date": "2026-10-02", "type": "x", "summary": "DM on X"}, headers=U)
+    c.patch(f"/api/partners/{prot}", json={"contact_email": "claudia@protiviti.example"}, headers=A)
+    mids = [m["id"] for m in c.get(f"/api/outreach?campaign_id={cid}", headers=A).json() if m["partner_id"] == prot and m["step"] == 1]
+    assert c.post("/api/outreach/approve", json={"ids": mids}, headers=A).json()["approved"] == mids
+    sent = c.post("/api/outreach/send-due", headers=A).json()["sent"]
+    assert [x["partner"] for x in sent] == ["Protiviti"]
+    c.post(f"/api/partners/{prot}/reply", json={"date": "2026-10-03", "summary": "Happy to talk next week", "kind": "email"}, headers=U)
+    c.post(f"/api/partners/{prot}/interactions", json={"date": "2026-10-08", "type": "meeting", "summary": "Intro call"}, headers=U)
+    c.post(f"/api/campaigns/{cid}/results", json={"date": "2026-10-09", "sent": 10, "replies": 1, "revenue_usd": 0}, headers=U)
+    d = c.get(f"/api/campaigns/{cid}", headers=U).json()
+    t = d["outreach"]["totals"]
+    assert (t["targets"], t["emails_sent"], t["social_touches"], t["touched"], t["replies"], t["meetings"]) == (2, 1, 2, 2, 1, 1)
+    assert t["in_conversation"] == 1 and d["outreach"]["queue"]["missing_email"] == 1
+    row = next(p for p in d["outreach"]["partners"] if p["id"] == prot)
+    assert row["replied"] and row["emails_sent"] == 1 and row["last_touch"] == "2026-10-08"
+    lst = {x["id"]: x for x in c.get("/api/campaigns?property_id=liqmint-institutional", headers=U).json()}
+    assert (lst[cid]["sent"], lst[cid]["replies"], lst[cid]["meetings"]) == (11, 2, 1)
+    assert lst[cid]["outreach_summary"]["targets"] == 2 and lst[cid2]["outreach_summary"]["targets"] == len(kids) - 1
+    assert all(m["campaign_id"] == cid for m in c.get(f"/api/outreach?campaign_id={cid}", headers=U).json())
+    assert c.get(f"/api/partners/{prot}", headers=U).json()["campaign_name"] == "Q4 design partners"
+    # detach, then delete a campaign: partners stay
+    assert c.delete(f"/api/campaigns/{cid}/partners/{lead}", headers=U).json() == {"ok": True}
+    assert c.delete(f"/api/campaigns/{cid}/partners/{lead}", headers=U).status_code == 404
+    assert c.delete(f"/api/campaigns/{cid}", headers=U).json() == {"ok": True}
+    assert s.one("SELECT campaign_id FROM partners WHERE id=?", (prot,))["campaign_id"] is None
+
+
+def test_web_31_linkedin_connections_import(env):
+    """WEB-31: any user imports LinkedIn's own Connections.csv export; connections are matched to partners by
+    company, shown on the partner page and counted in the partner list; a named contact who is now a connection gets
+    one 'Connected on LinkedIn' timeline entry that does not count as a touch; a file that isn't the export is
+    refused; each user can delete their own imported connections."""
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    c.post("/api/partners/import-research", headers=A)
+    export = ("Notes:\n\"When exporting your connection data...\"\n\n"
+              "First Name,Last Name,URL,Email Address,Company,Position,Connected On\n"
+              "Eleni,S.,https://www.linkedin.com/in/eleni,,Lead,Head of Stablecoins,02 Oct 2026\n"
+              "Pat,Lee,https://www.linkedin.com/in/pl,,U.S. Bank,VP Digital Assets,01 Jan 2021\n"
+              "Joe,Bloggs,https://www.linkedin.com/in/jb,,Bank,Teller,01 Jan 2020\n")
+    assert c.post("/api/linkedin/connections", json={"csv": "name,company\nA,B\nC,D"}, headers=U).status_code == 400
+    r = c.post("/api/linkedin/connections", json={"csv": export}, headers=U).json()
+    assert (r["connections"], r["added"]) == (3, 3) and "Lead Bank" in r["contacts_connected"]
+    assert c.post("/api/linkedin/connections", json={"csv": export}, headers=U).json()["contacts_connected"] == []
+    lead = s.one("SELECT id FROM partners WHERE name='Lead Bank' AND property_id='liqmint-institutional'")["id"]
+    p = c.get(f"/api/partners/{lead}", headers=A).json()
+    assert [(x["first_name"], x["is_contact"], x["owner_name"]) for x in p["connections"]] == [("Eleni", True, "Uma User")]
+    tl = [i for i in p["interactions"] if i["summary"].startswith("Connected on LinkedIn: Eleni S.")]
+    assert len(tl) == 1 and tl[0]["type"] == "linkedin" and tl[0]["date"] == "2026-10-02"
+    rows = {x["name"]: x for x in c.get("/api/partners?property_id=liqmint-institutional", headers=U).json()}
+    assert rows["Lead Bank"]["connections"] == 1 and rows["U.S. Bancorp (U.S. Bank)"]["connections"] == 1
+    assert all(x["connections"] == 0 for n, x in rows.items() if n.startswith("BNY"))   # 'Bank' alone matches nothing
+    cid = _campaign(env, U, property_id="liqmint-institutional", name="LinkedIn warm intros", kind="social", channel="LinkedIn")
+    c.post(f"/api/campaigns/{cid}/partners", json={"partner_ids": [lead]}, headers=U)
+    assert c.get(f"/api/campaigns/{cid}", headers=U).json()["outreach"]["totals"]["social_touches"] == 0
+    summ = c.get("/api/linkedin/connections", headers=A).json()
+    assert summ["by_user"][0]["n"] == 3 and summ["partners_with_connections"] >= 2
+    assert c.delete("/api/linkedin/connections", headers=A).json()["deleted"] == 0
+    assert c.delete("/api/linkedin/connections", headers=U).json()["deleted"] == 3

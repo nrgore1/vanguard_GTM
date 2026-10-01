@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.9.0 — 2026-10-01
+
+### Added: campaigns linked to outreach
+- **Add partners to a campaign** from the campaign page (or `vanguard campaign attach`). From then on
+  every email the outreach queue sends them, every LinkedIn or X touch you log, every reply and every
+  meeting counts towards that campaign automatically.
+- **Campaign page:** a funnel (partners → touched → replied → in conversation → pilot → signed), the
+  send queue (drafts to approve, queued, partners missing an email, next due date) and one row per
+  partner. Sent, replies and meetings add outreach to anything logged by hand, so log only what the
+  app can't see (opens, clicks, signups, revenue, spend).
+- **Outreach page** filters by campaign, and each message shows its campaign.
+- **New interaction types:** LinkedIn and X, so hand-sent messages are tracked like emails.
+
+### Added: LinkedIn connections import
+- Load your own LinkedIn export (Settings → Data privacy → Get a copy of your data → Connections).
+  Vanguard-GTM never logs into LinkedIn, calls its API or scrapes it.
+- Connections are matched to partners by company: a **Known** column on Partners and a "People you
+  know here" card on each partner, for warm introductions.
+- When a partner's named contact appears in a later export, their timeline gets "Connected on
+  LinkedIn", which is how accepted requests show up. An email the connection chose to share fills an
+  empty contact email.
+- `vanguard linkedin import FILE --by EMAIL` and `vanguard linkedin matches` from the command line.
+
 ## 0.8.1 — 2026-09-29
 
 ### Partner contacts and mid-market targets (LiqMint Institutional)

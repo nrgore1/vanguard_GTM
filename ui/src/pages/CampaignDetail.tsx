@@ -6,6 +6,7 @@ import { useAuth, useLoad } from "../lib/auth";
 import { CAMPAIGN_STATUSES, label, num, pct, shortDate, today, usd } from "../lib/format";
 import { Badge, Button, Card, CardHeader, Confirm, ErrorNote, Field, Input, Modal, Progress, Select, Spinner, Stat, useToast } from "../components/ui";
 import { CampaignForm } from "./Campaigns";
+import { CampaignOutreachCard } from "../components/CampaignOutreach";
 
 const METRICS: (keyof Result)[] = ["sent", "opens", "clicks", "replies", "meetings", "signups", "conversions", "revenue_usd", "spend_usd"];
 
@@ -25,7 +26,7 @@ function ResultForm({ open, onClose, cid, onSaved }: { open: boolean; onClose: (
     <Modal open={open} onClose={onClose} title="Log results" wide
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={busy} onClick={save}>Save results</Button></>}>
       <ErrorNote error={error} />
-      <p className="mb-4 text-sm text-muted">Enter what happened since the last entry — from Smartlead/Instantly, LinkedIn, GA4 or your CRM. Leave blanks at 0.</p>
+      <p className="mb-4 text-sm text-muted">Enter what the app can't see on its own — opens and clicks from another tool, signups, revenue, spend. Emails sent, replies and meetings for partners attached to this campaign are counted automatically, so don't enter those twice.</p>
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Date"><Input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
         {METRICS.map((m) => (
@@ -55,6 +56,11 @@ export default function CampaignDetail() {
   if (!c) return <ErrorNote error={error} />;
   const R = c.results ?? [];
   const tot = Object.fromEntries(METRICS.map((m) => [m, R.reduce((s, r) => s + Number(r[m] ?? 0), 0)])) as Record<string, number>;
+  // outreach activity for attached partners counts on top of hand-logged results
+  const ot = c.outreach?.totals;
+  const auto = { sent: ot?.emails_sent ?? 0, replies: ot?.replies ?? 0, meetings: ot?.meetings ?? 0 };
+  tot.sent += auto.sent; tot.replies += auto.replies; tot.meetings += auto.meetings;
+  const fromOutreach = (n: number) => (n ? ` · ${n} from outreach` : "");
   const canDelete = isAdmin || c.created_by === user?.id;
   const goalActual = c.goal_metric ? tot[c.goal_metric] ?? 0 : 0;
 
@@ -95,9 +101,9 @@ export default function CampaignDetail() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <Stat label="Sent" value={num(tot.sent, true)} sub={`${pct(tot.opens, tot.sent)} opened`} />
-        <Stat label="Replies" value={num(tot.replies)} sub={`${pct(tot.replies, tot.sent)} reply rate`} tone="sky" />
-        <Stat label="Meetings" value={num(tot.meetings)} sub={`${num(tot.signups)} signups`} tone="violet" />
+        <Stat label="Sent" value={num(tot.sent, true)} sub={`${pct(tot.opens, tot.sent)} opened${fromOutreach(auto.sent)}`} />
+        <Stat label="Replies" value={num(tot.replies)} sub={`${pct(tot.replies, ot?.touched ? Math.max(ot.touched, tot.sent) : tot.sent)} reply rate${fromOutreach(auto.replies)}`} tone="sky" />
+        <Stat label="Meetings" value={num(tot.meetings)} sub={`${num(tot.signups)} signups${fromOutreach(auto.meetings)}`} tone="violet" />
         <Stat label="Conversions" value={num(tot.conversions)} sub={`${usd(tot.revenue_usd, true)} revenue`} tone="green" />
         <Stat label="Spend" value={usd(tot.spend_usd, true)} sub={tot.conversions ? `${usd(tot.spend_usd / tot.conversions)} per conversion` : "no conversions yet"} tone="amber" />
       </div>
@@ -110,9 +116,11 @@ export default function CampaignDetail() {
         </Card>
       ) : null}
 
+      {c.outreach && <CampaignOutreachCard cid={cid} propertyId={c.property_id} o={c.outreach} onChanged={reload} />}
+
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <Card className="overflow-hidden">
-          <CardHeader title="Results log" sub={`${R.length} entries`} />
+          <CardHeader title="Results log" sub={`${R.length} hand-logged entries`} />
           {R.length === 0 ? <p className="px-5 py-10 text-center text-sm text-muted">No results yet. Log the first numbers when the campaign starts sending.</p> : (
             <div className="overflow-x-auto scroll-thin">
               <table className="w-full min-w-[640px] text-sm">

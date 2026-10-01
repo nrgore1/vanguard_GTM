@@ -210,7 +210,7 @@ export function ReplyModal({ open, onClose, pid, onSaved }: { open: boolean; onC
       <p className="mb-4 text-sm text-muted">For replies that came by phone, LinkedIn or an inbox Vanguard can't read. Recording a reply stops the remaining emails in the sequence.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Date"><Input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
-        <Field label="Channel"><Select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>{["email", "call", "meeting", "note"].map((k) => <option key={k} value={k}>{label(k)}</option>)}</Select></Field>
+        <Field label="Channel"><Select value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>{["email", "linkedin", "x", "call", "meeting", "note"].map((k) => <option key={k} value={k}>{k === "linkedin" ? "LinkedIn" : k === "x" ? "X (Twitter)" : label(k)}</option>)}</Select></Field>
         <Field label="What they said" className="sm:col-span-2"><Textarea value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} placeholder="Interested - asked for the referral terms" /></Field>
         <Field label="Outcome" hint="Leave on auto to classify from the text (opt-out words are always honoured)."><Select value={f.outcome} onChange={(e) => setF({ ...f, outcome: e.target.value })}>
           <option value="">Auto</option>{["positive", "neutral", "negative"].map((o) => <option key={o} value={o}>{label(o)}</option>)}</Select></Field>

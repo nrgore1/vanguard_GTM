@@ -49,16 +49,25 @@ password. Ask an admin to reset it if you forget it. Eight wrong attempts lock t
 ## Campaigns
 1. **New campaign:** pick the property, type (email, social, partner, event, content, paid),
    status, dates, goal (for example 20 meetings), budget and owner.
-2. **Log results** whenever you have new numbers from Smartlead, Instantly, LinkedIn, GA4 or
-   your CRM. Enter only what changed since the last entry. Totals, reply rate, cost per
-   conversion and goal progress update straight away.
-3. **Status:** draft → scheduled → active → paused → completed. Change it from the dropdown at
+2. **Add partners** (v0.9.0): on the campaign page, **Add partners** picks the partners this
+   campaign works. Their emails from Outreach, LinkedIn/X touches, replies and meetings then count
+   towards the campaign automatically, and the page shows the funnel, the send queue and each
+   partner's progress. Step-by-step: [Campaigns & Outreach manual](CAMPAIGN_MANUAL.md).
+3. **Log results** for what the app can't see: opens and clicks from another tool, signups,
+   revenue, spend. Don't re-enter emails sent, replies or meetings for attached partners; they are
+   already counted. Totals, reply rate, cost per conversion and goal progress update straight away.
+4. **Status:** draft → scheduled → active → paused → completed. Change it from the dropdown at
    the top of the campaign.
-4. **Agent campaigns:** those imported from the agent carry the full five-step email sequence
+5. **Agent campaigns:** those imported from the agent carry the full five-step email sequence
    or the social hooks. Sending still happens in your email tool, only after an admin approves
    the plan.
 
 ## Partners
+**LinkedIn connections** (v0.9.0): **Import LinkedIn connections** on the Partners page loads the
+`Connections.csv` that LinkedIn emails you (Settings → Data privacy → Get a copy of your data). The
+**Known** column then shows how many people you know at each partner, and each partner page lists
+them. See the [Campaigns & Outreach manual](CAMPAIGN_MANUAL.md), section 4.
+
 - The **board** has a column per stage: identified → contacted → in conversation → pilot →
   signed, plus declined. Drag a card to another column, or use the "Move to" menu on the card.
 - **Partnership types:**

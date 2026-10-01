@@ -13,6 +13,21 @@ export interface Campaign {
   owner_name?: string | null; created_by: number | null; source_run_id: string | null; updated_at: string;
   sent?: number; replies?: number; meetings?: number; signups?: number; conversions?: number;
   revenue_usd?: number; spend_usd?: number; results?: Result[];
+  outreach?: CampaignOutreach; outreach_summary?: { targets: number; emails_sent: number; social_touches: number; replies: number; meetings: number };
+}
+export interface CampaignOutreachTotals {
+  targets: number; emails_sent: number; social_touches: number; touched: number; replies: number; meetings: number;
+  in_conversation: number; pilot: number; signed: number; declined: number;
+}
+export interface CampaignPartnerRow {
+  id: number; name: string; stage: PartnerStage; priority: string | null; priority_score: number | null;
+  contact_name: string | null; contact_email: string | null; next_step: string | null; next_step_date: string | null;
+  emails_sent: number; social_touches: number; meetings: number; replied: boolean; drafts: number; approved: number;
+  steps: number; last_touch: string | null; next_due: string | null;
+}
+export interface CampaignOutreach {
+  partners: CampaignPartnerRow[]; totals: CampaignOutreachTotals;
+  queue: { drafts: number; approved: number; missing_email: number; next_due: string | null };
 }
 export interface Result {
   id: number; campaign_id: number; date: string; sent: number; opens: number; clicks: number; replies: number;
@@ -33,6 +48,12 @@ export interface Partner {
   agreement_status?: AgreementStatus | null; agreement_signed_date?: string | null; agreement_notes?: string | null;
   outreach?: OutreachMessage[]; targets?: { id: number; name: string; stage: string; contact_email: string | null; agreement_status: string | null }[];
   segment_name?: string | null; email_consent?: EmailConsent | null;
+  campaign_id?: number | null; campaign_name?: string | null;
+  connections?: number | LinkedInConnection[];
+}
+export interface LinkedInConnection {
+  id: number; first_name: string; last_name: string; profile_url: string | null; email: string | null; company: string | null;
+  position: string | null; connected_on: string | null; owner_name: string | null; is_contact: boolean;
 }
 export interface AgentStatus {
   version: string; provider: string; local_model: string; local_ok: boolean | null; local_message: string;
@@ -57,6 +78,7 @@ export interface OutreachMessage {
   partner_name?: string; property_id?: string; partner_kind?: string; partner_stage?: string; contact_email?: string | null;
   contact_name?: string | null; priority_score?: number | null; priority?: string | null;
   transport?: string | null; pm_message_id?: string | null; delivered_at?: string | null; opened_at?: string | null;
+  campaign_id?: number | null; campaign_name?: string | null;
 }
 export interface OutreachStats {
   draft: number; approved: number; sent: number; replied: number; cancelled: number; failed: number; bounced: number;
@@ -164,6 +186,9 @@ export const api = {
   deleteCampaign: (id: number) => req("DELETE", `/campaigns/${id}`),
   addResult: (id: number, b: Partial<Result>) => req<{ id: number }>("POST", `/campaigns/${id}/results`, b),
   deleteResult: (id: number) => req("DELETE", `/results/${id}`),
+  attachPartners: (id: number, partner_ids: number[]) =>
+    req<{ attached: { id: number; name: string }[]; moved: { id: number; name: string; from: string }[]; refused: { id: number; name?: string; reason: string }[] }>("POST", `/campaigns/${id}/partners`, { partner_ids }),
+  detachPartner: (id: number, pid: number) => req("DELETE", `/campaigns/${id}/partners/${pid}`),
 
   partners: (f: { property_id?: string; kind?: string } = {}) => req<Partner[]>("GET", `/partners${qs(f)}`),
   partner: (id: number) => req<Partner & { interactions: Interaction[] }>("GET", `/partners/${id}`),
@@ -173,6 +198,10 @@ export const api = {
   addInteraction: (id: number, b: Partial<Interaction> & { stage?: PartnerStage }) =>
     req<{ id: number }>("POST", `/partners/${id}/interactions`, b),
   deleteInteraction: (id: number) => req("DELETE", `/interactions/${id}`),
+  importLinkedIn: (csv: string) => req<{ connections: number; added: number; refreshed: number; partners_with_connections: number;
+    contacts_connected: string[]; emails_filled: string[] }>("POST", "/linkedin/connections", { csv }),
+  linkedInSummary: () => req<{ by_user: { owner_id: number | null; owner_name: string | null; n: number; last_import: string }[]; partners_with_connections: number }>("GET", "/linkedin/connections"),
+  deleteMyLinkedIn: () => req<{ deleted: number }>("DELETE", "/linkedin/connections"),
 
   importResearch: () => req<{ properties: Record<string, { created: number; updated: number }>; errors: string[]; without_email: number }>("POST", "/partners/import-research"),
   recommendPartners: (b: { property_id: string; mode: "offline" | "model"; provider?: string }) =>
@@ -181,7 +210,7 @@ export const api = {
     req<{ id: number }>("POST", `/partners/${segmentId}/targets`, b),
   recordReply: (pid: number, b: { date: string; summary: string; outcome?: string; kind: string }) =>
     req<{ classification: string; outcome: string; cancelled_steps: number; stage: string }>("POST", `/partners/${pid}/reply`, b),
-  outreach: (f: { status?: string; property_id?: string; partner_id?: number } = {}) =>
+  outreach: (f: { status?: string; property_id?: string; partner_id?: number; campaign_id?: number } = {}) =>
     req<OutreachMessage[]>("GET", `/outreach${qs(f as Record<string, string | undefined>)}`),
   outreachStats: () => req<OutreachStats>("GET", "/outreach/stats"),
   editOutreach: (id: number, b: { subject?: string; body?: string }) =>

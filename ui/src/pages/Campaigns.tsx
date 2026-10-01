@@ -91,10 +91,10 @@ export default function Campaigns() {
             action={<Button variant="primary" icon={<Plus size={15} />} onClick={() => setCreating(true)}>New campaign</Button>} />
         ) : (
           <div className="overflow-x-auto scroll-thin">
-            <table className="w-full min-w-[880px] text-sm">
+            <table className="w-full min-w-[960px] text-sm">
               <thead><tr className="border-b border-line text-left text-xs text-muted">
-                {["Campaign", "Property", "Status", "Sent", "Replies", "Meetings", "Conv.", "Revenue", "Owner", "Updated"].map((h, i) =>
-                  <th key={h} className={`px-4 py-2.5 font-medium ${i >= 3 && i <= 7 ? "text-right" : ""}`}>{h}</th>)}
+                {["Campaign", "Property", "Status", "Partners", "Sent", "Replies", "Meetings", "Conv.", "Revenue", "Owner", "Updated"].map((h, i) =>
+                  <th key={h} className={`px-4 py-2.5 font-medium ${i >= 3 && i <= 8 ? "text-right" : ""}`}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {rows.map((c) => (
@@ -103,6 +103,8 @@ export default function Campaigns() {
                       <span className="text-xs text-faint">{label(c.kind)}{c.channel ? ` · ${c.channel}` : ""}</span></td>
                     <td className="px-4 py-3 text-muted">{propName(c.property_id)}</td>
                     <td className="px-4 py-3"><Badge tone={statusTone(c.status)}>{label(c.status)}</Badge></td>
+                    <td className="num px-4 py-3 text-right">{num(c.outreach_summary?.targets ?? 0)}
+                      {c.outreach_summary?.social_touches ? <div className="text-[11px] text-faint">{c.outreach_summary.social_touches} LinkedIn/X</div> : null}</td>
                     <td className="num px-4 py-3 text-right">{num(c.sent, true)}</td>
                     <td className="num px-4 py-3 text-right">{num(c.replies)}<span className="ml-1 text-[11px] text-faint">{c.sent ? pct(c.replies ?? 0, c.sent) : ""}</span></td>
                     <td className="num px-4 py-3 text-right">{num(c.meetings)}</td>

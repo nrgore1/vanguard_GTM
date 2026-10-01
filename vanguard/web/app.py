@@ -32,7 +32,7 @@ CampaignStatus = Literal["draft", "scheduled", "active", "paused", "completed"]
 CampaignKind = Literal["email", "social", "partner", "event", "content", "paid"]
 PartnerKind = Literal["design_partner", "co_sell", "distribution", "referral_affiliate", "integration"]
 PartnerStage = Literal["identified", "contacted", "in_conversation", "pilot", "signed", "declined"]
-InteractionType = Literal["email", "call", "meeting", "demo", "proposal", "note"]
+InteractionType = Literal["email", "linkedin", "x", "call", "meeting", "demo", "proposal", "note"]
 Outcome = Literal["positive", "neutral", "negative", "none"]
 TaskStatus = Literal["Not started", "In progress", "Done", "Blocked"]
 Priority = Literal["P0", "P1", "P2"]
@@ -185,6 +185,14 @@ class ReplyIn(BaseModel):
 class OutreachEdit(BaseModel):
     subject: str | None = Field(default=None, min_length=3, max_length=140)
     body: str | None = Field(default=None, min_length=20, max_length=2500)
+
+
+class AttachIn(BaseModel):
+    partner_ids: list[int] = Field(min_length=1, max_length=500)
+
+
+class LinkedInImportIn(BaseModel):
+    csv: str = Field(min_length=20, max_length=20_000_000)
 
 
 class IdsIn(BaseModel):
@@ -370,7 +378,17 @@ def list_campaigns(property_id: str | None = None, status: str | None = None, u:
         sql += " AND c.property_id=?"; args.append(property_id)
     if status:
         sql += " AND c.status=?"; args.append(status)
-    return store().q(sql + " GROUP BY c.id, uo.name ORDER BY c.updated_at DESC", args)
+    s = store()
+    rows = s.q(sql + " GROUP BY c.id, uo.name ORDER BY c.updated_at DESC", args)
+    from ..campaign_link import outreach_totals_by_campaign
+    auto = outreach_totals_by_campaign(s, [r["id"] for r in rows])
+    for r in rows:   # outreach activity counts towards the campaign on top of hand-logged results
+        a = auto.get(r["id"], {})
+        r["outreach_summary"] = a
+        r["sent"] += a.get("emails_sent", 0)
+        r["replies"] += a.get("replies", 0)
+        r["meetings"] += a.get("meetings", 0)
+    return rows
 
 
 @api.post("/campaigns", status_code=201)
@@ -392,7 +410,26 @@ def get_campaign(cid: int, u: dict = Depends(current_user)):
         raise HTTPException(404)
     c["results"] = s.q("SELECT r.*, u.name AS by_name FROM campaign_results r LEFT JOIN users u ON u.id=r.created_by "
                        "WHERE campaign_id=? ORDER BY date DESC, id DESC", (cid,))
+    from ..campaign_link import campaign_outreach
+    c["outreach"] = campaign_outreach(s, cid)
     return c
+
+
+@api.post("/campaigns/{cid}/partners")
+def attach_campaign_partners(cid: int, body: AttachIn, u: dict = Depends(current_user)):
+    from ..campaign_link import attach_partners
+    try:
+        return attach_partners(store(), cid, body.partner_ids, actor=u["id"])
+    except KeyError:
+        raise HTTPException(404)
+
+
+@api.delete("/campaigns/{cid}/partners/{pid}")
+def detach_campaign_partner(cid: int, pid: int, u: dict = Depends(current_user)):
+    from ..campaign_link import detach_partner
+    if not detach_partner(store(), cid, pid, actor=u["id"]):
+        raise HTTPException(404, "that partner is not in this campaign")
+    return {"ok": True}
 
 
 @api.patch("/campaigns/{cid}")
@@ -415,6 +452,8 @@ def delete_campaign(cid: int, u: dict = Depends(current_user)):
     if not c:
         raise HTTPException(404)
     can_modify(u, c["created_by"])
+    with s.conn() as conn:   # partners stay; they just leave the campaign
+        conn.execute("UPDATE partners SET campaign_id=NULL WHERE campaign_id=?", (cid,))
     s.delete("campaigns", "id", cid)
     s.audit(u["id"], "delete", "campaign", cid)
     return {"ok": True}
@@ -448,14 +487,21 @@ def delete_result(rid: int, u: dict = Depends(current_user)):
 @api.get("/partners")
 def list_partners(property_id: str | None = None, kind: str | None = None, u: dict = Depends(current_user)):
     sql = ("SELECT p.*, uo.name AS owner_name, (SELECT COUNT(*) FROM partner_interactions i WHERE i.partner_id=p.id) "
-           "AS interactions, (SELECT MAX(date) FROM partner_interactions i WHERE i.partner_id=p.id) AS last_contact "
-           "FROM partners p LEFT JOIN users uo ON uo.id=p.owner_id WHERE 1=1")
+           "AS interactions, (SELECT MAX(date) FROM partner_interactions i WHERE i.partner_id=p.id) AS last_contact, "
+           "cc.name AS campaign_name FROM partners p LEFT JOIN users uo ON uo.id=p.owner_id "
+           "LEFT JOIN campaigns cc ON cc.id=p.campaign_id WHERE 1=1")
     args: list = []
     if property_id:
         sql += " AND p.property_id=?"; args.append(property_id)
     if kind:
         sql += " AND p.kind=?"; args.append(kind)
-    return store().q(sql + " ORDER BY COALESCE(p.priority_score, -1) DESC, p.updated_at DESC", args)
+    s = store()
+    rows = s.q(sql + " ORDER BY COALESCE(p.priority_score, -1) DESC, p.updated_at DESC", args)
+    from ..linkedin import partners_with_connections
+    known = partners_with_connections(s)
+    for r in rows:   # how many people we already know there (from LinkedIn exports)
+        r["connections"] = len(known.get(r["id"], []))
+    return rows
 
 
 @api.post("/partners", status_code=201)
@@ -474,8 +520,8 @@ def create_partner(body: PartnerIn, u: dict = Depends(current_user)):
 @api.get("/partners/{pid}")
 def get_partner(pid: int, u: dict = Depends(current_user)):
     s = store()
-    p = s.one("SELECT p.*, uo.name AS owner_name FROM partners p LEFT JOIN users uo ON uo.id=p.owner_id WHERE p.id=?",
-              (pid,))
+    p = s.one("SELECT p.*, uo.name AS owner_name, cc.name AS campaign_name FROM partners p LEFT JOIN users uo "
+              "ON uo.id=p.owner_id LEFT JOIN campaigns cc ON cc.id=p.campaign_id WHERE p.id=?", (pid,))
     if not p:
         raise HTTPException(404)
     p["interactions"] = s.q("SELECT i.*, u.name AS by_name FROM partner_interactions i LEFT JOIN users u "
@@ -486,7 +532,39 @@ def get_partner(pid: int, u: dict = Depends(current_user)):
     p["segment_name"] = (s.one("SELECT name FROM partners WHERE id=?", (p["parent_id"],)) or {}).get("name") \
         if p.get("parent_id") else None
     p["factors"] = json.loads(p["factors"]) if p.get("factors") else None
+    from ..linkedin import partners_with_connections
+    p["connections"] = [{k: c[k] for k in ("id", "first_name", "last_name", "profile_url", "email", "company", "position",
+                                           "connected_on", "owner_name", "is_contact")}
+                        for c in partners_with_connections(s, [pid]).get(pid, [])]
     return p
+
+
+# LinkedIn connections (from LinkedIn's own "Get a copy of your data" export - no API, no scraping) ----------
+@api.post("/linkedin/connections")
+def import_linkedin(body: LinkedInImportIn, u: dict = Depends(current_user)):
+    from ..linkedin import import_connections
+    try:
+        return import_connections(store(), body.csv, u["id"])
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@api.get("/linkedin/connections")
+def linkedin_summary(u: dict = Depends(current_user)):
+    s = store()
+    rows = s.q("SELECT c.owner_id, u.name AS owner_name, COUNT(*) AS n, MAX(c.updated_at) AS last_import FROM "
+               "linkedin_connections c LEFT JOIN users u ON u.id=c.owner_id GROUP BY c.owner_id, u.name")
+    from ..linkedin import partners_with_connections
+    return {"by_user": rows, "partners_with_connections": len(partners_with_connections(s))}
+
+
+@api.delete("/linkedin/connections")
+def delete_my_linkedin(u: dict = Depends(current_user)):
+    s = store()
+    with s.conn() as c:
+        n = c.execute("DELETE FROM linkedin_connections WHERE owner_id=?", (u["id"],)).rowcount
+    s.audit(u["id"], "delete", "linkedin_connections", u["id"], {"rows": n})
+    return {"deleted": n}
 
 
 @api.patch("/partners/{pid}")
@@ -596,10 +674,11 @@ def import_research(a: dict = Depends(admin_user)):
 
 @api.get("/outreach")
 def list_outreach(status: str | None = None, property_id: str | None = None, partner_id: int | None = None,
-                  u: dict = Depends(current_user)):
+                  campaign_id: int | None = None, u: dict = Depends(current_user)):
     sql = ("SELECT m.*, p.name AS partner_name, p.property_id, p.kind AS partner_kind, p.stage AS partner_stage, "
-           "p.contact_email, p.contact_name, p.priority_score, p.priority, p.is_segment FROM outreach_messages m "
-           "JOIN partners p ON p.id=m.partner_id WHERE 1=1")
+           "p.contact_email, p.contact_name, p.priority_score, p.priority, p.is_segment, p.campaign_id, "
+           "cc.name AS campaign_name FROM outreach_messages m "
+           "JOIN partners p ON p.id=m.partner_id LEFT JOIN campaigns cc ON cc.id=p.campaign_id WHERE 1=1")
     args: list = []
     if not partner_id:   # segment templates live on the segment's page, not in the sending queue
         sql += " AND COALESCE(p.is_segment,0)=0"
@@ -609,6 +688,8 @@ def list_outreach(status: str | None = None, property_id: str | None = None, par
         sql += " AND p.property_id=?"; args.append(property_id)
     if partner_id:
         sql += " AND m.partner_id=?"; args.append(partner_id)
+    if campaign_id:
+        sql += " AND p.campaign_id=?"; args.append(campaign_id)
     return store().q(sql + " ORDER BY COALESCE(p.priority_score,0) DESC, p.name, m.step LIMIT 1000", args)
 
 

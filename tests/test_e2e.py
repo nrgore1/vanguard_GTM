@@ -723,3 +723,32 @@ def test_e2e_db_copy_from_sqlite(env, tmp_path):
     assert "users                2" in cli(new, "db", "info").stdout
     assert "(id 3)" in cli(new, "create-user", "--email", "n@x.com", "--name", "N", "--password", "longpassword123").stdout
     assert cli(new, "db", "copy-from-sqlite", check=False).returncode != 0
+
+
+def test_e2e_campaign_attach_and_linkedin_import(env, tmp_path):
+    """E2E-33: from the CLI, partners are attached to a campaign by name, LinkedIn's Connections.csv export is
+    imported and matched to partners by company (named contact gets a 'Connected on LinkedIn' entry, an email the
+    connection shared fills an empty contact email), and `campaign show` reports partners, touches and the queue."""
+    cli(env, "partners", "import")
+    from vanguard.web.db import WebStore
+    ws = WebStore(Path(env["VANGUARD_DB"]))
+    cid = ws.insert("campaigns", {"property_id": "liqmint-institutional", "name": "Q4 design partners", "kind": "partner",
+                                  "status": "active"})
+    out = cli(env, "campaign", "attach", str(cid), "Lead Bank", "Protiviti").stdout
+    assert "attached  Lead Bank" in out and "attached  Protiviti" in out
+    assert cli(env, "campaign", "attach", str(cid), "No Such Co", check=False).returncode != 0
+    csv_path = tmp_path / "Connections.csv"
+    csv_path.write_text(
+        'Notes:\n"When exporting your connection data, you may notice that some of the email addresses are missing."\n\n'
+        "First Name,Last Name,URL,Email Address,Company,Position,Connected On\n"
+        "Eleni,S.,https://www.linkedin.com/in/eleni,,Lead,Head of Stablecoins,02 Oct 2026\n"
+        "Claudia,Kuzma,https://www.linkedin.com/in/ck,claudia@protiviti.example,Protiviti Inc.,Managing Director,15 Mar 2019\n"
+        "Joe,Bloggs,https://www.linkedin.com/in/jb,,Bank,Teller,01 Jan 2020\n", encoding="utf-8")
+    out = cli(env, "linkedin", "import", str(csv_path)).stdout
+    assert "3 connections (3 new" in out and "named contact at Lead Bank" in out and "email added from LinkedIn: Protiviti" in out
+    assert "0 new, 3 refreshed" in cli(env, "linkedin", "import", str(csv_path)).stdout
+    m = cli(env, "linkedin", "matches", "--property", "liqmint-institutional").stdout
+    assert "Eleni S." in m and "(named contact)" in m and "Joe" not in m        # 'Bank' is too generic to match
+    show = cli(env, "campaign", "show", str(cid)).stdout
+    assert "partners 2" in show and "claudia@protiviti.example" in show and "Lead Bank" in show
+    assert cli(env, "linkedin", "import", str(tmp_path / "missing.csv"), check=False).returncode != 0

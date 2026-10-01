@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.8.1 · updated 2026-09-28
+Version 0.9.0 · updated 2026-10-01
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -43,6 +43,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | E2E-30 | Gates remove blocked tasks from a run | Dry run where one institutional task emails seed investors | That task is gone, dependants no longer point at it, a `GATE_BLOCKED` note names it, and a WeddingOS playbook run with its owner removed carries a `FOCUS_LOCK` note. |
 | E2E-31 | Premortem at $0 | `premortem liqmint-institutional --dry-run --plan plan.md --out pm.md` | The markdown has 7 ranked causes, a verdict, an adversary and a tripwire table. |
 | E2E-32 | Move SQLite data into the configured database | Old SQLite file with two users and a tripwire reading; `db copy-from-sqlite` into the configured database | Every table is copied; a second run skips tables that already hold rows; `db info` shows 2 users; the next new user gets id 3; the command without a file is refused. On PostgreSQL this is a real SQLite-to-PostgreSQL copy. |
+| E2E-33 | Campaign by CLI and LinkedIn export | Import partners; `campaign attach` by name (an unknown name is refused); `linkedin import` a Connections.csv with LinkedIn's notes preamble, twice; `linkedin matches`; `campaign show` | Partners attached; 3 connections loaded then refreshed, not duplicated; "Eleni S." at "Lead" recognised as Lead Bank's named contact; Protiviti's empty email filled from the export; "Bank" matches nothing; `show` lists 2 partners with the email; a missing file exits non-zero. |
 
 ## Live smoke cases (opt-in)
 
@@ -85,6 +86,8 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-27 | Targets file quality | Every item has a known property and category, https evidence, contact and website links, a valid inbox format, a why, a priority hint and a confidence. No duplicate names; at least 10 per property. `vanguard partners import` runs at $0 with no problems. |
 | WEB-28 | Tripwires and gates in the web API | Users see the tracker for all 8 properties (week 3 on Oct 16) and record readings; unknown tripwires get 422; users get 403 on gates; admins fail G1 and get its walk-away condition; unknown gates 404; no premortem yet 404. |
 | WEB-29 | Contacts, new categories and merge tags | Import the researched file, then re-import after removing a category's partners | Lead Bank gets contact_name Eleni Steinman, a Route and Person line, a timely hook and P0 in stablecoin_banks; drafts keep `{{company}}` and none contain a bare `{company}`; BNY is P1; a hand-entered name survives re-import; the removed category's segment and partners come back; `render` fills both `{{company}}` and `{company}`. WEB-27 also checks every named contact has an https source and no email. |
+| WEB-30 | Campaign linked to outreach | Attach Lead Bank (and a partner of another property), a segment to a second campaign, then move Protiviti; log LinkedIn and X touches, approve and send Protiviti's step 1, record a reply and a meeting, hand-log 10 sent / 1 reply; read the campaign and the list; filter Outreach; detach; delete | Other property refused; segment brings its named organisations; the move reports where from; totals 2 partners, 1 email, 2 LinkedIn/X touches, 2 touched, 1 replied, 1 meeting, 1 in conversation, 1 missing email; list shows 11 sent, 2 replies, 1 meeting; Outreach filter returns only that campaign; a second detach is 404; deleting the campaign leaves the partner with no campaign. |
+| WEB-31 | LinkedIn connections import | A file that isn't the export; the export as a user, twice; partner page and list; a campaign with Lead Bank; summary; delete as admin, then as the user | 400 for the wrong file; 3 added; Lead Bank's named contact gets one "Connected on LinkedIn" entry dated 2026-10-02 (not repeated, not counted as a touch); partner page lists Eleni as named contact via Uma User; Known counts 1 for Lead Bank and U.S. Bank, 0 for BNY; admin deletes 0 rows, the user deletes 3. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
@@ -108,6 +111,7 @@ Atmakosh.
 | UI-13 | General user limits | No Send/Check replies/Recommend buttons. Can add a named target and edit a draft, which saves as "needs admin approval". No approve buttons. |
 | UI-14 | Email permission + digest | Uma opens Shaadi Squad Events: permission "none" with the cold-routing note. She sets "Opted out", sees the toast, and all 3 messages show cancelled. The admin clicks "Email approval digest" and gets "Digest emailed to 1 admin (outbox)". |
 | UI-15 | Load researched partners | The admin clicks "Load researched partners" and gets a toast. India Association of Minnesota opens with the "researched organisation" badge, a clickable iamn.org website and contact link, and 3 drafts titled "… + Jodibana: a small pilot idea". |
+| UI-16 | LinkedIn campaign in the browser | A user imports a Connections.csv on Partners, creates a LiqMint Institutional campaign and adds Lead Bank. The import reports Lead Bank's named contact; the campaign funnel shows 1 partner; Lead Bank shows "People you know here" with the named contact, a link to the campaign and a "Connected on LinkedIn" timeline entry. |
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
 
 ## Database tests (`tests/test_db.py`)

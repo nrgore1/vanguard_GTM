@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.8.1 |
+| **Version** | 0.9.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
-| **Last updated** | 2026-09-28 |
+| **Last updated** | 2026-10-01 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
 
 > **Keeping this current.** Every change to behaviour, configuration, the CLI, the API or the
@@ -698,6 +698,46 @@ queue until someone adds a business contact.
 | `email_suppression` | email, reason (opt-out/bounce), at |
 | `inbound_emails` | message_id, partner_id, outreach_id, from_addr, subject, received_at, classification |
 
+### 15.9 Campaign link and LinkedIn connections (v0.9.0)
+
+**Campaign link.** A partner belongs to at most one campaign (`partners.campaign_id`, same property
+only). Attaching a segment attaches the named organisations under it; attaching a partner that is
+in another campaign moves it. Everything that happens to an attached partner counts towards the
+campaign without being stored twice: `campaign_link.campaign_outreach` computes, on every read,
+
+| Measure | From |
+|---|---|
+| Partners | partners with this `campaign_id` |
+| Emails sent | `outreach_messages.sent_at` set |
+| LinkedIn/X touches | `partner_interactions` of type `linkedin` or `x`, except "Connected on LinkedIn" events |
+| Touched | partners with an email sent or a LinkedIn/X touch |
+| Replied | partners with a replied message, or `email_consent` `replied`/`opted_out` |
+| Meetings | interactions of type `meeting` or `demo` |
+| In conversation / pilot / signed | partner stage (in conversation counts everyone at or past it) |
+| Queue | drafts awaiting approval, approved messages, partners with drafts but no email, next due date |
+
+The campaign's displayed sent, replies and meetings are hand-logged `campaign_results` **plus**
+these, so hand logging is for what the app cannot see (opens and clicks from another tool, signups,
+revenue, spend). Goal progress uses the combined figure. `GET /outreach` filters by `campaign_id`.
+Deleting a campaign clears `campaign_id` on its partners; partners and their history stay.
+
+**LinkedIn connections.** LinkedIn's API does not give third-party apps a member's connections or
+messaging, and scraping or browser automation breaks its terms, so Vanguard-GTM never touches
+LinkedIn. It reads the member's own export instead (Settings → Data privacy → Get a copy of your
+data → Connections.csv). `linkedin.import_connections` parses the file (skipping LinkedIn's
+"Notes" preamble), keys rows by profile URL and importing user, and refreshes on re-import.
+Companies are normalised (case, punctuation, legal suffixes) and matched to partner names, the
+text in brackets, and the part before " - "; a prefix match needs four or more characters and a
+non-generic word ("Bank" alone never matches). People match on first name plus last name or last
+initial ("Eleni S." = "Eleni Steinman"). When a partner's named contact is found, the partner gets
+one `linkedin` timeline entry "Connected on LinkedIn: …" dated with the connection date, which is
+how an accepted request shows up after the next export; and if the connection shared an email and
+the partner has none, it becomes the contact email. Each user may delete their own imported rows.
+
+**Data.** `partners.campaign_id INTEGER` (migration); new table `linkedin_connections` (owner_id,
+profile_url, first_name, last_name, email, company, company_norm, position, connected_on,
+imported_at, updated_at). Interaction types gain `linkedin` and `x`.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -842,6 +882,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.9.0 | 2026-10-01 | **Campaigns linked to outreach** (§15.9): partners attach to a campaign (UI "Add partners", `POST/DELETE /campaigns/{id}/partners`, `vanguard campaign attach/detach/show/list`); emails sent, LinkedIn/X touches, replies and meetings for attached partners count towards the campaign automatically and add to hand-logged results; campaign page shows the funnel, the send queue and per-partner progress; Outreach filters by campaign. **LinkedIn connections import** from LinkedIn's own data export (no API, no scraping): matched to partners by company, shown on partner pages and as a Known count, named contacts who connected get a timeline entry, shared emails fill empty contact emails (`vanguard linkedin import/matches`, `/linkedin/connections`). Interaction types `linkedin` and `x`. Tests E2E-33, WEB-30, WEB-31. |
 | 0.8.1 | 2026-09-29 | **Partner contacts and mid-market targets** (§15.7): `partner_targets.yaml` gains `how_to_reach`, sourced `contacts` and `recent_hook`; contacts refreshed for 12 LiqMint Institutional partners; 24 new mid-market targets in four new categories (stablecoin banks, stablecoin fintechs, wallet/compliance infrastructure, mid-size advisory); tier-1 banks and Coinbase Prime moved to P1; categories may override draft wording (`middle`, `follow`); import creates segments for newly added categories. **Fix:** design-partner drafts contained `{company}` instead of the `{{company}}` merge tag (str.format collapsed the braces), so emails would have shown a literal placeholder; drafts now keep the tag and sending also fills `{company}` in drafts written earlier. Test WEB-29. |
 | 0.8.0 | 2026-09-28 | **PostgreSQL** (§10): `VANGUARD_DATABASE_URL` switches every table to PostgreSQL through `db.py`; SQL made portable (upserts, dates, boolean sums, `GROUP BY`); Docker Compose runs PostgreSQL 16 on a private network; `vanguard db info` and `vanguard db copy-from-sqlite`; the suite runs on PostgreSQL with `VANGUARD_TEST_DATABASE_URL`. **Config path fix:** an installed package (Docker) looked for `config/` inside site-packages; now `VANGUARD_CONFIG_DIR`, else the repo, else `./config`. **Reply-date fix:** replies were dated by the server's local date while sends used UTC, so late-evening replies sorted before the email they answered (WEB-19 failed after midnight UTC); both now use UTC. `.dockerignore` added. Tests E2E-32 and `tests/test_db.py`. |
 | 0.7.3 | 2026-09-28 | **Docker fix:** `pyproject.toml` listed only the `vanguard` package, so a non-editable install (the Docker image) left out `vanguard.web` and `vanguard serve` failed with `ModuleNotFoundError`. Both packages are now listed, and `tests/test_docs_sync.py` fails if a package under `vanguard/` is missing from the build list. |

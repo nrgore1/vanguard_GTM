@@ -312,6 +312,36 @@ test.describe.serial("Vanguard-GTM web app", () => {
     await expect(page.getByText("draft", { exact: true })).toHaveCount(3);
   });
 
+  test("UI-16 user builds a LinkedIn campaign: imports connections, adds a partner, sees it counted", async ({ page }) => {
+    await login(page, UMA);
+    await page.goto("/partners?property=liqmint-institutional");
+    await page.getByRole("button", { name: "Import LinkedIn connections" }).click();
+    const csv = "Notes:\n\"export notes\"\n\nFirst Name,Last Name,URL,Email Address,Company,Position,Connected On\n" +
+      "Eleni,S.,https://www.linkedin.com/in/eleni-e2e,,Lead,Head of Stablecoins,02 Oct 2026\n";
+    await page.locator('input[type="file"]').setInputFiles({ name: "Connections.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+    await page.getByRole("button", { name: "Import", exact: true }).click();
+    await expect(page.getByText(/Named contacts you're now connected with: Lead Bank/)).toBeVisible();
+    await page.getByRole("button", { name: "Done" }).click();
+    await page.goto("/campaigns");
+    await page.getByRole("button", { name: "New campaign" }).first().click();
+    const dlg = page.getByRole("dialog");
+    await dlg.getByLabel("Name").fill("LinkedIn warm intros");
+    await dlg.getByLabel("Property").selectOption("liqmint-institutional");
+    await dlg.getByRole("button", { name: /create|save/i }).click();
+    await expect(page.getByRole("heading", { name: "LinkedIn warm intros" })).toBeVisible();
+    await page.getByRole("button", { name: "Add partners" }).first().click();
+    await page.getByPlaceholder("Search partners").fill("Lead Bank");
+    await page.getByRole("dialog").getByRole("checkbox").first().check();
+    await page.getByRole("button", { name: "Add 1" }).click();
+    await expect(page.getByRole("link", { name: "Lead Bank" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Campaign funnel" })).toContainText("Partners1");
+    await page.getByRole("link", { name: "Lead Bank" }).click();
+    await expect(page.getByText("People you know here")).toBeVisible();
+    await expect(page.getByText("named contact")).toBeVisible();
+    await expect(page.getByRole("link", { name: "LinkedIn warm intros" })).toBeVisible();
+    await expect(page.getByText(/Connected on LinkedIn: Eleni S\./)).toBeVisible();
+  });
+
   test("UI-11 theme toggle and sign-out", async ({ page }) => {
     await login(page, UMA);
     await page.getByRole("button", { name: "Toggle theme" }).click();
