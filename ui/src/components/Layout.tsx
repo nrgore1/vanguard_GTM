@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, Megaphone, Handshake, ListChecks, ShieldCheck, LogOut, Sun, Moon, Menu, X, Send, Siren } from "lucide-react";
+import { LayoutDashboard, Megaphone, Handshake, ListChecks, ShieldCheck, LogOut, Sun, Moon, Menu, X, Send, Siren, Network } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { Badge, cx } from "./ui";
@@ -34,6 +34,7 @@ export default function Layout() {
     { to: "/campaigns", label: "Campaigns", icon: Megaphone },
     { to: "/partners", label: "Partners", icon: Handshake },
     { to: "/outreach", label: "Outreach", icon: Send },
+    { to: "/intros", label: "Introductions", icon: Network },
     { to: "/tasks", label: "Tasks", icon: ListChecks },
     { to: "/tripwires", label: "Tripwires", icon: Siren },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),

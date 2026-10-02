@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.11.0 — 2026-10-02
+
+### Added: Introductions
+- **Import your full LinkedIn archive** (.zip) on Partners. Besides connections it now reads how often you've
+  messaged each person, endorsements and how long you've been connected, and scores every tie 0-5. Message
+  text is never stored.
+- **Find paths** (new Introductions page): for each investor and partner, people you know who can introduce
+  you - insiders who work there, and likely bridges (someone at a company in the target's background, or a
+  close tie in the target's world). Each target has a "Check 2nd-degree" link that opens LinkedIn's search
+  filtered to your 2nd-degree network, because LinkedIn's export doesn't include 2nd/3rd-degree connections.
+- **Ask for the intro**: a drafted double opt-in note plus a short paragraph to forward, checked against the
+  claim rules. An admin approves; it is emailed if the person shared an email with LinkedIn, otherwise you
+  send it on LinkedIn and mark it sent. Outcomes (agreed, introduced, declined) go on the target's timeline.
+- Each partner page has a "Paths in" card.
+
+### Added: more investors
+- 118 more Fintech, Crypto and AI investors from the full 80-page vcconf.com list (310 in total), with 15 more
+  researched; a firm's email is used only where the firm publishes it.
+
+
 ## 0.10.0 — 2026-10-02
 
 ### Added: ranked investor targets for the raise

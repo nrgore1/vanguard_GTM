@@ -8,6 +8,8 @@ import { Badge, Button, Card, CardHeader, Confirm, ErrorNote, Field, Input, Sele
 import { KIND_HELP, PartnerForm } from "./Partners";
 import { AgreementCard, PriorityCard, SequenceCard, TargetsCard } from "../components/PartnerPanels";
 import { ConnectionsCard } from "../components/LinkedInPanels";
+import { IntroEditor, Strength } from "./Intros";
+import type { Intro } from "../lib/api";
 
 const TYPE_ICON: Record<string, typeof Mail> = { email: Mail, linkedin: Linkedin, x: AtSign, call: Phone, meeting: Users, demo: Presentation, proposal: FileText, note: StickyNote };
 const TYPE_LABEL: Record<string, string> = { linkedin: "LinkedIn", x: "X (Twitter)" };
@@ -24,6 +26,7 @@ export default function PartnerDetail() {
   const [f, setF] = useState({ date: today(), type: "email", summary: "", outcome: "none", next_step: "", stage: "" });
   const [busy, setBusy] = useState(false);
   const [formErr, setFormErr] = useState<unknown>(null);
+  const [intro, setIntro] = useState<Intro | null>(null);
 
   if (loading && !p) return <Spinner />;
   if (!p) return <ErrorNote error={error} />;
@@ -92,6 +95,16 @@ export default function PartnerDetail() {
       <div className="grid gap-4 lg:grid-cols-[1fr_1.3fr]">
         <div className="space-y-4">
           {Array.isArray(p.connections) && <ConnectionsCard people={p.connections} />}
+          {!p.is_segment && <Card>
+            <CardHeader title="Paths in (introductions)" sub="People you know who can introduce you. Open one to draft the ask."
+              action={p.mutuals_url && <a href={p.mutuals_url} target="_blank" rel="noreferrer noopener" className="text-xs text-vireo hover:underline">Check 2nd-degree on LinkedIn</a>} />
+            {(p.intros ?? []).length === 0 ? <p className="px-5 py-6 text-sm text-muted">No paths yet. Import your LinkedIn export (Partners page), then <Link to="/intros" className="text-vireo hover:underline">Find paths</Link>.</p> : (
+              <ul className="divide-y divide-line">{(p.intros ?? []).map((i) => (
+                <li key={i.id}><button onClick={() => setIntro(i)} className="flex w-full items-start gap-3 px-5 py-3 text-left text-sm hover:bg-surface-2">
+                  <div className="min-w-0 flex-1"><div className="font-medium">{i.first_name} {i.last_name} <Badge tone={i.path === "direct" ? "green" : "sky"}>{i.path === "direct" ? "insider" : "likely bridge"}</Badge></div>
+                    <div className="truncate text-xs text-muted">{i.position}{i.company ? ` · ${i.company}` : ""}</div></div>
+                  <Strength v={i.strength} /><Badge tone={statusTone(i.status)}>{i.status}</Badge></button></li>))}</ul>)}
+          </Card>}
           <TargetsCard p={p} onAdded={reload} />
           <SequenceCard p={p} onChanged={reload} />
           <Card>
@@ -145,6 +158,7 @@ export default function PartnerDetail() {
           )}
         </Card>
       </div>
+      <IntroEditor intro={intro} onClose={() => setIntro(null)} onChanged={() => { setIntro(null); reload(); }} />
       <PartnerForm open={editing} onClose={() => setEditing(false)} initial={p} onSaved={() => { setEditing(false); reload(); }} />
       <Confirm open={confirm} onClose={() => setConfirm(false)} onConfirm={del} title="Delete partner?"
         body={<>Removes <b className="text-ink">{p.name}</b> and its {p.interactions.length} logged interactions.</>} />

@@ -423,6 +423,35 @@ def cmd_investors(a, store: Store):
               f"{(r['partner_type'] or '')[:48]:48} {r['stage']}")
 
 
+def cmd_intros(a, store: Store):
+    """Paths to investors and partners through people you know (from imported LinkedIn exports)."""
+    from .intros import draft, listing, send_approved, suggest
+    from .web.db import WebStore
+    ws = WebStore(store.path)
+    if a.action == "suggest":
+        res = suggest(ws, a.property.split(",") if a.property else None)
+        if res.get("error"):
+            sys.exit(res["error"])
+        print(f"{res['targets']} targets checked · {res['suggested']} new intro paths ({res['direct']} through insiders)")
+    elif a.action == "draft":
+        rows = listing(ws, "suggested")
+        for r in rows:
+            draft(ws, r["id"])
+        print(f"{len(rows)} asks drafted - an admin approves them in the app (Intros) before anything is sent")
+    elif a.action == "send":
+        res = send_approved(ws)
+        if res.get("error"):
+            sys.exit(res["error"])
+        for m in res["sent"]:
+            print(f"sent   #{m['id']} -> {m['to']} <{m['email']}> about {m['target']}")
+        for m in res["skipped"]:
+            print(f"held   #{m['id']} {m['to']}: {m['reason']}")
+    else:
+        for r in listing(ws, a.status):
+            print(f"  #{r['id']:<4} {r['priority'] or '--':3} {r['partner_name'][:26]:26} <- {r['first_name']} {r['last_name']}"
+                  f"{' (insider)' if r['path'] == 'direct' else ''} · strength {r['strength'] or 0:g} · {r['status']}")
+
+
 def cmd_linkedin(a, store: Store):
     """Load LinkedIn's Connections.csv (Settings > Data privacy > Get a copy of your data) and match it to partners."""
     from .linkedin import import_connections, partners_with_connections
@@ -438,8 +467,12 @@ def cmd_linkedin(a, store: Store):
                 sys.exit(f"no user {a.by}")
             uid = u["id"]
         try:
-            res = import_connections(ws, Path(a.file).read_text(encoding="utf-8-sig"), uid)
-        except ValueError as e:
+            if a.file.lower().endswith(".zip"):
+                from .intros import import_export_zip
+                res = import_export_zip(ws, Path(a.file).read_bytes(), uid)
+            else:
+                res = import_connections(ws, Path(a.file).read_text(encoding="utf-8-sig"), uid)
+        except (ValueError, FileNotFoundError) as e:
             sys.exit(str(e))
         print(f"{res['connections']} connections ({res['added']} new, {res['refreshed']} refreshed) · "
               f"{res['partners_with_connections']} partners where you know someone")
@@ -447,6 +480,8 @@ def cmd_linkedin(a, store: Store):
             print(f"  connected: named contact at {n}")
         for n in res["emails_filled"]:
             print(f"  email added from LinkedIn: {n}")
+        if "warm" in res:
+            print(f"  tie strength from the full export: {res['with_messages']} people you've messaged, {res['warm']} warm ties (2+/5)")
         return
     known = partners_with_connections(ws)
     q, args = "SELECT id, name, property_id, priority FROM partners WHERE COALESCE(is_segment,0)=0", []
@@ -738,6 +773,10 @@ def main(argv=None):
     s = sub.add_parser("investors", help="investor targets for the raise: import [FILE] | list [--priority P0]")
     s.add_argument("action", choices=["import", "list"]); s.add_argument("file", nargs="?")
     s.add_argument("--priority", help="list: only this priority (P0, P1, P2)"); s.set_defaults(fn=cmd_investors)
+    s = sub.add_parser("intros", help="introductions through your LinkedIn connections: suggest | list | draft | send")
+    s.add_argument("action", choices=["suggest", "list", "draft", "send"])
+    s.add_argument("--property", help="suggest: only these properties (comma list)")
+    s.add_argument("--status", help="list: only this status"); s.set_defaults(fn=cmd_intros)
     s = sub.add_parser("linkedin", help="LinkedIn connections from LinkedIn's own data export: import FILE --by EMAIL | matches")
     s.add_argument("action", choices=["import", "matches"]); s.add_argument("file", nargs="?")
     s.add_argument("--by", help="import: the user these connections belong to (email)")

@@ -342,6 +342,28 @@ test.describe.serial("Vanguard-GTM web app", () => {
     await expect(page.getByText(/Connected on LinkedIn: Eleni S\./)).toBeVisible();
   });
 
+  test("UI-17 admin finds an introduction path from a LinkedIn archive, drafts, approves and sends it", async ({ page }) => {
+    await login(page, ADMIN);
+    await page.goto("/partners?property=liqmint-institutional");
+    await page.getByRole("button", { name: "Import LinkedIn connections" }).click();
+    await page.locator('input[type="file"]').setInputFiles(new URL("./fixtures/linkedin_export.zip", import.meta.url).pathname);
+    await page.getByRole("button", { name: "Import", exact: true }).click();
+    await expect(page.getByText(/warm ties/)).toBeVisible();
+    await page.getByRole("button", { name: "Done" }).click();
+    await page.goto("/intros");
+    await page.getByRole("button", { name: "Find paths" }).first().click();
+    await expect(page.getByText(/new paths across/)).toBeVisible();
+    const row = page.getByRole("row").filter({ hasText: "Lead Bank" }).filter({ hasText: "Sam Okafor" });
+    await expect(row.getByText("insider", { exact: true })).toBeVisible();
+    await expect(row.getByRole("link", { name: "Check 2nd-degree" })).toHaveAttribute("href", /network=%5B%22S%22%5D/);
+    await row.click();
+    await page.getByRole("button", { name: "Draft the ask" }).click();
+    await expect(page.getByRole("dialog").getByText(/Note to forward/).first()).toBeVisible();
+    await page.getByRole("dialog").getByRole("button", { name: "Approve" }).click();
+    await page.getByRole("button", { name: "Send approved emails" }).click();
+    await expect(page.getByText(/emailed Sam Okafor <sam@lead.example>/)).toBeVisible();
+  });
+
   test("UI-11 theme toggle and sign-out", async ({ page }) => {
     await login(page, UMA);
     await page.getByRole("button", { name: "Toggle theme" }).click();

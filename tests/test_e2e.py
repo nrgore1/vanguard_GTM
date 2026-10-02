@@ -768,3 +768,21 @@ def test_e2e_investor_targets_cli(env, tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("property_id: vireoka\n", encoding="utf-8")
     assert cli(env, "investors", "import", str(bad), check=False).returncode != 0
+
+
+def test_e2e_intros_cli(env, tmp_path):
+    """E2E-35: `vanguard linkedin import export.zip` loads tie strength; `vanguard intros suggest`, `draft` and
+    `list` work from the command line, and `intros send` sends nothing until an admin has approved an ask."""
+    import base64
+    from tests.test_web import _linkedin_zip
+    z = tmp_path / "export.zip"
+    z.write_bytes(base64.b64decode(_linkedin_zip().split(",", 1)[1]))
+    cli(env, "partners", "import")
+    cli(env, "investors", "import")
+    out = cli(env, "linkedin", "import", str(z)).stdout
+    assert "4 connections" in out and "warm ties" in out
+    assert "new intro paths" in cli(env, "intros", "suggest").stdout
+    assert "asks drafted" in cli(env, "intros", "draft").stdout
+    listing = cli(env, "intros", "list", "--status", "draft").stdout
+    assert "Lead Bank" in listing and "(insider)" in listing
+    assert "sent" not in cli(env, "intros", "send").stdout.split("\n")[0].split()[:1]

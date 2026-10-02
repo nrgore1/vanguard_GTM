@@ -10,12 +10,16 @@ export function ImportLinkedIn({ open, onClose, onDone }: { open: boolean; onClo
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const [res, setRes] = useState<Awaited<ReturnType<typeof api.importLinkedIn>> | null>(null);
+  const [res, setRes] = useState<(Awaited<ReturnType<typeof api.importLinkedIn>> & { warm?: number; with_messages?: number }) | null>(null);
   const run = async () => {
     if (!file) return;
     setBusy(true); setError(null);
     try {
-      const r = await api.importLinkedIn(await file.text());
+      const r = file.name.toLowerCase().endsWith(".zip")
+        ? await api.importLinkedInZip(await new Promise<string>((ok, bad) => {
+            const fr = new FileReader(); fr.onload = () => ok(String(fr.result)); fr.onerror = () => bad(fr.error); fr.readAsDataURL(file);
+          }))
+        : await api.importLinkedIn(await file.text());
       setRes(r); toast(`${r.connections} connections loaded`); onDone();
     } catch (e) { setError(e); } finally { setBusy(false); }
   };
@@ -33,16 +37,17 @@ export function ImportLinkedIn({ open, onClose, onDone }: { open: boolean; onClo
         <div className="space-y-2 text-sm">
           <p><b>{res.connections}</b> connections ({res.added} new, {res.refreshed} refreshed). You know someone at <b>{res.partners_with_connections}</b> partners - see the <span className="text-vireo">Known</span> column.</p>
           {res.contacts_connected.length > 0 && <p>Named contacts you're now connected with: {res.contacts_connected.join(", ")}. Each got a "Connected on LinkedIn" entry in its timeline.</p>}
+          {res.warm != null && <p>From the full archive: you've messaged {res.with_messages} of them, and {res.warm} are warm ties. Open <span className="text-vireo">Introductions</span> and click Find paths.</p>}
           {res.emails_filled.length > 0 && <p>Contact emails added from LinkedIn (shared by the person): {res.emails_filled.join(", ")}.</p>}
         </div>
       ) : (
         <>
           <ol className="mb-4 list-decimal space-y-1.5 pl-5 text-sm text-muted">
             <li>On LinkedIn, open <b className="text-ink">Settings → Data privacy → Get a copy of your data</b>.</li>
-            <li>Tick <b className="text-ink">Connections</b> only and request the archive. LinkedIn emails a download link, usually within 10 minutes.</li>
-            <li>Unzip it and choose <code className="font-mono text-xs text-ink">Connections.csv</code> below.</li>
+            <li>Choose <b className="text-ink">Download larger data archive</b> (connections, messages, endorsements). LinkedIn emails a download link; the full archive can take up to a day, the connections-only one about 10 minutes.</li>
+            <li>Choose the <b className="text-ink">.zip</b> LinkedIn sent (best: tie strength from messages and endorsements feeds Introductions), or just <code className="font-mono text-xs text-ink">Connections.csv</code>.</li>
           </ol>
-          <input type="file" accept=".csv,text/csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          <input type="file" accept=".csv,text/csv,.zip,application/zip" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-line file:bg-surface-2 file:px-3 file:py-1.5 file:text-ink" />
           <p className="mt-3 text-xs text-faint">Your connections are matched to partners by company. Re-import every week or two: newly accepted
             requests then show up on the partner's timeline. Nothing is sent to LinkedIn, and nothing here automates your account.</p>

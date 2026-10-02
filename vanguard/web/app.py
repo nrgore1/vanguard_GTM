@@ -195,6 +195,24 @@ class LinkedInImportIn(BaseModel):
     csv: str = Field(min_length=20, max_length=20_000_000)
 
 
+class LinkedInZipIn(BaseModel):
+    zip_b64: str = Field(min_length=20, max_length=60_000_000)
+
+
+class IntroSuggestIn(BaseModel):
+    property_ids: list[str] | None = None
+
+
+class IntroEditIn(BaseModel):
+    subject: str | None = Field(default=None, min_length=3, max_length=160)
+    body: str | None = Field(default=None, min_length=20, max_length=5000)
+
+
+class IntroOutcomeIn(BaseModel):
+    outcome: Literal["accepted", "introduced", "declined", "cancelled"]
+    note: str | None = Field(default=None, max_length=2000)
+
+
 class IdsIn(BaseModel):
     ids: list[int] = Field(min_length=1, max_length=500)
 
@@ -536,6 +554,9 @@ def get_partner(pid: int, u: dict = Depends(current_user)):
     p["connections"] = [{k: c[k] for k in ("id", "first_name", "last_name", "profile_url", "email", "company", "position",
                                            "connected_on", "owner_name", "is_contact")}
                         for c in partners_with_connections(s, [pid]).get(pid, [])]
+    from ..intros import listing, mutuals_search_url
+    p["intros"] = listing(s, partner_id=pid)
+    p["mutuals_url"] = mutuals_search_url(p)
     return p
 
 
@@ -547,6 +568,88 @@ def import_linkedin(body: LinkedInImportIn, u: dict = Depends(current_user)):
         return import_connections(store(), body.csv, u["id"])
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+@api.post("/linkedin/export")
+def import_linkedin_export(body: LinkedInZipIn, u: dict = Depends(current_user)):
+    """LinkedIn's full data export (.zip): connections plus message counts and endorsements for tie strength."""
+    import base64
+    import binascii
+    from ..intros import import_export_zip
+    try:
+        data = base64.b64decode(body.zip_b64.split(",", 1)[-1], validate=False)
+        return import_export_zip(store(), data, u["id"])
+    except (ValueError, binascii.Error) as e:
+        raise HTTPException(400, str(e))
+
+
+# introductions -------------------------------------------------------------------------
+@api.post("/intros/suggest")
+def suggest_intros(body: IntroSuggestIn, u: dict = Depends(current_user)):
+    from ..intros import suggest
+    return suggest(store(), body.property_ids, user_id=u["id"])
+
+
+@api.get("/intros")
+def list_intros(status: str | None = None, partner_id: int | None = None, kind: str | None = None,
+                u: dict = Depends(current_user)):
+    from ..intros import listing
+    return listing(store(), status, partner_id, kind)
+
+
+@api.post("/intros/{iid}/draft")
+def draft_intro(iid: int, u: dict = Depends(current_user)):
+    from ..intros import draft
+    try:
+        return draft(store(), iid, (u.get("name") or "Narendra").split(" ")[0])
+    except KeyError:
+        raise HTTPException(404)
+
+
+@api.patch("/intros/{iid}")
+def edit_intro(iid: int, body: IntroEditIn, u: dict = Depends(current_user)):
+    from ..intros import edit
+    try:
+        return edit(store(), iid, body.subject, body.body)
+    except KeyError:
+        raise HTTPException(404)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@api.post("/intros/approve")
+def approve_intros(body: IdsIn, a: dict = Depends(admin_user)):
+    from ..intros import approve
+    res = approve(store(), body.ids, a["name"])
+    store().audit(a["id"], "approve", "intros", ",".join(map(str, res["approved"])))
+    return res
+
+
+@api.post("/intros/send")
+def send_intros(a: dict = Depends(admin_user)):
+    from ..intros import send_approved
+    return send_approved(store(), actor=a["id"])
+
+
+@api.post("/intros/{iid}/sent-linkedin")
+def intro_sent_linkedin(iid: int, u: dict = Depends(current_user)):
+    from ..intros import mark_sent_linkedin
+    try:
+        mark_sent_linkedin(store(), iid, u["id"])
+    except KeyError:
+        raise HTTPException(404)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    return {"ok": True}
+
+
+@api.post("/intros/{iid}/outcome")
+def intro_outcome(iid: int, body: IntroOutcomeIn, u: dict = Depends(current_user)):
+    from ..intros import record_outcome
+    try:
+        return record_outcome(store(), iid, body.outcome, body.note, u["id"])
+    except KeyError:
+        raise HTTPException(404)
 
 
 @api.get("/linkedin/connections")

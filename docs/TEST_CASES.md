@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.10.0 · updated 2026-10-02
+Version 0.11.0 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -45,6 +45,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | E2E-32 | Move SQLite data into the configured database | Old SQLite file with two users and a tripwire reading; `db copy-from-sqlite` into the configured database | Every table is copied; a second run skips tables that already hold rows; `db info` shows 2 users; the next new user gets id 3; the command without a file is refused. On PostgreSQL this is a real SQLite-to-PostgreSQL copy. |
 | E2E-33 | Campaign by CLI and LinkedIn export | Import partners; `campaign attach` by name (an unknown name is refused); `linkedin import` a Connections.csv with LinkedIn's notes preamble, twice; `linkedin matches`; `campaign show` | Partners attached; 3 connections loaded then refreshed, not duplicated; "Eleni S." at "Lead" recognised as Lead Bank's named contact; Protiviti's empty email filled from the export; "Bank" matches nothing; `show` lists 2 partners with the email; a missing file exits non-zero. |
 | E2E-34 | Investor targets from the CLI | `investors import` twice; `investors list --priority P0`; import a file without an investors list | Added, then 0 added on re-run, "No emails drafted"; the P0 list holds only P0 rows in descending score; the bad file exits non-zero. |
+| E2E-35 | Introductions from the CLI | `linkedin import export.zip`, `intros suggest`, `intros draft`, `intros list --status draft`, `intros send` | Tie strength reported ("warm ties"); new paths found; asks drafted; Lead Bank listed as an insider path; nothing sent before approval. |
 
 ## Live smoke cases (opt-in)
 
@@ -91,6 +92,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-31 | LinkedIn connections import | A file that isn't the export; the export as a user, twice; partner page and list; a campaign with Lead Bank; summary; delete as admin, then as the user | 400 for the wrong file; 3 added; Lead Bank's named contact gets one "Connected on LinkedIn" entry dated 2026-10-02 (not repeated, not counted as a touch); partner page lists Eleni as named contact via Uma User; Known counts 1 for Lead Bank and U.S. Bank, 0 for BNY; admin deletes 0 rows, the user deletes 3. |
 | WEB-32 | Investor contacts | Create "Robert Fabbio" as kind investor under Vireoka, log a note that moves the stage, filter by kind, try an unknown kind | Created with no drafted emails; stage contacted; the investor filter returns only him; an unknown kind is 422. |
 | WEB-33 | Investor targets | Check the YAML; Load researched partners as admin; set the top investor to contacted with an email; load again | Ranks 1..N, priorities match scores, five factors each, https sources, no published email; every investor created as kind investor under Vireoka with "Rank #1 of", key considerations and sources; no outreach drafts; the re-load refreshes all and keeps the stage and email. |
+| WEB-34 | Introductions | A bad zip; a synthetic export with messages and an endorsement; Find paths; draft; approve as user then admin; send; mark sent on LinkedIn; record introduced | 400 for the bad zip; message counts 6 and 13, one endorsement, strength ordered, no message text stored; Sam (at Lead) is an insider path for Lead Bank, Eleni (the target) is not proposed, only Andrea (TA Ventures) bridges to investors and for at most 4 of them; the draft names Eleni, is double opt-in and has a note to forward; user approval is 403; the email goes only to the connector who shared an address, the other is held for LinkedIn; marking an emailed ask as sent on LinkedIn is 409; the outcome and the ask are on the partner timeline. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
@@ -115,6 +117,7 @@ Atmakosh.
 | UI-14 | Email permission + digest | Uma opens Shaadi Squad Events: permission "none" with the cold-routing note. She sets "Opted out", sees the toast, and all 3 messages show cancelled. The admin clicks "Email approval digest" and gets "Digest emailed to 1 admin (outbox)". |
 | UI-15 | Load researched partners | The admin clicks "Load researched partners" and gets a toast. India Association of Minnesota opens with the "researched organisation" badge, a clickable iamn.org website and contact link, and 3 drafts titled "… + Jodibana: a small pilot idea". |
 | UI-16 | LinkedIn campaign in the browser | A user imports a Connections.csv on Partners, creates a LiqMint Institutional campaign and adds Lead Bank. The import reports Lead Bank's named contact; the campaign funnel shows 1 partner; Lead Bank shows "People you know here" with the named contact, a link to the campaign and a "Connected on LinkedIn" timeline entry. |
+| UI-17 | Introductions in the browser | Import a LinkedIn .zip on Partners; Introductions, Find paths; open the Lead Bank path; draft; admin approves; send approved emails | The import reports warm ties; an insider path to Lead Bank appears with a 2nd-degree search link; the drafted ask shows the note to forward; after approval the send report shows the email to the connector. |
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
 
 ## Database tests (`tests/test_db.py`)

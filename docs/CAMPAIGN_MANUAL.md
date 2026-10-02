@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.9.0 · updated 2026-10-01 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.11.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -326,6 +326,24 @@ Command line (admin, on the server, after copying the file into `/opt/vanguard-g
 sudo docker exec vanguard-gtm vanguard linkedin import /app/data/Connections.csv --by naren@atmakosh.com
 sudo docker exec vanguard-gtm vanguard linkedin matches --property liqmint-institutional
 ```
+
+### Introductions (v0.11.0)
+Warm introductions beat any cold message. After importing the **full** archive (the .zip, not just
+Connections.csv):
+
+1. **Introductions → Find paths.** You get up to three people per target: **insiders** (they work there) and
+   **likely bridges** (someone at a company in the target's background, or a close tie in the target's world).
+2. For a bridge, click **Check 2nd-degree** first. It opens LinkedIn's search for the target, filtered to your
+   2nd-degree network, so you can see who you actually share. LinkedIn's export doesn't include 2nd- or
+   3rd-degree connections, so the app can't see that for you.
+3. Tick the paths worth using → **Draft**. Each ask is a short double opt-in note ("say no if it isn't a fit")
+   plus a paragraph they can forward. Edit it to sound like you.
+4. An admin **approves**. **Send approved emails** emails the people who shared an address with LinkedIn; for
+   everyone else, open the ask, **Copy & open LinkedIn**, send it there, then click **I sent it on LinkedIn**.
+5. When they answer, record **Agreed to intro**, **Introduced** or **Declined**. It's logged on the target's
+   page, and an introduction moves the target to Contacted.
+
+Nobody is proposed for more than four introductions, so no one gets a pile of requests from you.
 
 ---
 

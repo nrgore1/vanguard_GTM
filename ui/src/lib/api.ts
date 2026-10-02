@@ -49,11 +49,21 @@ export interface Partner {
   outreach?: OutreachMessage[]; targets?: { id: number; name: string; stage: string; contact_email: string | null; agreement_status: string | null }[];
   segment_name?: string | null; email_consent?: EmailConsent | null;
   campaign_id?: number | null; campaign_name?: string | null;
-  connections?: number | LinkedInConnection[];
+  connections?: number | LinkedInConnection[]; intros?: Intro[]; mutuals_url?: string;
 }
 export interface LinkedInConnection {
   id: number; first_name: string; last_name: string; profile_url: string | null; email: string | null; company: string | null;
   position: string | null; connected_on: string | null; owner_name: string | null; is_contact: boolean;
+}
+export type IntroStatus = "suggested" | "draft" | "approved" | "sent" | "accepted" | "introduced" | "declined" | "cancelled";
+export interface Intro {
+  id: number; partner_id: number; connection_id: number; path: "direct" | "bridge"; reason: string | null; score: number;
+  status: IntroStatus; channel: "email" | "linkedin"; subject: string | null; body: string | null; blurb: string | null;
+  lint_status: string | null; lint_findings: string | null; approved_by: string | null; sent_at: string | null; outcome: string | null;
+  partner_name: string; partner_kind: PartnerKind; priority: string | null; priority_score: number | null; property_id: string;
+  target_contact: string | null; first_name: string; last_name: string; position: string | null; company: string | null;
+  email: string | null; profile_url: string | null; strength: number | null; msg_count: number | null;
+  last_message_at: string | null; endorsements: number | null; mutuals_url: string;
 }
 export interface AgentStatus {
   version: string; provider: string; local_model: string; local_ok: boolean | null; local_message: string;
@@ -200,6 +210,16 @@ export const api = {
   deleteInteraction: (id: number) => req("DELETE", `/interactions/${id}`),
   importLinkedIn: (csv: string) => req<{ connections: number; added: number; refreshed: number; partners_with_connections: number;
     contacts_connected: string[]; emails_filled: string[] }>("POST", "/linkedin/connections", { csv }),
+  importLinkedInZip: (zip_b64: string) => req<{ connections: number; added: number; refreshed: number; partners_with_connections: number;
+    contacts_connected: string[]; emails_filled: string[]; with_messages?: number; warm?: number }>("POST", "/linkedin/export", { zip_b64 }),
+  suggestIntros: (property_ids?: string[]) => req<{ targets: number; suggested: number; direct: number; error?: string }>("POST", "/intros/suggest", { property_ids }),
+  intros: (f: { status?: string; partner_id?: number; kind?: string } = {}) => req<Intro[]>("GET", `/intros${qs(f as Record<string, string | undefined>)}`),
+  draftIntro: (id: number) => req("POST", `/intros/${id}/draft`),
+  editIntro: (id: number, b: { subject?: string; body?: string }) => req<{ lint_status: string; lint_findings: string | null }>("PATCH", `/intros/${id}`, b),
+  approveIntros: (ids: number[]) => req<{ approved: number[]; refused: { id: number; reason: string }[] }>("POST", "/intros/approve", { ids }),
+  sendIntros: () => req<{ sent: { id: number; to: string; email: string; target: string }[]; skipped: { id: number; to: string; reason: string }[]; mode: string; error?: string }>("POST", "/intros/send"),
+  introSentLinkedIn: (id: number) => req("POST", `/intros/${id}/sent-linkedin`),
+  introOutcome: (id: number, outcome: string, note?: string) => req("POST", `/intros/${id}/outcome`, { outcome, note }),
   linkedInSummary: () => req<{ by_user: { owner_id: number | null; owner_name: string | null; n: number; last_import: string }[]; partners_with_connections: number }>("GET", "/linkedin/connections"),
   deleteMyLinkedIn: () => req<{ deleted: number }>("DELETE", "/linkedin/connections"),
 

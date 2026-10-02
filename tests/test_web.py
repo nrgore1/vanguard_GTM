@@ -5,6 +5,7 @@ Each docstring starts with its ID from docs/TEST_CASES.md.
 from __future__ import annotations
 
 import json
+import re
 import os
 import subprocess
 import sys
@@ -980,7 +981,8 @@ def test_web_33_investor_targets(env):
         assert set(e["factors"]) == {"thesis", "stage", "check", "geo", "research"}
         for src in (e.get("research") or {}).get("sources", []):
             assert src.startswith("https://"), (e["name"], src)
-        assert not (e.get("research") or {}).get("published_email"), e["name"]   # none were published on firm sites
+        em = (e.get("research") or {}).get("published_email")
+        assert em is None or re.fullmatch(r"[\w.+-]+@[\w-]+(\.[\w-]+)+", em), (e["name"], em)   # a bare address, no notes
     r = c.post("/api/partners/import-research", headers=A).json()
     assert r["investors"]["created"] == len(inv) and r["investors"]["by_priority"]["P0"] >= 5
     top = s.one("SELECT * FROM partners WHERE kind='investor' AND name=?", (inv[0]["name"],))
@@ -995,3 +997,70 @@ def test_web_33_investor_targets(env):
     assert r["investors"]["created"] == 0 and r["investors"]["updated"] == len(inv)
     row = s.one("SELECT stage, contact_email FROM partners WHERE id=?", (top["id"],))
     assert (row["stage"], row["contact_email"]) == ("contacted", "me@fund.example")
+
+
+def _linkedin_zip(extra_rows: str = "") -> str:
+    import base64
+    import io as _io
+    import zipfile as _zf
+    buf = _io.BytesIO()
+    with _zf.ZipFile(buf, "w") as z:
+        z.writestr("Connections.csv", "Notes:\n\"export notes\"\n\nFirst Name,Last Name,URL,Email Address,Company,Position,Connected On\n"
+                   "Sam,Okafor,https://www.linkedin.com/in/sam-okafor,sam@lead.example,Lead,VP Treasury Operations,03 Mar 2019\n"
+                   "Eleni,S.,https://www.linkedin.com/in/eleni,,Lead,Head of Stablecoins,02 Oct 2026\n"
+                   "Andrea,Volk,https://www.linkedin.com/in/avolk,,TA Ventures,Partner,05 May 2018\n"
+                   "Joe,Bloggs,https://www.linkedin.com/in/jb,,Acme Widgets,Engineer,01 Jan 2020\n" + extra_rows)
+        z.writestr("messages.csv", "\"CONVERSATION ID\",\"CONVERSATION TITLE\",\"FROM\",\"SENDER PROFILE URL\",\"TO\",\"RECIPIENT PROFILE URLS\",\"DATE\",\"SUBJECT\",\"CONTENT\",\"FOLDER\",\"ATTACHMENTS\"\n"
+                   + "".join(f"\"c{i}\",\"\",\"Me\",\"https://www.linkedin.com/in/me\",\"X\",\"https://www.linkedin.com/in/{u}\",\"2026-09-{10 + i % 9:02d} 10:00:00 UTC\",\"\",\"private text\",\"INBOX\",\"\"\n"
+                             for i, u in enumerate(["sam-okafor"] * 6 + ["avolk"] * 12))
+                   + "\"c99\",\"\",\"Andrea Volk\",\"https://www.linkedin.com/in/avolk\",\"Me\",\"https://www.linkedin.com/in/me\",\"2026-09-30 10:00:00 UTC\",\"\",\"hi\",\"INBOX\",\"\"\n")
+        z.writestr("Endorsement_Received_Info.csv", "Endorsement Date,Skill Name,Endorser First Name,Endorser Last Name,Endorser Public Url,Endorsement Status\n"
+                   "2024/01/01 10:00:00 UTC,Fintech,Andrea,Volk,www.linkedin.com/in/avolk,ACCEPTED\n")
+    return "data:application/zip;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def test_web_34_introductions(env):
+    """WEB-34: the full LinkedIn export (.zip) loads connections with tie strength from message counts and
+    endorsements (message text is not stored); Find paths proposes an insider at a target and a likely bridge for an
+    investor, never the target person themselves; an ask is drafted as a double opt-in note with a forwardable
+    blurb; only an admin approves; approved asks are emailed when the connector shared an email, otherwise held for
+    LinkedIn and marked sent by hand; outcomes log on the partner and an introduction moves it to contacted."""
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    c.post("/api/partners/import-research", headers=A)
+    assert c.post("/api/linkedin/export", json={"zip_b64": "data:application/zip;base64,bm90IGEgemlw"}, headers=U).status_code == 400
+    r = c.post("/api/linkedin/export", json={"zip_b64": _linkedin_zip()}, headers=U).json()
+    assert r["connections"] == 4 and r["with_messages"] == 2 and r["warm"] >= 1
+    sam = s.one("SELECT * FROM linkedin_connections WHERE first_name='Sam'")
+    andrea = s.one("SELECT * FROM linkedin_connections WHERE first_name='Andrea'")
+    assert sam["msg_count"] == 6 and andrea["msg_count"] == 13 and andrea["endorsements"] == 1
+    assert andrea["strength"] > sam["strength"] > 0 and "investor" in andrea["tags"]
+    assert "private text" not in json.dumps(s.q("SELECT * FROM linkedin_connections"))
+    res = c.post("/api/intros/suggest", json={}, headers=U).json()
+    assert res["suggested"] >= 2 and res["direct"] >= 1
+    rows = c.get("/api/intros", headers=U).json()
+    lead = next(x for x in rows if x["partner_name"] == "Lead Bank")
+    assert lead["path"] == "direct" and lead["first_name"] == "Sam" and "check" not in lead["mutuals_url"]
+    assert "network=%5B%22S%22%5D" in lead["mutuals_url"]
+    assert not any(x["first_name"] == "Eleni" for x in rows if x["partner_name"] == "Lead Bank")   # the target herself
+    inv = [x for x in rows if x["partner_kind"] == "investor"]
+    assert inv and all(x["first_name"] == "Andrea" and x["path"] == "bridge" for x in inv)
+    assert len(inv) <= 4                                                                  # nobody gets a pile of asks
+    assert not any(x["first_name"] == "Joe" for x in rows)
+    d = c.post(f"/api/intros/{lead['id']}/draft", headers=U).json()
+    assert d["status"] == "draft" and "Eleni Steinman" in d["subject"] and "Note to forward:" in d["body"]
+    assert "say no if it isn't a fit" in d["body"] and d["lint_status"] in ("pass", "warn")
+    assert c.post("/api/intros/approve", json={"ids": [lead["id"]]}, headers=U).status_code == 403
+    c.post(f"/api/intros/{inv[0]['id']}/draft", headers=U)
+    ok = c.post("/api/intros/approve", json={"ids": [lead["id"], inv[0]["id"], 99999]}, headers=A).json()
+    assert ok["approved"] == [lead["id"], inv[0]["id"]] and ok["refused"][0]["id"] == 99999
+    sent = c.post("/api/intros/send", headers=A).json()
+    assert [x["email"] for x in sent["sent"]] == ["sam@lead.example"] and sent["mode"] == "outbox"
+    assert any("send it on LinkedIn" in x["reason"] for x in sent["skipped"])
+    assert c.post(f"/api/intros/{lead['id']}/sent-linkedin", headers=U).status_code == 409   # already sent by email
+    assert c.post(f"/api/intros/{inv[0]['id']}/sent-linkedin", headers=U).json() == {"ok": True}
+    c.post(f"/api/intros/{lead['id']}/outcome", json={"outcome": "introduced", "note": "Intro email to Eleni"}, headers=U)
+    p = c.get(f"/api/partners/{lead['partner_id']}", headers=U).json()
+    assert p["stage"] == "contacted" or p["stage"] != "identified"
+    assert any("made the introduction" in i["summary"] for i in p["interactions"])
+    assert any("Asked Sam Okafor for an introduction" in i["summary"] for i in p["interactions"])
+    assert [i["status"] for i in p["intros"] if i["id"] == lead["id"]] == ["introduced"]

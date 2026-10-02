@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.10.0 |
+| **Version** | 0.11.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -768,6 +768,39 @@ sources), `deal_structure` (check size and stages), `partner_type`, `website`, `
 these and leaves the stage, a hand-entered email or contact name and an existing next step alone. The
 partner page labels the factors for investors and explains the investor formula.
 
+### 15.11 Introductions (v0.11.0)
+
+`vanguard/intros.py` finds people you already know who can introduce you to a target (investor or partner),
+drafts the ask, and tracks it.
+
+**Data.** The full LinkedIn export (.zip, "Download larger data archive") is read by `import_export_zip`:
+`Connections.csv` as before (§15.9), plus `messages.csv` (count and last date per person; message text is
+never stored), `Endorsement_Received_Info.csv` and `Endorsement_Given_Info.csv`. Each connection gets
+`msg_count`, `last_message_at`, `endorsements`, `strength` (0-5: up to 2 for messages, 1.5 for recency,
+1 for endorsements, 0.5 for years connected) and `tags` (investor, bank, fintech, compliance, consulting, ibm,
+senior) from title and company.
+
+**Paths.** LinkedIn's export has 1st-degree connections only, so 2nd/3rd-degree paths cannot be read from it.
+`suggest` proposes, per target (investors and partners of the founder's properties by default):
+
+| Path | Rule | Score |
+|---|---|---|
+| insider (`direct`) | connection's company matches the target organisation (the firm for an investor); every priority | 60 + 7×strength (+8 senior) |
+| bridge, named in background | connection's employer (5+ letters, not an everyday word) appears in the target's researched title, thesis, portfolio or deals; P0/P1 | 35 + 8×strength (+6 senior) |
+| bridge, same world | connection tagged for the target's kind (investor: investor/fintech; design partner: bank/fintech/compliance; integration, distribution: fintech/bank), strength ≥ 1.5, senior or an investor; none for co-sell (competing firms); P0/P1 | 20 + 9×strength (+6 senior, +4 investor to investor) |
+
+The target person themselves is never proposed. Up to 3 paths per target; a connector is proposed for at most
+4 targets, assigned best-first across all targets. Each target carries a LinkedIn people-search link filtered
+to the 2nd-degree network (`network=["S"]`) so the user confirms who they share before asking a bridge.
+
+**Asks.** `intro_requests` holds one row per (target, connector) with status suggested, draft, approved,
+sent, then accepted / introduced / declined / cancelled. `draft` writes a double opt-in note (say no if it
+isn't a fit; introduce me only if they agree) plus a forwardable blurb, linted with the target property's claim
+rules. Only an admin approves. `send_approved` emails approved asks when the connector shared an email with
+LinkedIn (same mailer, footer and daily cap as outreach; opted-out addresses are cancelled); others are sent by
+hand on LinkedIn and marked sent. Sending logs "Asked X for an introduction" on the target's timeline; outcomes
+log there too, and "introduced" moves an identified target to contacted.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -912,6 +945,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.11.0 | 2026-10-02 | **Introductions** (§15.11): full LinkedIn export import (message counts, endorsements, tie strength, role tags; no message text stored); path finder (insiders at the target, likely bridges named in the target's background or in the same world, a LinkedIn 2nd-degree search link per target, at most 4 asks per connector); double opt-in asks with a forwardable blurb, lint-checked, admin-approved, emailed or sent on LinkedIn by hand; outcomes on the partner timeline; Introductions page and a Paths in card on partners; `vanguard intros suggest/list/draft/send`. **Investor list:** 118 more Fintech/Crypto/AI investors from the full 80-page vcconf.com export (310 total), 15 more researched. Tests E2E-35, WEB-34, UI-17. |
 | 0.10.0 | 2026-10-02 | **Investor targets** (§15.10): `config/investor_targets.yaml` ranks 192 investors for LiqMint (189 Fintech/Crypto/AI investors from the Sep 2026 VC Pitch Conf list plus 3 March 2026 conference speakers), with conference-derived considerations and sourced research on the top 28; `vanguard investors import/list`; the Load researched partners button also loads them; investor-specific factor labels on the partner page. Tests E2E-34, WEB-33. |
 | 0.9.1 | 2026-10-02 | **Investor contacts:** partners can have kind `investor` (web API, UI type picker, filter, rose badge), so fundraising contacts sit in the same pipeline with stages, interactions and next steps. No drafts are generated for them; the agent playbook schema is unchanged. Test WEB-32. |
 | 0.9.0 | 2026-10-01 | **Campaigns linked to outreach** (§15.9): partners attach to a campaign (UI "Add partners", `POST/DELETE /campaigns/{id}/partners`, `vanguard campaign attach/detach/show/list`); emails sent, LinkedIn/X touches, replies and meetings for attached partners count towards the campaign automatically and add to hand-logged results; campaign page shows the funnel, the send queue and per-partner progress; Outreach filters by campaign. **LinkedIn connections import** from LinkedIn's own data export (no API, no scraping): matched to partners by company, shown on partner pages and as a Known count, named contacts who connected get a timeline entry, shared emails fill empty contact emails (`vanguard linkedin import/matches`, `/linkedin/connections`). Interaction types `linkedin` and `x`. Tests E2E-33, WEB-30, WEB-31. |
