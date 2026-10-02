@@ -13,6 +13,7 @@ export const KIND_HELP: Record<string, string> = {
   distribution: "Channel that reaches your ICP",
   referral_affiliate: "Refers customers for a fee",
   integration: "Product integration partner",
+  investor: "Investor or fundraising contact",
 };
 
 export function PartnerForm({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial?: Partial<Partner>; onSaved: (id: number) => void }) {

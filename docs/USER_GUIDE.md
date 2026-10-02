@@ -63,6 +63,9 @@ password. Ask an admin to reset it if you forget it. Eight wrong attempts lock t
    the plan.
 
 ## Partners
+**Investors** (v0.9.1): track fundraising contacts as partners of type **Investor**, usually under
+the Vireoka property. They get stages, a timeline and next steps like any partner, but no drafted emails.
+
 **LinkedIn connections** (v0.9.0): **Import LinkedIn connections** on the Partners page loads the
 `Connections.csv` that LinkedIn emails you (Settings → Data privacy → Get a copy of your data). The
 **Known** column then shows how many people you know at each partner, and each partner page lists

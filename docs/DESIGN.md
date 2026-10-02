@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.9.0 |
+| **Version** | 0.9.1 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-01 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -882,6 +882,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.9.1 | 2026-10-02 | **Investor contacts:** partners can have kind `investor` (web API, UI type picker, filter, rose badge), so fundraising contacts sit in the same pipeline with stages, interactions and next steps. No drafts are generated for them; the agent playbook schema is unchanged. Test WEB-32. |
 | 0.9.0 | 2026-10-01 | **Campaigns linked to outreach** (§15.9): partners attach to a campaign (UI "Add partners", `POST/DELETE /campaigns/{id}/partners`, `vanguard campaign attach/detach/show/list`); emails sent, LinkedIn/X touches, replies and meetings for attached partners count towards the campaign automatically and add to hand-logged results; campaign page shows the funnel, the send queue and per-partner progress; Outreach filters by campaign. **LinkedIn connections import** from LinkedIn's own data export (no API, no scraping): matched to partners by company, shown on partner pages and as a Known count, named contacts who connected get a timeline entry, shared emails fill empty contact emails (`vanguard linkedin import/matches`, `/linkedin/connections`). Interaction types `linkedin` and `x`. Tests E2E-33, WEB-30, WEB-31. |
 | 0.8.1 | 2026-09-29 | **Partner contacts and mid-market targets** (§15.7): `partner_targets.yaml` gains `how_to_reach`, sourced `contacts` and `recent_hook`; contacts refreshed for 12 LiqMint Institutional partners; 24 new mid-market targets in four new categories (stablecoin banks, stablecoin fintechs, wallet/compliance infrastructure, mid-size advisory); tier-1 banks and Coinbase Prime moved to P1; categories may override draft wording (`middle`, `follow`); import creates segments for newly added categories. **Fix:** design-partner drafts contained `{company}` instead of the `{{company}}` merge tag (str.format collapsed the braces), so emails would have shown a literal placeholder; drafts now keep the tag and sending also fills `{company}` in drafts written earlier. Test WEB-29. |
 | 0.8.0 | 2026-09-28 | **PostgreSQL** (§10): `VANGUARD_DATABASE_URL` switches every table to PostgreSQL through `db.py`; SQL made portable (upserts, dates, boolean sums, `GROUP BY`); Docker Compose runs PostgreSQL 16 on a private network; `vanguard db info` and `vanguard db copy-from-sqlite`; the suite runs on PostgreSQL with `VANGUARD_TEST_DATABASE_URL`. **Config path fix:** an installed package (Docker) looked for `config/` inside site-packages; now `VANGUARD_CONFIG_DIR`, else the repo, else `./config`. **Reply-date fix:** replies were dated by the server's local date while sends used UTC, so late-evening replies sorted before the email they answered (WEB-19 failed after midnight UTC); both now use UTC. `.dockerignore` added. Tests E2E-32 and `tests/test_db.py`. |

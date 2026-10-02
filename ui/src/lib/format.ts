@@ -31,4 +31,4 @@ export const TRACKS: Record<string, string> = {
 
 export const STAGES = ["identified", "contacted", "in_conversation", "pilot", "signed", "declined"] as const;
 export const CAMPAIGN_STATUSES = ["draft", "scheduled", "active", "paused", "completed"] as const;
-export const PARTNER_KINDS = ["design_partner", "co_sell", "distribution", "referral_affiliate", "integration"] as const;
+export const PARTNER_KINDS = ["design_partner", "co_sell", "distribution", "referral_affiliate", "integration", "investor"] as const;

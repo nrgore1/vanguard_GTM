@@ -30,7 +30,7 @@ UI_DIST = Path(os.getenv("VANGUARD_UI_DIST", Path(__file__).resolve().parents[2]
 
 CampaignStatus = Literal["draft", "scheduled", "active", "paused", "completed"]
 CampaignKind = Literal["email", "social", "partner", "event", "content", "paid"]
-PartnerKind = Literal["design_partner", "co_sell", "distribution", "referral_affiliate", "integration"]
+PartnerKind = Literal["design_partner", "co_sell", "distribution", "referral_affiliate", "integration", "investor"]
 PartnerStage = Literal["identified", "contacted", "in_conversation", "pilot", "signed", "declined"]
 InteractionType = Literal["email", "linkedin", "x", "call", "meeting", "demo", "proposal", "note"]
 Outcome = Literal["positive", "neutral", "negative", "none"]

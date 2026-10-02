@@ -75,7 +75,7 @@ export const statusTone = (s: string) => ({
 } as Record<string, string>)[s] ?? "gray";
 
 export const kindTone = (k: string) => ({
-  design_partner: "violet", co_sell: "sky", distribution: "green", referral_affiliate: "amber", integration: "gray",
+  design_partner: "violet", co_sell: "sky", distribution: "green", referral_affiliate: "amber", integration: "gray", investor: "rose",
 } as Record<string, string>)[k] ?? "gray";
 
 /* ---------- form fields ---------- */

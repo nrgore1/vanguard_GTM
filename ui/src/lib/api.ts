@@ -35,7 +35,7 @@ export interface Result {
   notes: string | null; created_by: number | null; by_name?: string;
 }
 export type PartnerStage = "identified" | "contacted" | "in_conversation" | "pilot" | "signed" | "declined";
-export type PartnerKind = "design_partner" | "co_sell" | "distribution" | "referral_affiliate" | "integration";
+export type PartnerKind = "design_partner" | "co_sell" | "distribution" | "referral_affiliate" | "integration" | "investor";
 export interface Partner {
   id: number; property_id: string; name: string; kind: PartnerKind; stage: PartnerStage; partner_type: string | null;
   contact_name: string | null; contact_email: string | null; value_sharing_model: string | null;

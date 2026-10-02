@@ -945,3 +945,19 @@ def test_web_31_linkedin_connections_import(env):
     assert summ["by_user"][0]["n"] == 3 and summ["partners_with_connections"] >= 2
     assert c.delete("/api/linkedin/connections", headers=A).json()["deleted"] == 0
     assert c.delete("/api/linkedin/connections", headers=U).json()["deleted"] == 3
+
+
+def test_web_32_investor_contacts(env):
+    """WEB-32: an investor can be tracked as a partner of kind 'investor' (no drafted emails are created), logged
+    with an interaction that moves it to contacted, filtered by kind, and an unknown kind is still refused."""
+    c, U, s = env["c"], env["U"], env["s"]
+    r = c.post("/api/partners", json={"property_id": "vireoka", "name": "Robert Fabbio", "kind": "investor",
+                                      "contact_name": "Robert Fabbio", "next_step": "Follow up to schedule a call"}, headers=U)
+    assert r.status_code == 201, r.text
+    pid = r.json()["id"]
+    c.post(f"/api/partners/{pid}/interactions", json={"date": "2026-10-02", "type": "note", "stage": "contacted",
+           "summary": "Reached out about the raise; he is willing to talk"}, headers=U)
+    p = c.get(f"/api/partners/{pid}", headers=U).json()
+    assert p["kind"] == "investor" and p["stage"] == "contacted" and p["outreach"] == []
+    assert [x["name"] for x in c.get("/api/partners?kind=investor", headers=U).json()] == ["Robert Fabbio"]
+    assert c.post("/api/partners", json={"property_id": "vireoka", "name": "X Fund", "kind": "lender"}, headers=U).status_code == 422

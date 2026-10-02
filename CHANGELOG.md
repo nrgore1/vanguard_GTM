@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.1 — 2026-10-02
+
+### Added
+- **Investor** as a partner type, so fundraising contacts are tracked in the same pipeline: stage,
+  interactions, next step and date. Choose "Investor" when adding a partner; filter Partners by it.
+
 ## 0.9.0 — 2026-10-01
 
 ### Added: campaigns linked to outreach

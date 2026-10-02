@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.9.0 · updated 2026-10-01
+Version 0.9.1 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -88,6 +88,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-29 | Contacts, new categories and merge tags | Import the researched file, then re-import after removing a category's partners | Lead Bank gets contact_name Eleni Steinman, a Route and Person line, a timely hook and P0 in stablecoin_banks; drafts keep `{{company}}` and none contain a bare `{company}`; BNY is P1; a hand-entered name survives re-import; the removed category's segment and partners come back; `render` fills both `{{company}}` and `{company}`. WEB-27 also checks every named contact has an https source and no email. |
 | WEB-30 | Campaign linked to outreach | Attach Lead Bank (and a partner of another property), a segment to a second campaign, then move Protiviti; log LinkedIn and X touches, approve and send Protiviti's step 1, record a reply and a meeting, hand-log 10 sent / 1 reply; read the campaign and the list; filter Outreach; detach; delete | Other property refused; segment brings its named organisations; the move reports where from; totals 2 partners, 1 email, 2 LinkedIn/X touches, 2 touched, 1 replied, 1 meeting, 1 in conversation, 1 missing email; list shows 11 sent, 2 replies, 1 meeting; Outreach filter returns only that campaign; a second detach is 404; deleting the campaign leaves the partner with no campaign. |
 | WEB-31 | LinkedIn connections import | A file that isn't the export; the export as a user, twice; partner page and list; a campaign with Lead Bank; summary; delete as admin, then as the user | 400 for the wrong file; 3 added; Lead Bank's named contact gets one "Connected on LinkedIn" entry dated 2026-10-02 (not repeated, not counted as a touch); partner page lists Eleni as named contact via Uma User; Known counts 1 for Lead Bank and U.S. Bank, 0 for BNY; admin deletes 0 rows, the user deletes 3. |
+| WEB-32 | Investor contacts | Create "Robert Fabbio" as kind investor under Vireoka, log a note that moves the stage, filter by kind, try an unknown kind | Created with no drafted emails; stage contacted; the investor filter returns only him; an unknown kind is 422. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
