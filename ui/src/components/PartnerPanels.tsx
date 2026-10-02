@@ -21,17 +21,18 @@ export function Linkify({ text }: { text: string }) {
 }
 
 const FACTOR_LABEL: Record<string, string> = { fit: "ICP fit", reach: "Reach", access: "Access", strategic: "Strategic value", speed: "Speed to result" };
+const INVESTOR_FACTOR_LABEL: Record<string, string> = { thesis: "Thesis fit", stage: "Stage fit", check: "Check size", geo: "Geography", research: "Researched fit" };
 
 export function PriorityCard({ p }: { p: Partner }) {
   if (p.priority_score == null) return null;
   return (
     <Card>
-      <CardHeader title={<span className="flex items-center gap-2"><Gauge size={14} className="text-vireo" />Why this partner</span>}
+      <CardHeader title={<span className="flex items-center gap-2"><Gauge size={14} className="text-vireo" />{p.kind === "investor" ? "Why this investor" : "Why this partner"}</span>}
         sub={p.segment_name ? <>Named target under “{p.segment_name}”</> : p.is_segment ? "A segment to research - add named organisations below" : undefined}
         action={<div className="flex items-center gap-2"><Badge tone={statusTone(p.priority ?? "P2")}>{p.priority}</Badge><span className="num text-xl">{p.priority_score}</span></div>} />
       <div className="grid gap-5 p-5 md:grid-cols-[1fr_1.2fr]">
         <div className="space-y-2">
-          {p.factors && Object.entries(FACTOR_LABEL).map(([k, l]) => (
+          {p.factors && Object.entries(p.kind === "investor" ? INVESTOR_FACTOR_LABEL : FACTOR_LABEL).map(([k, l]) => (
             <div key={k} className="grid grid-cols-[110px_1fr_20px] items-center gap-2 text-xs">
               <span className="text-muted">{l}</span>
               <div className="flex gap-[3px]" aria-label={`${l} ${p.factors?.[k]} of 5`}>
@@ -39,12 +40,14 @@ export function PriorityCard({ p }: { p: Partner }) {
               </div>
               <span className="num text-right">{p.factors?.[k]}</span>
             </div>))}
-          <p className="pt-1 text-[11px] text-faint">Score = weighted fit 30% · reach 25% · strategic 20% · access 15% · speed 10%. P0 ≥ 75, P1 ≥ 55.</p>
+          <p className="pt-1 text-[11px] text-faint">{p.kind === "investor"
+            ? "Likelihood to invest in LiqMint = thesis 25% · stage 15% · check 15% · geography 5% · researched fit 40%. P0 ≥ 75, P1 ≥ 55."
+            : "Score = weighted fit 30% · reach 25% · strategic 20% · access 15% · speed 10%. P0 ≥ 75, P1 ≥ 55."}</p>
         </div>
         <dl className="space-y-2.5 text-sm">
           {p.rationale && <div><dt className="text-xs text-muted">Why</dt><dd className="whitespace-pre-line"><Linkify text={p.rationale} /></dd></div>}
-          {p.deal_structure && <div><dt className="text-xs text-muted">Typical deal</dt><dd>{p.deal_structure}</dd></div>}
-          {p.how_to_find && <div><dt className="flex items-center gap-1 text-xs text-muted"><Search size={11} />How to find the right contact</dt><dd><Linkify text={p.how_to_find} /></dd></div>}
+          {p.deal_structure && <div><dt className="text-xs text-muted">{p.kind === "investor" ? "Check size & stages" : "Typical deal"}</dt><dd>{p.deal_structure}</dd></div>}
+          {p.how_to_find && <div><dt className="flex items-center gap-1 text-xs text-muted"><Search size={11} />{p.kind === "investor" ? "Research & how to reach" : "How to find the right contact"}</dt><dd><Linkify text={p.how_to_find} /></dd></div>}
         </dl>
       </div>
     </Card>

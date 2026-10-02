@@ -669,6 +669,14 @@ def import_research(a: dict = Depends(admin_user)):
     res = import_targets(store(), user_id=a["id"])
     store().audit(a["id"], "import-research", "partner", None,
                   {k: v for k, v in res.items() if k != "errors"} | {"errors": len(res["errors"])})
+    # investor targets for the raise (config/investor_targets.yaml) load with the same button
+    from ..investors import import_investors
+    try:
+        inv = import_investors(store(), user_id=a["id"])
+        res["investors"] = {k: inv[k] for k in ("created", "updated", "by_priority")}
+        res["errors"] += inv["errors"]
+    except (FileNotFoundError, ValueError) as e:
+        res["errors"].append(f"investors: {e}")
     return res
 
 

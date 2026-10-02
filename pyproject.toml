@@ -1,6 +1,6 @@
 [project]
 name = "vanguard-gtm"
-version = "0.9.1"
+version = "0.10.0"
 description = "Vanguard-GTM: parallel go-to-market orchestration for the Vireoka portfolio"
 requires-python = ">=3.11"
 dependencies = [

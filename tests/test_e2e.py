@@ -752,3 +752,19 @@ def test_e2e_campaign_attach_and_linkedin_import(env, tmp_path):
     show = cli(env, "campaign", "show", str(cid)).stdout
     assert "partners 2" in show and "claudia@protiviti.example" in show and "Lead Bank" in show
     assert cli(env, "linkedin", "import", str(tmp_path / "missing.csv"), check=False).returncode != 0
+
+
+def test_e2e_investor_targets_cli(env, tmp_path):
+    """E2E-34: `vanguard investors import` loads the ranked investor targets (no emails drafted) and is safe to
+    re-run; `vanguard investors list --priority P0` prints only P0 investors in score order; a file without an
+    'investors' list is refused."""
+    out = cli(env, "investors", "import").stdout
+    assert "vireoka:" in out and "added" in out and "No emails drafted" in out
+    assert " 0 added" in cli(env, "investors", "import").stdout
+    lines = [l for l in cli(env, "investors", "list", "--priority", "P0").stdout.splitlines() if l.strip()]
+    assert lines and all(" P0 " in l for l in lines)
+    scores = [int(l.split()[2]) for l in lines]
+    assert scores == sorted(scores, reverse=True)
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("property_id: vireoka\n", encoding="utf-8")
+    assert cli(env, "investors", "import", str(bad), check=False).returncode != 0

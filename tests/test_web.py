@@ -961,3 +961,37 @@ def test_web_32_investor_contacts(env):
     assert p["kind"] == "investor" and p["stage"] == "contacted" and p["outreach"] == []
     assert [x["name"] for x in c.get("/api/partners?kind=investor", headers=U).json()] == ["Robert Fabbio"]
     assert c.post("/api/partners", json={"property_id": "vireoka", "name": "X Fund", "kind": "lender"}, headers=U).status_code == 422
+
+
+def test_web_33_investor_targets(env):
+    """WEB-33: 'Load researched partners' also loads config/investor_targets.yaml: every investor becomes a partner
+    of kind investor under Vireoka with rank, score, priority, the five investor factors, reasons, conference
+    considerations and sourced research; no emails are drafted; re-importing refreshes without touching the stage
+    or a hand-entered email; the file is well-formed (ranks 1..N, priorities match scores, https sources, no
+    unpublished email)."""
+    import yaml
+    c, A, s = env["c"], env["A"], env["s"]
+    data = yaml.safe_load((ROOT / "config" / "investor_targets.yaml").read_text(encoding="utf-8"))
+    inv = data["investors"]
+    assert data["property_id"] == "vireoka" and len(inv) >= 150
+    assert [e["rank"] for e in inv] == list(range(1, len(inv) + 1))
+    for e in inv:
+        assert e["priority"] == ("P0" if e["score"] >= 75 else "P1" if e["score"] >= 55 else "P2"), e["name"]
+        assert set(e["factors"]) == {"thesis", "stage", "check", "geo", "research"}
+        for src in (e.get("research") or {}).get("sources", []):
+            assert src.startswith("https://"), (e["name"], src)
+        assert not (e.get("research") or {}).get("published_email"), e["name"]   # none were published on firm sites
+    r = c.post("/api/partners/import-research", headers=A).json()
+    assert r["investors"]["created"] == len(inv) and r["investors"]["by_priority"]["P0"] >= 5
+    top = s.one("SELECT * FROM partners WHERE kind='investor' AND name=?", (inv[0]["name"],))
+    assert top["property_id"] == "vireoka" and top["priority"] == "P0" and top["stage"] == "identified"
+    assert "Rank #1 of" in top["rationale"] and "Key considerations:" in top["rationale"]
+    assert "Sources: https://" in top["how_to_find"]
+    assert json.loads(top["factors"])["research"] >= 4
+    assert s.one("SELECT COUNT(*) AS n FROM outreach_messages m JOIN partners p ON p.id=m.partner_id "
+                 "WHERE p.kind='investor'")["n"] == 0
+    c.patch(f"/api/partners/{top['id']}", json={"stage": "contacted", "contact_email": "me@fund.example"}, headers=A)
+    r = c.post("/api/partners/import-research", headers=A).json()
+    assert r["investors"]["created"] == 0 and r["investors"]["updated"] == len(inv)
+    row = s.one("SELECT stage, contact_email FROM partners WHERE id=?", (top["id"],))
+    assert (row["stage"], row["contact_email"]) == ("contacted", "me@fund.example")

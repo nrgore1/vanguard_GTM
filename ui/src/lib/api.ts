@@ -203,7 +203,8 @@ export const api = {
   linkedInSummary: () => req<{ by_user: { owner_id: number | null; owner_name: string | null; n: number; last_import: string }[]; partners_with_connections: number }>("GET", "/linkedin/connections"),
   deleteMyLinkedIn: () => req<{ deleted: number }>("DELETE", "/linkedin/connections"),
 
-  importResearch: () => req<{ properties: Record<string, { created: number; updated: number }>; errors: string[]; without_email: number }>("POST", "/partners/import-research"),
+  importResearch: () => req<{ properties: Record<string, { created: number; updated: number }>; errors: string[]; without_email: number;
+    investors?: { created: number; updated: number; by_priority: Record<string, number> } }>("POST", "/partners/import-research"),
   recommendPartners: (b: { property_id: string; mode: "offline" | "model"; provider?: string }) =>
     req<{ partners: number; updated: number; messages: number; recommendations: { rank: number; name: string; kind: string; score: number; priority: string; lint_status: string }[] }>("POST", "/partners/recommend", b),
   addTarget: (segmentId: number, b: { name: string; contact_name?: string; contact_email?: string; website?: string }) =>

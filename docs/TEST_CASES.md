@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.9.1 · updated 2026-10-02
+Version 0.10.0 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -44,6 +44,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | E2E-31 | Premortem at $0 | `premortem liqmint-institutional --dry-run --plan plan.md --out pm.md` | The markdown has 7 ranked causes, a verdict, an adversary and a tripwire table. |
 | E2E-32 | Move SQLite data into the configured database | Old SQLite file with two users and a tripwire reading; `db copy-from-sqlite` into the configured database | Every table is copied; a second run skips tables that already hold rows; `db info` shows 2 users; the next new user gets id 3; the command without a file is refused. On PostgreSQL this is a real SQLite-to-PostgreSQL copy. |
 | E2E-33 | Campaign by CLI and LinkedIn export | Import partners; `campaign attach` by name (an unknown name is refused); `linkedin import` a Connections.csv with LinkedIn's notes preamble, twice; `linkedin matches`; `campaign show` | Partners attached; 3 connections loaded then refreshed, not duplicated; "Eleni S." at "Lead" recognised as Lead Bank's named contact; Protiviti's empty email filled from the export; "Bank" matches nothing; `show` lists 2 partners with the email; a missing file exits non-zero. |
+| E2E-34 | Investor targets from the CLI | `investors import` twice; `investors list --priority P0`; import a file without an investors list | Added, then 0 added on re-run, "No emails drafted"; the P0 list holds only P0 rows in descending score; the bad file exits non-zero. |
 
 ## Live smoke cases (opt-in)
 
@@ -89,6 +90,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-30 | Campaign linked to outreach | Attach Lead Bank (and a partner of another property), a segment to a second campaign, then move Protiviti; log LinkedIn and X touches, approve and send Protiviti's step 1, record a reply and a meeting, hand-log 10 sent / 1 reply; read the campaign and the list; filter Outreach; detach; delete | Other property refused; segment brings its named organisations; the move reports where from; totals 2 partners, 1 email, 2 LinkedIn/X touches, 2 touched, 1 replied, 1 meeting, 1 in conversation, 1 missing email; list shows 11 sent, 2 replies, 1 meeting; Outreach filter returns only that campaign; a second detach is 404; deleting the campaign leaves the partner with no campaign. |
 | WEB-31 | LinkedIn connections import | A file that isn't the export; the export as a user, twice; partner page and list; a campaign with Lead Bank; summary; delete as admin, then as the user | 400 for the wrong file; 3 added; Lead Bank's named contact gets one "Connected on LinkedIn" entry dated 2026-10-02 (not repeated, not counted as a touch); partner page lists Eleni as named contact via Uma User; Known counts 1 for Lead Bank and U.S. Bank, 0 for BNY; admin deletes 0 rows, the user deletes 3. |
 | WEB-32 | Investor contacts | Create "Robert Fabbio" as kind investor under Vireoka, log a note that moves the stage, filter by kind, try an unknown kind | Created with no drafted emails; stage contacted; the investor filter returns only him; an unknown kind is 422. |
+| WEB-33 | Investor targets | Check the YAML; Load researched partners as admin; set the top investor to contacted with an email; load again | Ranks 1..N, priorities match scores, five factors each, https sources, no published email; every investor created as kind investor under Vireoka with "Rank #1 of", key considerations and sources; no outreach drafts; the re-load refreshes all and keeps the stage and email. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 

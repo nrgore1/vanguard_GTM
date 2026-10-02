@@ -400,6 +400,29 @@ def cmd_campaign(a, store: Store):
             print(("detached  " if detach_partner(ws, a.campaign, pid) else "not in campaign  ") + str(pid))
 
 
+def cmd_investors(a, store: Store):
+    """Investor targets (config/investor_targets.yaml) as partners of kind 'investor', ranked for LiqMint."""
+    from .web.db import WebStore
+    ws = WebStore(store.path)
+    if a.action == "import":
+        from .investors import import_investors
+        try:
+            res = import_investors(ws, a.file)
+        except (FileNotFoundError, ValueError) as e:
+            sys.exit(str(e))
+        pri = ", ".join(f"{k} {v}" for k, v in sorted(res["by_priority"].items()))
+        print(f"{res['property_id']}: {res['created']} added, {res['updated']} refreshed ({pri}). No emails drafted.")
+        for err in res["errors"]:
+            print(f"  error: {err}")
+        return
+    q, args = "SELECT name, partner_type, priority, priority_score, stage FROM partners WHERE kind='investor'", []
+    if a.priority:
+        q += " AND priority=?"; args.append(a.priority.upper())
+    for i, r in enumerate(ws.q(q + " ORDER BY COALESCE(priority_score,0) DESC, name", args), 1):
+        print(f"  {i:>3} {r['priority'] or '--':3} {r['priority_score'] or '':>3}  {r['name'][:28]:28} "
+              f"{(r['partner_type'] or '')[:48]:48} {r['stage']}")
+
+
 def cmd_linkedin(a, store: Store):
     """Load LinkedIn's Connections.csv (Settings > Data privacy > Get a copy of your data) and match it to partners."""
     from .linkedin import import_connections, partners_with_connections
@@ -712,6 +735,9 @@ def main(argv=None):
     s.add_argument("campaign", nargs="?", type=int, help="campaign id")
     s.add_argument("partners", nargs="*", help="partner ids or exact names (attach/detach)")
     s.add_argument("--property", help="list: only this property"); s.set_defaults(fn=cmd_campaign)
+    s = sub.add_parser("investors", help="investor targets for the raise: import [FILE] | list [--priority P0]")
+    s.add_argument("action", choices=["import", "list"]); s.add_argument("file", nargs="?")
+    s.add_argument("--priority", help="list: only this priority (P0, P1, P2)"); s.set_defaults(fn=cmd_investors)
     s = sub.add_parser("linkedin", help="LinkedIn connections from LinkedIn's own data export: import FILE --by EMAIL | matches")
     s.add_argument("action", choices=["import", "matches"]); s.add_argument("file", nargs="?")
     s.add_argument("--by", help="import: the user these connections belong to (email)")

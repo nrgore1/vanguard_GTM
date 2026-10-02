@@ -135,7 +135,8 @@ export default function Partners() {
       const r = await api.importResearch();
       const added = Object.values(r.properties).reduce((n, s) => n + s.created, 0);
       const refreshed = Object.values(r.properties).reduce((n, s) => n + s.updated, 0);
-      toast(`${added} researched partners added${refreshed ? `, ${refreshed} refreshed` : ""} - drafts await approval`, r.errors.length ? "err" : "ok");
+      const inv = r.investors ? ` · investors: ${r.investors.created} added, ${r.investors.updated} refreshed` : "";
+      toast(`${added} researched partners added${refreshed ? `, ${refreshed} refreshed` : ""} - drafts await approval${inv}`, r.errors.length ? "err" : "ok");
       reload();
     } catch (e) { toast(String((e as Error).message), "err"); } finally { setImporting(false); }
   };

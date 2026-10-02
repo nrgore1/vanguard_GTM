@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.0 — 2026-10-02
+
+### Added: ranked investor targets for the raise
+- **192 investors ranked by how likely they are to invest in LiqMint**: the 189 Fintech, Crypto and AI investors
+  from the Sep 17, 2026 VC Pitch Conf list, plus 3 investors who spoke at the March 2026 conference
+  (Gradient, Everywhere Ventures, the ComplyAdvantage founder).
+- Each investor's page shows why they fit, their thesis, the likely objection, an opening hook, what the
+  March 2026 panels said investors want, and, for the top 28, researched portfolio, recent deals, how to
+  reach them and sources. Where research could not confirm the person, the page says to verify first.
+- `vanguard investors import` / `list`; the admin's **Load researched partners** button loads them too.
+  No emails are drafted for investors.
+
 ## 0.9.1 — 2026-10-02
 
 ### Added

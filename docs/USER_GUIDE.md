@@ -65,6 +65,10 @@ password. Ask an admin to reset it if you forget it. Eight wrong attempts lock t
 ## Partners
 **Investors** (v0.9.1): track fundraising contacts as partners of type **Investor**, usually under
 the Vireoka property. They get stages, a timeline and next steps like any partner, but no drafted emails.
+Since v0.10.0, **Load researched partners** also loads the ranked investor list for the LiqMint raise:
+filter Partners by property Vireoka and type Investor, and work the P0s first. Each investor's "Why this
+investor" card shows the fit, likely concern, an opening hook and the research sources; "VERIFY FIRST"
+means research could not confirm the person at that firm.
 
 **LinkedIn connections** (v0.9.0): **Import LinkedIn connections** on the Partners page loads the
 `Connections.csv` that LinkedIn emails you (Settings → Data privacy → Get a copy of your data). The

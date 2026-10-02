@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.9.1 |
+| **Version** | 0.10.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
-| **Last updated** | 2026-10-01 |
+| **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
 
 > **Keeping this current.** Every change to behaviour, configuration, the CLI, the API or the
@@ -738,6 +738,36 @@ the partner has none, it becomes the contact email. Each user may delete their o
 profile_url, first_name, last_name, email, company, company_norm, position, connected_on,
 imported_at, updated_at). Interaction types gain `linkedin` and `x`.
 
+### 15.10 Investor targets (v0.10.0)
+
+Fundraising contacts are partners of kind `investor` (v0.9.1). `config/investor_targets.yaml` holds the
+ranked target list for the Vireoka / LiqMint raise; `investors.import_investors` loads it (CLI
+`vanguard investors import`, or the admin's **Load researched partners** button), creating or refreshing one
+partner per investor under the file's `property_id` (Vireoka). It never creates outreach drafts: first
+contact with an investor is personal.
+
+The file is built from three inputs: the attendee list of the Sep 17, 2026 Virtual 1:1 VC Pitch Conf (only
+investors listing Fintech, Crypto or AI; fund-of-funds-only LPs dropped), investor speakers from the March
+2026 conference transcript whose stated thesis fits, and public-web research on the top of the list (every
+fact with a source URL, a `confidence` for whether the person was confirmed at the firm, and no guessed
+email). Each entry carries `rank`, `score`, `priority` and five `factors` (0-5):
+
+| Factor | Weight | Rule |
+|---|---|---|
+| thesis | 25% | Fintech 2, Crypto 2.5, AI 1, Cybersecurity or SaaS 0.5, capped at 5 |
+| stage | 15% | pre-seed + seed 5, seed 4.5, pre-seed 3, Series A only 2 |
+| check | 15% | able to anchor part of a $3M round 5, down to under $100K 1 |
+| geo | 5% | US 5, US among several or global 4, elsewhere 1.5 |
+| research | 40% | researched fit 0-5; 2 when not researched yet |
+
+Score = 20 × weighted sum, +3 for the event's own top-20 match or the 10 most responsive investors, −6
+when research could not confirm the person; P0 ≥ 75, P1 ≥ 55. The importer writes `rationale` (rank,
+profile, why, their thesis, likely concern, opening hook, signals, the conference "key considerations",
+source and confidence), `how_to_find` (title, location, LinkedIn, contact route, portfolio, recent deals,
+sources), `deal_structure` (check size and stages), `partner_type`, `website`, `factors`. Re-import refreshes
+these and leaves the stage, a hand-entered email or contact name and an existing next step alone. The
+partner page labels the factors for investors and explains the investor formula.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -882,6 +912,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.10.0 | 2026-10-02 | **Investor targets** (§15.10): `config/investor_targets.yaml` ranks 192 investors for LiqMint (189 Fintech/Crypto/AI investors from the Sep 2026 VC Pitch Conf list plus 3 March 2026 conference speakers), with conference-derived considerations and sourced research on the top 28; `vanguard investors import/list`; the Load researched partners button also loads them; investor-specific factor labels on the partner page. Tests E2E-34, WEB-33. |
 | 0.9.1 | 2026-10-02 | **Investor contacts:** partners can have kind `investor` (web API, UI type picker, filter, rose badge), so fundraising contacts sit in the same pipeline with stages, interactions and next steps. No drafts are generated for them; the agent playbook schema is unchanged. Test WEB-32. |
 | 0.9.0 | 2026-10-01 | **Campaigns linked to outreach** (§15.9): partners attach to a campaign (UI "Add partners", `POST/DELETE /campaigns/{id}/partners`, `vanguard campaign attach/detach/show/list`); emails sent, LinkedIn/X touches, replies and meetings for attached partners count towards the campaign automatically and add to hand-logged results; campaign page shows the funnel, the send queue and per-partner progress; Outreach filters by campaign. **LinkedIn connections import** from LinkedIn's own data export (no API, no scraping): matched to partners by company, shown on partner pages and as a Known count, named contacts who connected get a timeline entry, shared emails fill empty contact emails (`vanguard linkedin import/matches`, `/linkedin/connections`). Interaction types `linkedin` and `x`. Tests E2E-33, WEB-30, WEB-31. |
 | 0.8.1 | 2026-09-29 | **Partner contacts and mid-market targets** (§15.7): `partner_targets.yaml` gains `how_to_reach`, sourced `contacts` and `recent_hook`; contacts refreshed for 12 LiqMint Institutional partners; 24 new mid-market targets in four new categories (stablecoin banks, stablecoin fintechs, wallet/compliance infrastructure, mid-size advisory); tier-1 banks and Coinbase Prime moved to P1; categories may override draft wording (`middle`, `follow`); import creates segments for newly added categories. **Fix:** design-partner drafts contained `{company}` instead of the `{{company}}` merge tag (str.format collapsed the braces), so emails would have shown a literal placeholder; drafts now keep the tag and sending also fills `{company}` in drafts written earlier. Test WEB-29. |

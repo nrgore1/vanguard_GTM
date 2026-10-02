@@ -1,6 +1,6 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.9.1 · updated 2026-10-02 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.10.0 · updated 2026-10-02 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
 > **Rule for every change:** update this manual, `DESIGN.md` (including its §18 change log) and
@@ -186,6 +186,15 @@ Edit the file freely and re-run `vanguard partners import`. It is idempotent: ex
 are refreshed, never duplicated, and hand-entered emails are kept. `tests/test_web.py::WEB-27`
 validates the file.
 
+### 3.3b `config/investor_targets.yaml`
+`property_id` (default `vireoka`) and `investors`: a list in rank order. Each entry: `name`, `firm`, `types`,
+`geography`, `check_size`, `stages`, `sectors`, `source`, `score`, `rank`, `priority`, `factors` (`thesis`,
+`stage`, `check`, `geo`, `research`, each 0-5), `signals`, `considerations`, and optional `research`
+(`title`, `website`, `location`, `linkedin`, `thesis`, `fund_size`, `relevant_portfolio`, `recent_deals`,
+`leads_rounds`, `typical_check`, `contact_route`, `published_email`, `fit`, `concern`, `hook`, `confidence`,
+`sources`). Only an email the investor's own site publishes may go in `published_email`. The scoring rules
+are in the file header and DESIGN §15.10.
+
 ### 3.4 `config/lint_gate.yaml`
 
 - `attribution`: `enabled_profiles`, `number_pattern`, `source_pattern` and `severity`.
@@ -235,6 +244,8 @@ the database, not this file.
 | `vanguard campaign list [--property P]` | Lists campaigns with their outreach totals (partners, emails, LinkedIn/X touches, replies, meetings) | No |
 | `vanguard campaign show <id>` | Funnel, send queue and one line per attached partner (stage, email, emails sent of steps, LinkedIn/X touches, last touch) | No |
 | `vanguard campaign attach <id> <partner…>` · `vanguard campaign detach <id> <partner…>` | Puts partners (ids or exact names, same property) into a campaign or takes them out; a segment brings its named organisations; a partner in another campaign is moved | No |
+| `vanguard investors import [FILE]` | Loads the ranked investor targets (default `config/investor_targets.yaml`) as partners of kind investor under the file's property. Refreshes on re-run without touching stage, hand-entered email or next step. No emails drafted. | No |
+| `vanguard investors list [--priority P0\|P1\|P2]` | Investors in score order with type, firm and stage | No |
 | `vanguard linkedin import Connections.csv [--by EMAIL]` | Loads LinkedIn's own connections export (Settings → Data privacy → Get a copy of your data) for that user, matches companies to partners, logs "Connected on LinkedIn" for named contacts and fills empty contact emails the connection shared. Safe to re-run. | No |
 | `vanguard linkedin matches [--property P]` | Who you know at each partner, from imported connections | No |
 | `vanguard outreach status` | Email mode, problems, daily cap, Postmark streams and monthly usage, queue and reply stats | No |
@@ -271,7 +282,7 @@ Sign in with `POST /api/auth/login {email, password}`, which returns `{token, us
 | Campaigns | `GET /campaigns?property_id&status` (sent/replies/meetings include outreach for attached partners; `outreach_summary` per row), `POST /campaigns`, `GET/PATCH /campaigns/{id}` (`GET` adds `outreach`: partners, totals, queue), `DELETE /campaigns/{id}` (creator or admin; partners leave the campaign), `POST /campaigns/{id}/results`, `DELETE /results/{id}` (creator or admin), `POST /campaigns/{id}/partners {partner_ids}` (returns attached, moved, refused), `DELETE /campaigns/{id}/partners/{pid}` |
 | LinkedIn | `POST /linkedin/connections {csv}` (the user's own Connections.csv text; 400 if it isn't the export), `GET /linkedin/connections` (rows per user, partners with connections), `DELETE /linkedin/connections` (delete your own). `GET /partners` adds `connections` (count) and `campaign_name`; `GET /partners/{id}` adds `connections` (people) and `campaign_name`. |
 | Partners | `GET /partners?property_id&kind` (kinds: design_partner, co_sell, distribution, referral_affiliate, integration, investor), `POST /partners`, `GET/PATCH /partners/{id}`, `POST /partners/{id}/interactions` (types email, linkedin, x, call, meeting, demo, proposal, note; optional `stage` moves the partner), `DELETE /interactions/{id}` (creator or admin) · admin: `DELETE /partners/{id}` |
-| Partner outreach | admin: `POST /partners/import-research` (load `config/partner_targets.yaml`; returns per-property created/updated, errors, without_email) · admin: `POST /partners/recommend {property_id, mode: offline\|model, provider}` · all users: `POST /partners/{segment}/targets` (add a named organisation under a segment), `POST /partners/{id}/reply {date, summary, outcome?, kind}`, `GET /outreach?status&property_id&partner_id&campaign_id` (segments excluded unless partner_id; rows carry `campaign_name`), `GET /outreach/stats`, `PATCH /outreach/{id}` (edit; resets to draft; re-lints) · admin: `POST /outreach/approve {ids}`, `POST /outreach/{id}/cancel`, `POST /outreach/send-due`, `POST /outreach/sync-replies`, `POST /outreach/digest`, `POST /outreach/postmark-sync`, `GET /email/postmark` (stream check + usage; 409 without a token). Partner `PATCH` also takes `agreement_status`, `agreement_signed_date`, `agreement_notes`, `website`, `email_consent` (`opted_out` also suppresses the address and cancels queued messages). `GET /outreach/stats` → `email.postmark` includes `used_this_month`. |
+| Partner outreach | admin: `POST /partners/import-research` (load `config/partner_targets.yaml` and `config/investor_targets.yaml`; returns per-property created/updated, `investors` {created, updated, by_priority}, errors, without_email) · admin: `POST /partners/recommend {property_id, mode: offline\|model, provider}` · all users: `POST /partners/{segment}/targets` (add a named organisation under a segment), `POST /partners/{id}/reply {date, summary, outcome?, kind}`, `GET /outreach?status&property_id&partner_id&campaign_id` (segments excluded unless partner_id; rows carry `campaign_name`), `GET /outreach/stats`, `PATCH /outreach/{id}` (edit; resets to draft; re-lints) · admin: `POST /outreach/approve {ids}`, `POST /outreach/{id}/cancel`, `POST /outreach/send-due`, `POST /outreach/sync-replies`, `POST /outreach/digest`, `POST /outreach/postmark-sync`, `GET /email/postmark` (stream check + usage; 409 without a token). Partner `PATCH` also takes `agreement_status`, `agreement_signed_date`, `agreement_notes`, `website`, `email_consent` (`opted_out` also suppresses the address and cancels queued messages). `GET /outreach/stats` → `email.postmark` includes `used_this_month`. |
 | Tasks | `GET /tasks?property_id&status&mine`, `PATCH /tasks/{id}` (a user may change only status and notes, and only when assigned) · admin: `POST /tasks`, `DELETE /tasks/{id}` |
 | Agent (admin) | `GET /agent/status`, `GET /runs`, `POST /runs {properties, dry_run, provider}` (409 if it can't run at $0), `GET /runs/{id}`, `GET /runs/{id}/playbooks/{pid}`, `POST /runs/{id}/approve/{pid}`, `POST /runs/{id}/import`, `POST /runs/{id}/sync` |
 | Fail-proof | `GET /failproof?as_of&property_id` (tracker), `POST /failproof/{pid}/readings {tripwire_id, value, date?, note?}` (any user), `GET /failproof/{pid}/premortem` (latest; 404 if none) · admin: `PUT /failproof/{pid}/gates/{gid} {status: open\|passed\|failed, note?}` (returns `walk_away_if` when failed) |
