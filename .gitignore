@@ -20,3 +20,4 @@ _to_delete/
 ~$*
 /SETUP_NOTION_AND_KEYS.md
 pgdata/
+!ui/e2e/fixtures/*.zip
