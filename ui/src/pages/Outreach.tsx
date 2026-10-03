@@ -48,7 +48,7 @@ export default function Outreach() {
     const r = await api.sendDue();
     const how = r.mode === "postmark" ? "Postmark + your mailbox" : r.mode === "smtp" ? "live email" : "outbox - nothing left this machine";
     setReport({ title: `${r.sent.length} sent (${how})`,
-      lines: [...r.sent.map((x) => `✓ ${x.partner} · ${x.step > 100 ? "one-off" : `step ${x.step}`} → ${x.to}${x.transport && x.transport !== r.mode ? ` (via ${x.transport})` : ""}`),
+      lines: [...r.sent.map((x) => `✓ ${x.partner} · ${x.step > 100 ? "one-off" : `step ${x.step}`} → ${x.to}${x.from ? ` from ${x.from}` : ""}${x.copy?.startsWith("not saved") ? ` (${x.copy})` : ""}${x.transport && x.transport !== r.mode ? ` (via ${x.transport})` : ""}`),
         ...r.skipped.map((x) => `· ${x.partner} · ${x.step > 100 ? "one-off" : `step ${x.step}`}: ${x.reason}`)] });
   });
   const digest = () => act("digest", async () => {

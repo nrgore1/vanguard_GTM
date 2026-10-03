@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.13.0 |
+| **Version** | 0.13.1 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -840,6 +840,16 @@ the default mailbox. `problems()` refuses to send if a mailbox lists no properti
 mailboxes, or (smtp/postmark) a mailbox has no sender, or (smtp) no password. Status output names each mailbox
 and the sender per property and never includes a password.
 
+### 15.14 A copy in the Sent folder (v0.13.1)
+
+SMTP delivers but keeps no copy, so emails sent from the app didn't appear in the mailbox's Sent folder.
+`SmtpMailer.send` now calls `save_to_sent` after each send: an IMAP `APPEND` of the exact message, flagged
+`\Seen`, into the folder flagged `\Sent` (RFC 6154) or else one named Sent / Sent Items / Sent Messages
+(`find_sent_folder`), using the same mailbox's IMAP login (per property, §15.13). `IMAP_SENT_FOLDER` (or
+`VANGUARD_MAILBOX_<NAME>_IMAP_SENT_FOLDER`) overrides the folder and `VANGUARD_SAVE_SENT=0` turns it off. The
+copy is best-effort: the send is recorded either way, and the report's `copy` field carries the folder or the
+reason it wasn't saved. Outbox and Postmark transports are unchanged.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -984,6 +994,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.13.1 | 2026-10-02 | **Copy in Sent** (§15.14): each SMTP send is also saved to the mailbox's Sent folder over IMAP (found by the `\\Sent` flag or name; `IMAP_SENT_FOLDER`, `VANGUARD_SAVE_SENT`); never fails the send; the send report and Write email say where the copy went. Test WEB-37. |
 | 0.13.0 | 2026-10-02 | **A mailbox per property** (§15.13): `VANGUARD_MAILBOXES` and `VANGUARD_MAILBOX_<NAME>_*` give listed properties their own sender, SMTP, IMAP and daily cap (Vireoka, LiqMint and LiqMint Institutional from vireoka.com); `EmailConfig.for_property`, `MailRouter` for outreach and intro asks, `from_email` on `outreach_messages` and `intro_requests`, reply sync over every inbox, per-mailbox status in `/outreach/stats` and `vanguard outreach status`. One-off sends log "Sent email from …". Test WEB-36. |
 | 0.12.0 | 2026-10-02 | **One-off emails** (§15.12): "Write email" on any named partner (investors included) creates a single draft (`one_off`, steps 101+), saves the address as the contact email, runs the claim rules, needs admin approval and sends through the normal path; "Approve & send" sends only that message (`send_due(only=…)`, `POST /outreach/send-due {ids}`); a reply doesn't cancel a one-off. Lint: a sentence about our own raise is exempt from the attribution rule (`attribution.exempt_pattern`). Tests WEB-35, UI-18. |
 | 0.11.0 | 2026-10-02 | **Introductions** (§15.11): full LinkedIn export import (message counts, endorsements, tie strength, role tags; no message text stored); path finder (insiders at the target, likely bridges named in the target's background or in the same world, a LinkedIn 2nd-degree search link per target, at most 4 asks per connector); double opt-in asks with a forwardable blurb, lint-checked, admin-approved, emailed or sent on LinkedIn by hand; outcomes on the partner timeline; Introductions page and a Paths in card on partners; `vanguard intros suggest/list/draft/send`. **Investor list:** 118 more Fintech/Crypto/AI investors from the full 80-page vcconf.com export (310 total), 15 more researched. Tests E2E-35, WEB-34, UI-17. |

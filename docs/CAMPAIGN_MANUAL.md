@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.13.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.13.1 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -100,6 +100,10 @@ VANGUARD_MAILBOX_VIREOKA_SMTP_PASSWORD=<that mailbox's password>
 Each mailbox has its own daily cap (20 unless you add `VANGUARD_MAILBOX_VIREOKA_DAILY_CAP`), and Check
 replies reads both inboxes. Outreach shows both senders at the top; Write email shows which one a message
 will come from.
+
+**A copy in your Sent folder** (v0.13.1). SMTP doesn't keep a copy of what it sends, so the app saves one to
+the mailbox's Sent folder using the IMAP lines below. Without those lines emails still go out, but you
+won't see them in webmail's Sent folder; check the partner's timeline instead.
 
 ### 1.3 Reply detection (recommended)
 Add these lines too, so the app can read replies from your inbox. With automatic sending on (§1.4),

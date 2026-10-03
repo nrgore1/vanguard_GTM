@@ -1165,3 +1165,60 @@ def test_web_36_mailbox_per_property(env, monkeypatch):
     assert "VANGUARD_MAILBOX_VIREOKA_SMTP_PASSWORD is required in smtp mode" in probs
     assert any("liqmint is in two mailboxes" in p for p in probs)
     assert c.post("/api/outreach/send-due", headers=A).status_code == 409
+
+
+def test_web_37_sent_copy_in_mailbox(env, monkeypatch):
+    """WEB-37: in smtp mode each sent email is also saved to that mailbox's Sent folder over IMAP (found by the
+    \\Sent flag), logged in as the property's own mailbox; if saving the copy fails the email still counts as sent
+    and the report says the copy wasn't saved; VANGUARD_SAVE_SENT=0 turns it off."""
+    import imaplib
+    import smtplib
+    sent, appended, logins = [], [], []
+
+    class FakeSMTP:
+        def __init__(self, *a, **k): pass
+        def starttls(self): pass
+        def login(self, u, p): logins.append(("smtp", u))
+        def send_message(self, e): sent.append(e)
+        def quit(self): pass
+
+    class FakeIMAP:
+        fail = False
+        def __init__(self, *a, **k): pass
+        def login(self, u, p): logins.append(("imap", u))
+        def list(self): return "OK", [b'(\\HasNoChildren) "." "INBOX"', b'(\\HasNoChildren \\Sent) "." "INBOX.Sent"']
+        def append(self, folder, flags, when, msg):
+            if FakeIMAP.fail:
+                raise imaplib.IMAP4.error("quota exceeded")
+            appended.append((folder, flags, msg)); return "OK", [b"done"]
+        def logout(self): pass
+
+    monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
+    monkeypatch.setattr(imaplib, "IMAP4_SSL", FakeIMAP)
+    for k, v in {"VANGUARD_EMAIL_MODE": "smtp", "VANGUARD_SENDER_NAME": "Narendra Gore",
+                 "VANGUARD_SENDER_EMAIL": "naren@atmakosh.example", "VANGUARD_SENDER_ADDRESS": "1 Main St, MN",
+                 "SMTP_HOST": "smtp.hostinger.com", "SMTP_USER": "naren@atmakosh.example", "SMTP_PASSWORD": "a",
+                 "IMAP_HOST": "imap.hostinger.com", "IMAP_USER": "naren@atmakosh.example", "IMAP_PASSWORD": "a",
+                 "VANGUARD_MAILBOXES": "vireoka", "VANGUARD_MAILBOX_VIREOKA_PROPERTIES": "vireoka",
+                 "VANGUARD_MAILBOX_VIREOKA_SENDER_EMAIL": "naren@vireoka.example",
+                 "VANGUARD_MAILBOX_VIREOKA_SMTP_PASSWORD": "v"}.items():
+        monkeypatch.setenv(k, v)
+    c, A, U = env["c"], env["A"], env["U"]
+    pid = c.post("/api/partners", json={"property_id": "vireoka", "name": "Andrew Brackin", "kind": "investor",
+                                        "contact_name": "Andrew Brackin", "contact_email": "andrew@example.com"}, headers=U).json()["id"]
+
+    def one():
+        mid = c.post(f"/api/partners/{pid}/email", json={"subject": "Hello there", "body": ANDREW}, headers=U).json()["id"]
+        c.post("/api/outreach/approve", json={"ids": [mid]}, headers=A)
+        return c.post("/api/outreach/send-due", json={"ids": [mid]}, headers=A).json()["sent"]
+
+    r = one()
+    assert r[0]["copy"] == "INBOX.Sent" and len(sent) == 1
+    assert appended[0][0] == '"INBOX.Sent"' and appended[0][1] == "(\\Seen)" and b"andrew@example.com" in appended[0][2]
+    assert ("smtp", "naren@vireoka.example") in logins and ("imap", "naren@vireoka.example") in logins
+    FakeIMAP.fail = True
+    r = one()
+    assert len(sent) == 2 and r[0]["copy"].startswith("not saved to Sent") and "quota" in r[0]["copy"]
+    FakeIMAP.fail = False
+    monkeypatch.setenv("VANGUARD_SAVE_SENT", "0")
+    assert one()[0]["copy"] is None and len(appended) == 1 and len(sent) == 3

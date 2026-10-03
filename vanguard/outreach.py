@@ -20,6 +20,7 @@ import logging
 import os
 import re
 import smtplib
+import time
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -39,7 +40,8 @@ BOUNCE_FROM = re.compile(r"(mailer-daemon|postmaster)@", re.I)
 
 
 MAILBOX_KEYS = ("properties", "sender_name", "sender_email", "sender_address", "reply_to", "daily_cap",
-                "smtp_host", "smtp_port", "smtp_user", "smtp_password", "imap_host", "imap_port", "imap_user", "imap_password")
+                "smtp_host", "smtp_port", "smtp_user", "smtp_password", "imap_host", "imap_port", "imap_user", "imap_password",
+                "imap_sent_folder")
 
 
 def _mailboxes_from_env() -> dict:
@@ -86,6 +88,8 @@ class EmailConfig:
     webhook_user: str = ""
     webhook_password: str = ""
     notify_replies: bool = True
+    save_sent: bool = True     # copy each email sent by SMTP into the mailbox's Sent folder over IMAP
+    sent_folder: str = ""      # "" = find it (the folder flagged \\Sent, else one named Sent)
     mailbox: str = "default"
     # extra mailboxes: name -> overrides (lower-case keys below), and property id -> mailbox name
     mailboxes: dict = field(default_factory=dict)
@@ -113,6 +117,7 @@ class EmailConfig:
             postmark_monthly_cap=int(g("VANGUARD_POSTMARK_MONTHLY_CAP", "100") or 100),
             webhook_user=g("VANGUARD_POSTMARK_WEBHOOK_USER", ""), webhook_password=g("VANGUARD_POSTMARK_WEBHOOK_PASSWORD", ""),
             notify_replies=g("VANGUARD_NOTIFY_REPLIES", "1") == "1",
+            save_sent=g("VANGUARD_SAVE_SENT", "1") == "1", sent_folder=g("IMAP_SENT_FOLDER", ""),
             **_mailboxes_from_env())
 
     # -------------------------------------------------------- per-property mailboxes
@@ -133,7 +138,8 @@ class EmailConfig:
                        smtp_user=o.get("smtp_user") or sender, smtp_password=o.get("smtp_password", ""),
                        imap_host=o.get("imap_host") or self.imap_host, imap_port=int(o.get("imap_port") or self.imap_port),
                        imap_user=(o.get("imap_user") or sender) if (o.get("imap_host") or self.imap_host) else "",
-                       imap_password=o.get("imap_password") or o.get("smtp_password", ""))
+                       imap_password=o.get("imap_password") or o.get("smtp_password", ""),
+                       sent_folder=o.get("imap_sent_folder") or self.sent_folder)
 
     def all_mailboxes(self) -> list["EmailConfig"]:
         return [self] + [self._mailbox(n) for n in self.mailboxes]
@@ -263,6 +269,13 @@ class SmtpMailer:
         if self.conn is None:
             self._open()
         self.conn.send_message(e)
+        # SMTP doesn't keep a copy (Hostinger and most hosts don't); put one in Sent so it shows in webmail.
+        self.last_copy = None
+        try:
+            self.last_copy = save_to_sent(self.cfg, e)
+        except Exception as ex:      # the email itself went out; a missing copy must not fail the send
+            self.last_copy = f"not saved to Sent: {type(ex).__name__}: {ex}"[:300]
+            log.warning("sent %s but could not save a copy to Sent: %s", e["Message-ID"], ex)
 
     def close(self):
         if self.conn:
@@ -270,6 +283,46 @@ class SmtpMailer:
                 self.conn.quit()
             except smtplib.SMTPException:
                 pass
+
+
+_LIST_RE = re.compile(r'\((?P<flags>[^)]*)\) (?:"[^"]*"|NIL) (?P<name>"(?:[^"\\]|\\.)*"|\S+)')
+
+
+def find_sent_folder(lines: list) -> str:
+    """Pick the Sent folder from an IMAP LIST reply: the one flagged \\Sent (RFC 6154), else one whose last
+    part is Sent / Sent Items / Sent Messages, else 'Sent'."""
+    named = None
+    for raw in lines or []:
+        line = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else str(raw or "")
+        m = _LIST_RE.search(line)
+        if not m:
+            continue
+        name = m.group("name").strip('"')
+        if "\\sent" in m.group("flags").lower():
+            return name
+        if named is None and re.split(r"[./]", name)[-1].lower() in ("sent", "sent items", "sent messages", "sent mail"):
+            named = name
+    return named or "Sent"
+
+
+def save_to_sent(cfg: EmailConfig, e: EmailMessage) -> str | None:
+    """Append a copy of a sent email to the mailbox's Sent folder (marked read). Returns the folder, or None
+    when there is no IMAP login for this mailbox or VANGUARD_SAVE_SENT=0."""
+    if not (cfg.save_sent and cfg.imap_host and cfg.imap_user and cfg.imap_password):
+        return None
+    box = imaplib.IMAP4_SSL(cfg.imap_host, cfg.imap_port)
+    try:
+        box.login(cfg.imap_user, cfg.imap_password)
+        folder = cfg.sent_folder or find_sent_folder(box.list()[1])
+        typ, data = box.append(f'"{folder}"', "(\\Seen)", imaplib.Time2Internaldate(time.time()), bytes(e))
+        if typ != "OK":
+            raise imaplib.IMAP4.error(f"APPEND to {folder}: {data}")
+        return folder
+    finally:
+        try:
+            box.logout()
+        except Exception:
+            pass
 
 
 def mailer_for(cfg: EmailConfig):
@@ -497,7 +550,7 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
             ws.update("partners", "id", m["partner_id"], {"stage": "contacted", "updated_at": ts})
         ws.audit(actor, "send", "outreach", m["id"], {"to": partner["contact_email"], "transport": transport})
         sent.append({"id": m["id"], "partner": m["p_name"], "step": m["step"], "to": partner["contact_email"],
-                     "transport": transport, "from": mc.sender_email})
+                     "transport": transport, "from": mc.sender_email, "copy": getattr(use, "last_copy", None)})
     router.close()
     for mm in (mailer, cold_mailer):
         if mm is not None and hasattr(mm, "close"):

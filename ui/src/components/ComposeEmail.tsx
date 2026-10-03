@@ -63,8 +63,10 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
       const a = await api.approveOutreach([r.id]);
       if (a.refused.length) throw new Error(a.refused[0].reason);
       const s = await api.sendDue([r.id]);
-      if (s.sent.length) toast(s.mode === "outbox" ? `Saved to the outbox (email isn't connected) - not sent to ${s.sent[0].to}` : `Sent to ${s.sent[0].to}`,
-        s.mode === "outbox" ? "err" : "ok");
+      const x = s.sent[0];
+      if (x) toast(s.mode === "outbox" ? `Saved to the outbox (email isn't connected) - not sent to ${x.to}`
+        : `Sent to ${x.to}${x.from ? ` from ${x.from}` : ""}${x.copy?.startsWith("not saved") ? ` - ${x.copy}` : x.copy ? ` · copy in ${x.copy}` : ""}`,
+        s.mode === "outbox" || x.copy?.startsWith("not saved") ? "err" : "ok");
       else toast(`Approved, not sent: ${s.skipped[0]?.reason ?? "check Outreach"}`, "err");
       onChanged(); onClose();
     } catch (e) { setError(e); } finally { setBusy(""); }

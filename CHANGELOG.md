@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.1 — 2026-10-02
+
+### Fixed: sent emails now appear in your mailbox's Sent folder
+- SMTP sends but keeps no copy, so emails sent from the app were missing from webmail's Sent folder. Each one
+  is now also saved there (marked read), from the right mailbox, using its IMAP login. If that fails, the email
+  still counts as sent and the send report says why the copy is missing. `VANGUARD_SAVE_SENT=0` turns it off.
+
+
 ## 0.13.0 — 2026-10-02
 
 ### Added: a mailbox per property

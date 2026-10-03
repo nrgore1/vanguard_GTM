@@ -242,7 +242,7 @@ export const api = {
   cancelOutreach: (id: number) => req("POST", `/outreach/${id}/cancel`),
   composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string }) =>
     req<OutreachMessage>("POST", `/partners/${pid}/email`, b),
-  sendDue: (ids?: number[]) => req<{ sent: { id: number; partner: string; step: number; to: string; transport?: string }[]; skipped: { id: number; partner: string; step: number; reason: string }[]; mode: string }>("POST", "/outreach/send-due", ids ? { ids } : undefined),
+  sendDue: (ids?: number[]) => req<{ sent: { id: number; partner: string; step: number; to: string; transport?: string; from?: string; copy?: string | null }[]; skipped: { id: number; partner: string; step: number; reason: string }[]; mode: string }>("POST", "/outreach/send-due", ids ? { ids } : undefined),
   syncReplies: () => req<{ matched: number; bounces: number; unmatched: number; duplicates: number }>("POST", "/outreach/sync-replies"),
   sendDigest: () => req<{ sent: number; transport?: string; reason?: string }>("POST", "/outreach/digest"),
   postmarkSync: () => req<{ stream: string; pulled: number; pushed: number; remote_total: number }>("POST", "/outreach/postmark-sync"),
