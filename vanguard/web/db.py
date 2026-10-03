@@ -93,7 +93,8 @@ MIGRATIONS = {
                              ("endorsements", "INTEGER DEFAULT 0"), ("strength", "DOUBLE PRECISION DEFAULT 0"),
                              ("tags", "TEXT")],
     "outreach_messages": [("transport", "TEXT"), ("pm_message_id", "TEXT"), ("delivered_at", "TEXT"),
-                          ("opened_at", "TEXT"), ("one_off", "INTEGER DEFAULT 0")],
+                          ("opened_at", "TEXT"), ("one_off", "INTEGER DEFAULT 0"), ("from_email", "TEXT")],
+    "intro_requests": [("from_email", "TEXT")],
 }
 AGREEMENT_STATUSES = ["none", "proposed", "negotiating", "signed", "declined"]
 

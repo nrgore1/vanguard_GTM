@@ -386,16 +386,15 @@ def approve(ws, ids: list[int], approver: str) -> dict:
 
 
 def send_approved(ws, cfg=None, mailer=None, actor: int | None = None) -> dict:
-    """Email approved asks whose connector shared an address; LinkedIn ones wait to be sent by hand."""
-    from .outreach import EmailConfig, _sent_today, footer, mailer_for
+    """Email approved asks whose connector shared an address; LinkedIn ones wait to be sent by hand. Each ask
+    goes from the mailbox of the target's property (EmailConfig.for_property), within that mailbox's daily cap."""
+    from .outreach import EmailConfig, MailRouter, footer
     cfg = cfg or EmailConfig.from_env()
     if cfg.problems():
         return {"sent": [], "skipped": [], "error": "; ".join(cfg.problems())}
-    mailer = mailer or mailer_for(cfg)
-    room = max(0, cfg.daily_cap - _sent_today(ws) - ws.one(
-        "SELECT COUNT(*) AS n FROM intro_requests WHERE substr(sent_at,1,10)=?", (now()[:10],))["n"])
+    router = MailRouter(ws, cfg, mailer)
     sent, skipped = [], []
-    for r in ws.q("SELECT i.*, c.email, c.first_name, c.last_name, p.name AS p_name FROM intro_requests i "
+    for r in ws.q("SELECT i.*, c.email, c.first_name, c.last_name, p.name AS p_name, p.property_id FROM intro_requests i "
                   "JOIN linkedin_connections c ON c.id=i.connection_id JOIN partners p ON p.id=i.partner_id "
                   "WHERE i.status='approved' ORDER BY i.score DESC"):
         who = f"{r['first_name']} {r['last_name']}"
@@ -406,26 +405,30 @@ def send_approved(ws, cfg=None, mailer=None, actor: int | None = None) -> dict:
             ws.update("intro_requests", "id", r["id"], {"status": "cancelled", "error": "address opted out"})
             skipped.append({"id": r["id"], "to": who, "reason": "opted out - cancelled"})
             continue
-        if len(sent) >= room:
-            skipped.append({"id": r["id"], "to": who, "reason": f"daily cap of {cfg.daily_cap} reached"})
+        mc = router.config(r["property_id"])
+        if not router.room(mc):
+            skipped.append({"id": r["id"], "to": who, "reason": f"daily cap of {mc.daily_cap} reached"})
             continue
         e = EmailMessage()
-        e["From"] = f"{cfg.sender_name} <{cfg.sender_email}>" if cfg.sender_email else "Vireoka <outbox@localhost>"
+        e["From"] = f"{mc.sender_name} <{mc.sender_email}>" if mc.sender_email else "Vireoka <outbox@localhost>"
         e["To"] = r["email"]
-        if cfg.reply_to:
-            e["Reply-To"] = cfg.reply_to
+        if mc.reply_to:
+            e["Reply-To"] = mc.reply_to
         e["Subject"] = r["subject"]
-        e["Message-ID"] = make_msgid(domain=cfg.sender_email.split("@")[-1] if "@" in cfg.sender_email else "vanguard.local")
-        e.set_content(r["body"] + footer(cfg))
+        e["Message-ID"] = make_msgid(domain=mc.sender_email.split("@")[-1] if "@" in mc.sender_email else "vanguard.local")
+        e.set_content(r["body"] + footer(mc))
         try:
-            mailer.send(e, {"intro_id": r["id"]})
+            router.mailer(mc).send(e, {"intro_id": r["id"]})
         except Exception as ex:
             ws.update("intro_requests", "id", r["id"], {"error": f"{type(ex).__name__}: {ex}"[:400]})
             skipped.append({"id": r["id"], "to": who, "reason": f"send failed: {ex}"})
             continue
+        router.used(mc)
         _mark_sent(ws, r, "email", r["email"], actor)
-        sent.append({"id": r["id"], "to": who, "email": r["email"], "target": r["p_name"]})
-    if hasattr(mailer, "close"):
+        ws.update("intro_requests", "id", r["id"], {"from_email": mc.sender_email.lower() or None})
+        sent.append({"id": r["id"], "to": who, "email": r["email"], "target": r["p_name"], "from": mc.sender_email})
+    router.close()
+    if mailer is not None and hasattr(mailer, "close"):
         mailer.close()
     return {"sent": sent, "skipped": skipped, "mode": cfg.mode}
 

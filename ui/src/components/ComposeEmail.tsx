@@ -87,7 +87,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
           Approved emails are saved to the server's outbox and nothing leaves. Set the SMTP lines in the server's .env to send for real
           (see docs/SETUP_NOTION_AND_KEYS.md, Part 7).
         </div>)}
-      {email?.live && <p className="mb-4 text-xs text-muted">Sends from <b className="text-ink">{email.sender}</b> via {email.mode}, with your postal-address footer and an unsubscribe line.
+      {email?.live && <p className="mb-4 text-xs text-muted">Sends from <b className="text-ink">{email.senders?.[p.property_id] ?? email.sender}</b> via {email.mode}, with your postal-address footer and an unsubscribe line.
         {email.imap_configured ? " Replies are picked up by Check replies." : " Replies won't be read automatically (no IMAP) - use Record reply."}</p>}
       {findings.length > 0 && (
         <div className="mb-4 space-y-1.5 rounded-lg border border-amber/30 bg-amber-soft p-3 text-xs">

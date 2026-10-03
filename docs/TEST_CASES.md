@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.12.0 · updated 2026-10-02
+Version 0.13.0 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -94,6 +94,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-33 | Investor targets | Check the YAML; Load researched partners as admin; set the top investor to contacted with an email; load again | Ranks 1..N, priorities match scores, five factors each, https sources, no published email; every investor created as kind investor under Vireoka with "Rank #1 of", key considerations and sources; no outreach drafts; the re-load refreshes all and keeps the stage and email. |
 | WEB-34 | Introductions | A bad zip; a synthetic export with messages and an endorsement; Find paths; draft; approve as user then admin; send; mark sent on LinkedIn; record introduced | 400 for the bad zip; message counts 6 and 13, one endorsement, strength ordered, no message text stored; Sam (at Lead) is an insider path for Lead Bank, Eleni (the target) is not proposed, only Andrea (TA Ventures) bridges to investors and for at most 4 of them; the draft names Eleni, is double opt-in and has a note to forward; user approval is 403; the email goes only to the connector who shared an address, the other is held for LinkedIn; marking an emailed ask as sent on LinkedIn is 409; the outcome and the ask are on the partner timeline. |
 | WEB-35 | One-off email to an investor | Write an email to an investor partner with a bad address, an unknown partner, then a good address; a second with an unsourced market figure; approve as user then admin; send only that id; record a reply; write and send a follow-up | 422 and 404; the draft is step 101, `one_off`, lint pass (the raise sentence needs no source) and the address is saved lower-cased; the market figure is blocked and can't be approved; user approval is 403; only Andrew's email is sent while another approved message stays queued; he moves to contacted with an email on the timeline; the follow-up after his reply still sends. |
+| WEB-36 | A mailbox per property | Default mailbox atmakosh, a `vireoka` mailbox for vireoka, liqmint and liqmint-institutional with a daily cap of 1; one-off emails to a Vireoka, a LiqMint and a Jodibana partner; send; read stats; sync replies; then a missing password in smtp mode and a property in two mailboxes | The mailbox inherits host, name and address and uses its own user and password; Vireoka's email goes from vireoka and Jodibana's from atmakosh (From headers and `from_email`), LiqMint's is held by the vireoka cap; stats list both mailboxes and the LiqMint sender with no password in the response; reply sync reads both inboxes; both config errors are reported and sending returns 409. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 

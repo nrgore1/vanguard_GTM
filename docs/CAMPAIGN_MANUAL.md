@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.12.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.13.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -86,6 +86,20 @@ VANGUARD_EMAIL_DAILY_CAP=20
 The variable names matter. They are `SMTP_HOST`, `SMTP_USER` and so on, **without** a `VANGUARD_`
 prefix. The postal address is required by US anti-spam law (CAN-SPAM). The app won't send without
 it, and it adds it to every email together with an opt-out line.
+
+**Vireoka, LiqMint and LiqMint Institutional send from a vireoka.com address** (v0.13.0). Add a second
+mailbox for them; everything not set here is taken from the lines above:
+
+```
+VANGUARD_MAILBOXES=vireoka
+VANGUARD_MAILBOX_VIREOKA_PROPERTIES=vireoka,liqmint,liqmint-institutional
+VANGUARD_MAILBOX_VIREOKA_SENDER_EMAIL=<your vireoka.com mailbox>
+VANGUARD_MAILBOX_VIREOKA_SMTP_PASSWORD=<that mailbox's password>
+```
+
+Each mailbox has its own daily cap (20 unless you add `VANGUARD_MAILBOX_VIREOKA_DAILY_CAP`), and Check
+replies reads both inboxes. Outreach shows both senders at the top; Write email shows which one a message
+will come from.
 
 ### 1.3 Reply detection (recommended)
 Add these lines too, so the app can read replies from your inbox. With automatic sending on (§1.4),

@@ -20,7 +20,7 @@ import logging
 import os
 import re
 import smtplib
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
 from email.utils import make_msgid, parseaddr
@@ -36,6 +36,25 @@ NEGATIVE = re.compile(r"\b(not interested|no thanks|no, thank|not a fit|not the 
 POSITIVE = re.compile(r"\b(interested|sounds good|let'?s (talk|chat|connect|meet)|happy to|book|schedule|calendar|"
                       r"available|tell me more|send (it|the|over)|love to)\b", re.I)
 BOUNCE_FROM = re.compile(r"(mailer-daemon|postmaster)@", re.I)
+
+
+MAILBOX_KEYS = ("properties", "sender_name", "sender_email", "sender_address", "reply_to", "daily_cap",
+                "smtp_host", "smtp_port", "smtp_user", "smtp_password", "imap_host", "imap_port", "imap_user", "imap_password")
+
+
+def _mailboxes_from_env() -> dict:
+    """VANGUARD_MAILBOXES=vireoka plus VANGUARD_MAILBOX_VIREOKA_PROPERTIES=vireoka,liqmint,... and the other
+    VANGUARD_MAILBOX_VIREOKA_* keys in MAILBOX_KEYS. Unset keys fall back to the default mailbox, except the
+    password; SMTP and IMAP user default to the mailbox's sender email."""
+    boxes, owner = {}, {}
+    for name in [n.strip().lower() for n in os.getenv("VANGUARD_MAILBOXES", "").split(",") if n.strip()]:
+        pre = f"VANGUARD_MAILBOX_{re.sub(r'[^A-Z0-9]', '_', name.upper())}_"
+        o = {k: os.environ[pre + k.upper()].strip() for k in MAILBOX_KEYS if os.environ.get(pre + k.upper(), "").strip()}
+        o["properties"] = [x.strip() for x in o.get("properties", "").split(",") if x.strip()]
+        for pid in o["properties"]:
+            owner.setdefault(pid, name)
+        boxes[name] = o
+    return {"mailboxes": boxes, "property_mailbox": owner}
 
 
 @dataclass
@@ -67,6 +86,10 @@ class EmailConfig:
     webhook_user: str = ""
     webhook_password: str = ""
     notify_replies: bool = True
+    mailbox: str = "default"
+    # extra mailboxes: name -> overrides (lower-case keys below), and property id -> mailbox name
+    mailboxes: dict = field(default_factory=dict)
+    property_mailbox: dict = field(default_factory=dict)
 
     @classmethod
     def from_env(cls) -> "EmailConfig":
@@ -89,10 +112,47 @@ class EmailConfig:
             postmark_track_opens=g("VANGUARD_POSTMARK_TRACK_OPENS", "0") == "1",
             postmark_monthly_cap=int(g("VANGUARD_POSTMARK_MONTHLY_CAP", "100") or 100),
             webhook_user=g("VANGUARD_POSTMARK_WEBHOOK_USER", ""), webhook_password=g("VANGUARD_POSTMARK_WEBHOOK_PASSWORD", ""),
-            notify_replies=g("VANGUARD_NOTIFY_REPLIES", "1") == "1")
+            notify_replies=g("VANGUARD_NOTIFY_REPLIES", "1") == "1",
+            **_mailboxes_from_env())
+
+    # -------------------------------------------------------- per-property mailboxes
+    def for_property(self, property_id: str | None) -> "EmailConfig":
+        """The config to send with for one property: its own mailbox (VANGUARD_MAILBOX_<NAME>_*) if it has one,
+        otherwise the default (SMTP_*, VANGUARD_SENDER_*). A mailbox never inherits another mailbox's password."""
+        name = self.property_mailbox.get(property_id or "")
+        return self._mailbox(name) if name else self
+
+    def _mailbox(self, name: str) -> "EmailConfig":
+        o = self.mailboxes[name]
+        sender = o.get("sender_email", "")
+        return replace(self, mailbox=name, mailboxes={}, property_mailbox={},
+                       sender_email=sender, sender_name=o.get("sender_name") or self.sender_name,
+                       sender_address=o.get("sender_address") or self.sender_address, reply_to=o.get("reply_to", ""),
+                       daily_cap=int(o.get("daily_cap") or self.daily_cap),
+                       smtp_host=o.get("smtp_host") or self.smtp_host, smtp_port=int(o.get("smtp_port") or self.smtp_port),
+                       smtp_user=o.get("smtp_user") or sender, smtp_password=o.get("smtp_password", ""),
+                       imap_host=o.get("imap_host") or self.imap_host, imap_port=int(o.get("imap_port") or self.imap_port),
+                       imap_user=(o.get("imap_user") or sender) if (o.get("imap_host") or self.imap_host) else "",
+                       imap_password=o.get("imap_password") or o.get("smtp_password", ""))
+
+    def all_mailboxes(self) -> list["EmailConfig"]:
+        return [self] + [self._mailbox(n) for n in self.mailboxes]
 
     def problems(self) -> list[str]:
         p = []
+        seen: dict[str, str] = {}
+        for name, o in self.mailboxes.items():
+            env = f"VANGUARD_MAILBOX_{name.upper()}_"
+            if not o.get("properties"):
+                p.append(f"{env}PROPERTIES is empty - list the property ids this mailbox sends for")
+            for pid in o.get("properties", []):
+                if pid in seen:
+                    p.append(f"property {pid} is in two mailboxes ({seen[pid]}, {name})")
+                seen[pid] = name
+            if self.mode in ("smtp", "postmark") and not o.get("sender_email"):
+                p.append(f"{env}SENDER_EMAIL is required")
+            if self.mode == "smtp" and not o.get("smtp_password"):
+                p.append(f"{env}SMTP_PASSWORD is required in smtp mode")
         if self.mode not in ("outbox", "smtp", "postmark"):
             p.append("VANGUARD_EMAIL_MODE must be 'outbox', 'smtp' or 'postmark'")
         if self.mode == "postmark":
@@ -118,9 +178,15 @@ class EmailConfig:
                   "allow_cold": self.postmark_allow_cold, "cold_via_smtp": self.smtp_ready,
                   "monthly_cap": self.postmark_monthly_cap, "track_opens": self.postmark_track_opens,
                   "webhook_auth": bool(self.webhook_user and self.webhook_password)}
+        boxes = [{"name": c.mailbox, "sender": f"{c.sender_name} <{c.sender_email}>" if c.sender_email else "",
+                  "properties": self.mailboxes.get(c.mailbox, {}).get("properties", []) if c.mailbox != "default" else None,
+                  "daily_cap": c.daily_cap, "imap_configured": bool(c.imap_host and c.imap_user)}
+                 for c in self.all_mailboxes()]
         return {"mode": self.mode, "live": self.mode in ("smtp", "postmark") and not self.problems(),
+                "mailboxes": boxes, "senders": {pid: next(b["sender"] for b in boxes if b["name"] == n)
+                                                for pid, n in self.property_mailbox.items()},
                 "problems": self.problems(), "sender": f"{self.sender_name} <{self.sender_email}>" if self.sender_email else "",
-                "daily_cap": self.daily_cap, "imap_configured": bool(self.imap_host and self.imap_user), "postmark": pm}
+                "daily_cap": self.daily_cap, "imap_configured": any(b["imap_configured"] for b in boxes), "postmark": pm}
 
 
 # ---------------------------------------------------------------- rendering
@@ -278,8 +344,60 @@ def approve(ws, ids: Iterable[int], approver: str) -> dict:
 
 
 # ---------------------------------------------------------------- sending
-def _sent_today(ws) -> int:
-    return ws.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE substr(sent_at,1,10)=?", (_utc_day(),))["n"]
+def _sent_today(ws, cfg: "EmailConfig | None" = None) -> int:
+    """Emails (outreach and intro asks) sent today; with cfg, only from that mailbox (rows from before v0.13.0,
+    with no from_email, count for the default mailbox)."""
+    day = _utc_day()
+    if cfg is None:
+        return ws.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE substr(sent_at,1,10)=?", (day,))["n"]
+    cond, args = ("from_email=?", [cfg.sender_email.lower()]) if cfg.mailbox != "default" else \
+        ("(from_email IS NULL OR from_email=?)", [cfg.sender_email.lower()])
+    return sum(ws.one(f"SELECT COUNT(*) AS n FROM {t} WHERE substr(sent_at,1,10)=? AND {cond}", [day] + args)["n"]
+               for t in ("outreach_messages", "intro_requests"))
+
+
+class MailRouter:
+    """Picks the mailbox for each property and keeps one connection and one daily allowance per mailbox."""
+
+    def __init__(self, ws, cfg: "EmailConfig", mailer=None, cold_mailer=None, limit: int | None = None):
+        self.ws, self.cfg, self.fixed, self.fixed_cold, self.limit = ws, cfg, mailer, cold_mailer, limit
+        self.mailers: dict = {}
+        self.colds: dict = {}
+        self.rooms: dict = {}
+        self.total = 0
+
+    def config(self, property_id: str | None) -> "EmailConfig":
+        return self.cfg.for_property(property_id)
+
+    def mailer(self, c: "EmailConfig"):
+        if self.fixed is not None:
+            return self.fixed
+        if c.mailbox not in self.mailers:
+            self.mailers[c.mailbox] = mailer_for(c)
+        return self.mailers[c.mailbox]
+
+    def cold(self, c: "EmailConfig"):
+        if self.fixed_cold is not None:
+            return self.fixed_cold
+        if c.mailbox not in self.colds:
+            self.colds[c.mailbox] = SmtpMailer(c) if c.smtp_ready else None
+        return self.colds[c.mailbox]
+
+    def room(self, c: "EmailConfig") -> bool:
+        if self.limit is not None and self.total >= self.limit:
+            return False
+        if c.mailbox not in self.rooms:
+            self.rooms[c.mailbox] = max(0, c.daily_cap - _sent_today(self.ws, c))
+        return self.rooms[c.mailbox] > 0
+
+    def used(self, c: "EmailConfig"):
+        self.rooms[c.mailbox] = self.rooms.get(c.mailbox, 1) - 1
+        self.total += 1
+
+    def close(self):
+        for m in list(self.mailers.values()) + [x for x in self.colds.values() if x]:
+            if hasattr(m, "close"):
+                m.close()
 
 
 def _suppressed(ws, addr: str) -> bool:
@@ -300,13 +418,8 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
     if cfg.problems():
         return {"sent": [], "skipped": [], "error": "; ".join(cfg.problems())}
     at = at or datetime.now(timezone.utc)
-    mailer = mailer or mailer_for(cfg)
-    if cfg.mode == "postmark" and cold_mailer is None and cfg.smtp_ready:
-        cold_mailer = SmtpMailer(cfg)
+    router = MailRouter(ws, cfg, mailer, cold_mailer, limit)
     pm_room = cfg.postmark_monthly_cap - postmark_used_this_month(ws) if cfg.mode == "postmark" else None
-    room = max(0, cfg.daily_cap - _sent_today(ws))
-    if limit is not None:
-        room = min(room, limit)
     rows = ws.q("SELECT m.*, p.name AS p_name, p.contact_email, p.contact_name, p.stage, p.property_id, "
                 "p.priority_score, p.is_segment, p.email_consent FROM outreach_messages m JOIN partners p ON p.id=m.partner_id "
                 "WHERE m.status='approved' ORDER BY COALESCE(p.priority_score,0) DESC, m.partner_id, m.step")
@@ -341,23 +454,25 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
                 why = f"due {(datetime.fromisoformat(prev['sent_at']) + timedelta(days=m['delay_days'])).date()}"
             else:
                 m = dict(m) | {"prev_message_id": prev["message_id"]}
-        if why is None and len(sent) >= room:
-            why = f"daily cap of {cfg.daily_cap} reached"
-        use = mailer
+        mc = router.config(m["property_id"])
+        if why is None and not router.room(mc):
+            why = (f"daily cap of {mc.daily_cap} reached" + (f" for {mc.sender_email}" if mc.mailbox != "default" else "")
+                   if limit is None or router.total < limit else f"limit of {limit} reached")
+        use = base = router.mailer(mc)
         if why is None and cfg.mode == "postmark":
             warm = (m["email_consent"] or "none") in WARM_CONSENT
             if not warm and not cfg.postmark_allow_cold:
-                if cold_mailer is not None:
-                    use = cold_mailer            # hybrid: first touch from your own mailbox
+                if router.cold(mc) is not None:
+                    use = router.cold(mc)            # hybrid: first touch from your own mailbox
                 else:
                     why = ("held: Postmark only allows permission-based email - send this first touch from your own "
                            "mailbox (set SMTP_*), or mark the partner 'opted in' once they've agreed to hear from you")
-            if why is None and use is mailer and pm_room is not None and pm_room <= 0:
+            if why is None and use is base and pm_room is not None and pm_room <= 0:
                 why = f"Postmark monthly cap of {cfg.postmark_monthly_cap} reached (VANGUARD_POSTMARK_MONTHLY_CAP)"
         if why:
             skipped.append({"id": m["id"], "partner": m["p_name"], "step": m["step"], "reason": why})
             continue
-        e = build_email(dict(m), partner, cfg)
+        e = build_email(dict(m), partner, mc)
         meta = {"outreach_id": m["id"], "partner_id": m["partner_id"], "property_id": m["property_id"], "step": m["step"]}
         try:
             provider_id = use.send(e, meta)
@@ -365,21 +480,25 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
             ws.update("outreach_messages", "id", m["id"], {"status": "failed", "error": f"{type(ex).__name__}: {ex}"[:500]})
             skipped.append({"id": m["id"], "partner": m["p_name"], "step": m["step"], "reason": f"send failed: {ex}"})
             continue
+        router.used(mc)
         ts = at.isoformat(timespec="seconds")
         transport = getattr(use, "transport_name", cfg.mode)
         if transport == "postmark" and pm_room is not None:
             pm_room -= 1
         ws.update("outreach_messages", "id", m["id"], {"status": "sent", "sent_at": ts, "message_id": e["Message-ID"],
                                                          "to_email": partner["contact_email"], "updated_at": ts,
-                                                         "transport": transport, "pm_message_id": provider_id})
+                                                         "transport": transport, "pm_message_id": provider_id,
+                                                         "from_email": mc.sender_email.lower() or None})
         ws.insert("partner_interactions", {"partner_id": m["partner_id"], "date": at.date().isoformat(), "type": "email",
-                                           "summary": f"Sent step {m['step']}: {e['Subject']}", "outcome": "none",
+                                           "summary": (f"Sent email from {mc.sender_email}: " if m["one_off"] else f"Sent step {m['step']}: ")
+                                                      + str(e["Subject"]), "outcome": "none",
                                            "created_by": actor, "created_at": ts})
         if m["stage"] == "identified":
             ws.update("partners", "id", m["partner_id"], {"stage": "contacted", "updated_at": ts})
         ws.audit(actor, "send", "outreach", m["id"], {"to": partner["contact_email"], "transport": transport})
         sent.append({"id": m["id"], "partner": m["p_name"], "step": m["step"], "to": partner["contact_email"],
-                     "transport": transport})
+                     "transport": transport, "from": mc.sender_email})
+    router.close()
     for mm in (mailer, cold_mailer):
         if mm is not None and hasattr(mm, "close"):
             mm.close()
@@ -522,10 +641,19 @@ def fetch_imap(cfg: EmailConfig, since_days: int = 14) -> list[email.message.Mes
 
 def sync_replies(ws, cfg: EmailConfig | None = None, fetch: Callable[[EmailConfig], list] | None = None,
                  actor: int | None = None) -> dict:
+    """Read every configured inbox (the default one and each VANGUARD_MAILBOX_*) and match replies."""
     cfg = cfg or EmailConfig.from_env()
-    if not (cfg.imap_host and cfg.imap_user) and fetch is None:
+    boxes = [c for c in cfg.all_mailboxes() if c.imap_host and c.imap_user]
+    if not boxes and fetch is None:
         return {"error": "IMAP not configured (IMAP_HOST, IMAP_USER, IMAP_PASSWORD) - record replies by hand instead"}
-    return process_inbound(ws, (fetch or fetch_imap)(cfg), actor=actor)
+    total: dict = {}
+    for c in boxes or [cfg]:
+        res = process_inbound(ws, (fetch or fetch_imap)(c), actor=actor)
+        for k, v in res.items():
+            total[k] = total.get(k, 0) + v if isinstance(v, (int, float)) else v
+    if len(boxes) > 1:
+        total["mailboxes"] = len(boxes)
+    return total
 
 
 def queue_stats(ws) -> dict:

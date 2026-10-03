@@ -504,6 +504,9 @@ def cmd_outreach(a, store: Store):
         for pr in st["problems"]:
             print(f"  problem: {pr}")
         print(f"Daily cap {st['daily_cap']} · IMAP reply sync {'on' if st['imap_configured'] else 'off (record replies by hand)'}")
+        for b in st["mailboxes"]:
+            print(f"  mailbox {b['name']}: {b['sender'] or '(no sender)'} · cap {b['daily_cap']}/day · IMAP "
+                  f"{'on' if b['imap_configured'] else 'off'} · {', '.join(b['properties']) if b['properties'] else 'all other properties'}")
         if st["postmark"]:
             from .outreach import postmark_used_this_month
             pm = st["postmark"]

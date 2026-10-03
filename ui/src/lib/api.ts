@@ -77,6 +77,8 @@ export interface PostmarkStatus {
 }
 export interface EmailStatus {
   mode: string; live: boolean; problems: string[]; sender: string; daily_cap: number; imap_configured: boolean;
+  mailboxes?: { name: string; sender: string; properties: string[] | null; daily_cap: number; imap_configured: boolean }[];
+  senders?: Record<string, string>;
   postmark: PostmarkStatus | null;
 }
 export type AgreementStatus = "none" | "proposed" | "negotiating" | "signed" | "declined";

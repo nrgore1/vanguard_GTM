@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.13.0 — 2026-10-02
+
+### Added: a mailbox per property
+- Vireoka, LiqMint and LiqMint Institutional can email from a vireoka.com address while the other properties
+  keep the default mailbox. Set `VANGUARD_MAILBOXES=vireoka` and four `VANGUARD_MAILBOX_VIREOKA_*` lines; the
+  rest is inherited.
+- Each mailbox has its own daily cap, connection and reply inbox. Outreach, Write email and
+  `vanguard outreach status` show which address sends for which property. Introduction asks use the mailbox
+  of the target's property too.
+- Sent one-off emails are logged as "Sent email from <address>".
+
+
 ## 0.12.0 — 2026-10-02
 
 ### Added: write an email to one person

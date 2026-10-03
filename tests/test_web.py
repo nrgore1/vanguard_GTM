@@ -1107,3 +1107,61 @@ def test_web_35_one_off_email(env, monkeypatch):
     f = c.post(f"/api/partners/{pid}/email", json={"subject": "Times for next week", "body": ANDREW}, headers=U).json()
     c.post("/api/outreach/approve", json={"ids": [f["id"]]}, headers=A)
     assert [x["partner"] for x in c.post("/api/outreach/send-due", json={"ids": [f["id"]]}, headers=A).json()["sent"]] == ["Andrew Brackin"]
+
+
+def test_web_36_mailbox_per_property(env, monkeypatch):
+    """WEB-36: VANGUARD_MAILBOX_<NAME>_* gives some properties their own mailbox: their emails go From that
+    address with its own daily cap, others use the default; unset keys inherit the default (host, name, postal
+    address) but never the password; the stats show each mailbox and the sender per property without secrets;
+    reply sync reads every inbox; a property listed in two mailboxes, or a missing password in smtp mode, is a
+    problem that stops sending."""
+    from vanguard.outreach import EmailConfig, sync_replies
+    out = env["tmp"] / "out"
+    for k, v in {"VANGUARD_OUTPUT": str(out), "VANGUARD_SENDER_NAME": "Narendra Gore",
+                 "VANGUARD_SENDER_EMAIL": "naren@atmakosh.example", "VANGUARD_SENDER_ADDRESS": "1 Main St, MN",
+                 "SMTP_HOST": "smtp.hostinger.com", "SMTP_USER": "naren@atmakosh.example", "SMTP_PASSWORD": "atma-secret",
+                 "IMAP_HOST": "imap.hostinger.com", "IMAP_USER": "naren@atmakosh.example", "IMAP_PASSWORD": "atma-secret",
+                 "VANGUARD_MAILBOXES": "vireoka",
+                 "VANGUARD_MAILBOX_VIREOKA_PROPERTIES": "vireoka, liqmint, liqmint-institutional",
+                 "VANGUARD_MAILBOX_VIREOKA_SENDER_EMAIL": "naren@vireoka.example",
+                 "VANGUARD_MAILBOX_VIREOKA_SMTP_PASSWORD": "vireoka-secret",
+                 "VANGUARD_MAILBOX_VIREOKA_DAILY_CAP": "1"}.items():
+        monkeypatch.setenv(k, v)
+    cfg = EmailConfig.from_env()
+    v = cfg.for_property("liqmint-institutional")
+    assert (v.mailbox, v.sender_email, v.sender_name, v.sender_address) == ("vireoka", "naren@vireoka.example", "Narendra Gore", "1 Main St, MN")
+    assert (v.smtp_host, v.smtp_user, v.smtp_password, v.imap_user, v.imap_password) == (
+        "smtp.hostinger.com", "naren@vireoka.example", "vireoka-secret", "naren@vireoka.example", "vireoka-secret")
+    assert cfg.for_property("jodibana") is cfg and cfg.problems() == []
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    ids = {}
+    for prop, name in (("vireoka", "Andrew Brackin"), ("liqmint", "Some Fund"), ("jodibana", "Temple Assoc")):
+        pid = c.post("/api/partners", json={"property_id": prop, "name": name, "kind": "investor" if prop != "jodibana" else "distribution",
+                                            "contact_name": name, "contact_email": f"{name.split()[0].lower()}@example.com"}, headers=U).json()["id"]
+        ids[name] = c.post(f"/api/partners/{pid}/email", json={"subject": "Hello there", "body": ANDREW}, headers=U).json()["id"]
+    c.post("/api/outreach/approve", json={"ids": list(ids.values())}, headers=A)
+    r = c.post("/api/outreach/send-due", headers=A).json()
+    assert sorted((x["partner"], x["from"]) for x in r["sent"]) == [("Andrew Brackin", "naren@vireoka.example"),
+                                                                     ("Temple Assoc", "naren@atmakosh.example")]
+    assert [(x["partner"], x["reason"]) for x in r["skipped"]] == [("Some Fund", "daily cap of 1 reached for naren@vireoka.example")]
+    froms = sorted(f.read_text().split("From: ", 1)[1].split("\n", 1)[0] for f in (out / "outbox").glob("*.eml"))
+    assert froms == ["Narendra Gore <naren@atmakosh.example>", "Narendra Gore <naren@vireoka.example>"]
+    assert s.one("SELECT from_email FROM outreach_messages WHERE id=?", (ids["Andrew Brackin"],))["from_email"] == "naren@vireoka.example"
+    st = c.get("/api/outreach/stats", headers=A)
+    assert "secret" not in st.text
+    em = st.json()["email"]
+    assert [b["name"] for b in em["mailboxes"]] == ["default", "vireoka"] and em["mailboxes"][1]["daily_cap"] == 1
+    assert em["senders"]["liqmint"] == "Narendra Gore <naren@vireoka.example>" and "jodibana" not in em["senders"]
+    seen = []
+    assert sync_replies(s, cfg, fetch=lambda b: seen.append(b.imap_user) or [])["mailboxes"] == 2
+    assert seen == ["naren@atmakosh.example", "naren@vireoka.example"]
+    monkeypatch.setenv("VANGUARD_EMAIL_MODE", "smtp")
+    monkeypatch.setenv("VANGUARD_MAILBOX_VIREOKA_SMTP_PASSWORD", "")
+    monkeypatch.setenv("VANGUARD_MAILBOXES", "vireoka,other")
+    monkeypatch.setenv("VANGUARD_MAILBOX_OTHER_PROPERTIES", "liqmint")
+    monkeypatch.setenv("VANGUARD_MAILBOX_OTHER_SENDER_EMAIL", "x@example.com")
+    monkeypatch.setenv("VANGUARD_MAILBOX_OTHER_SMTP_PASSWORD", "p")
+    probs = EmailConfig.from_env().problems()
+    assert "VANGUARD_MAILBOX_VIREOKA_SMTP_PASSWORD is required in smtp mode" in probs
+    assert any("liqmint is in two mailboxes" in p for p in probs)
+    assert c.post("/api/outreach/send-due", headers=A).status_code == 409

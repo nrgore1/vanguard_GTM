@@ -80,9 +80,10 @@ export default function Outreach() {
         <div className={cx("mb-4 flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm",
           mode.live ? "border-amber/40 bg-amber-soft" : "border-line bg-surface")}>
           {mode.live ? <MailWarning size={17} className="text-amber" /> : <Inbox size={17} className="text-vireo" />}
-          <span>{mode.live ? <><b>Live email{mode.mode === "postmark" ? " via Postmark" : ""}</b> from {mode.sender}. Approved messages really send.</> :
+          <span>{mode.live ? <><b>Live email{mode.mode === "postmark" ? " via Postmark" : ""}</b> from {(mode.mailboxes ?? []).length > 1
+            ? mode.mailboxes!.map((b) => `${b.sender}${b.properties ? ` (${b.properties.join(", ")})` : " (other properties)"}`).join("; ") : mode.sender}. Approved messages really send.</> :
             <><b>Outbox mode</b> - approved messages are written to <code className="font-mono text-xs">output/outbox</code>; nothing is emailed yet.</>}</span>
-          <span className="text-muted">Daily cap {st?.sent_today}/{mode.daily_cap}</span>
+          <span className="text-muted">Daily cap {st?.sent_today}/{(mode.mailboxes ?? []).length > 1 ? mode.mailboxes!.map((b) => b.daily_cap).join("+") : mode.daily_cap}</span>
           <span className="text-muted">Reply sync: {mode.imap_configured ? "IMAP on" : "manual (log replies on the partner page)"}</span>
           {mode.problems.map((p) => <span key={p} className="text-rose">{p}</span>)}
         </div>

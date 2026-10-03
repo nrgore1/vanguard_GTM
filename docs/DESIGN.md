@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.12.0 |
+| **Version** | 0.13.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -821,6 +821,25 @@ release the rest of the queue. `POST /outreach/send-due` takes an optional `{ids
 sentence about our own raise ("We're raising a $3M seed"): a fact about Vireoka, not a market claim. Any other
 figure in the same email still needs a source.
 
+### 15.13 A mailbox per property (v0.13.0)
+
+Vireoka, LiqMint and LiqMint Institutional email from a vireoka.com address; the five delegated properties
+from the default (atmakosh.com) one. `EmailConfig` keeps the default mailbox (SMTP_*, IMAP_*,
+VANGUARD_SENDER_*) plus `mailboxes` read from `VANGUARD_MAILBOXES` and `VANGUARD_MAILBOX_<NAME>_*`, and a
+`property_mailbox` map. `for_property(pid)` returns the config to send with: the default itself, or a copy
+with that mailbox's sender, reply-to, SMTP, IMAP and daily cap. Unset keys fall back to the default (host,
+port, name, postal address); user names default to the mailbox's sender; a password is never inherited.
+
+`MailRouter` (used by `send_due` and `intros.send_approved`) picks the mailbox per message, opens at most one
+connection per mailbox, and gives each mailbox its own daily allowance: `_sent_today(ws, cfg)` counts sent
+outreach emails and intro asks by `from_email` (a column on both tables; rows sent before v0.13.0 count for the
+default). Mailbox reputation is per address, so caps are too. `sync_replies` reads every mailbox that has IMAP.
+In postmark mode the cold first touch goes through the property's mailbox SMTP; warm mail uses the Postmark
+stream with that mailbox's sender, which must be a verified sender in Postmark. Team notifications always use
+the default mailbox. `problems()` refuses to send if a mailbox lists no properties, a property sits in two
+mailboxes, or (smtp/postmark) a mailbox has no sender, or (smtp) no password. Status output names each mailbox
+and the sender per property and never includes a password.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -965,6 +984,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.13.0 | 2026-10-02 | **A mailbox per property** (§15.13): `VANGUARD_MAILBOXES` and `VANGUARD_MAILBOX_<NAME>_*` give listed properties their own sender, SMTP, IMAP and daily cap (Vireoka, LiqMint and LiqMint Institutional from vireoka.com); `EmailConfig.for_property`, `MailRouter` for outreach and intro asks, `from_email` on `outreach_messages` and `intro_requests`, reply sync over every inbox, per-mailbox status in `/outreach/stats` and `vanguard outreach status`. One-off sends log "Sent email from …". Test WEB-36. |
 | 0.12.0 | 2026-10-02 | **One-off emails** (§15.12): "Write email" on any named partner (investors included) creates a single draft (`one_off`, steps 101+), saves the address as the contact email, runs the claim rules, needs admin approval and sends through the normal path; "Approve & send" sends only that message (`send_due(only=…)`, `POST /outreach/send-due {ids}`); a reply doesn't cancel a one-off. Lint: a sentence about our own raise is exempt from the attribution rule (`attribution.exempt_pattern`). Tests WEB-35, UI-18. |
 | 0.11.0 | 2026-10-02 | **Introductions** (§15.11): full LinkedIn export import (message counts, endorsements, tie strength, role tags; no message text stored); path finder (insiders at the target, likely bridges named in the target's background or in the same world, a LinkedIn 2nd-degree search link per target, at most 4 asks per connector); double opt-in asks with a forwardable blurb, lint-checked, admin-approved, emailed or sent on LinkedIn by hand; outcomes on the partner timeline; Introductions page and a Paths in card on partners; `vanguard intros suggest/list/draft/send`. **Investor list:** 118 more Fintech/Crypto/AI investors from the full 80-page vcconf.com export (310 total), 15 more researched. Tests E2E-35, WEB-34, UI-17. |
 | 0.10.0 | 2026-10-02 | **Investor targets** (§15.10): `config/investor_targets.yaml` ranks 192 investors for LiqMint (189 Fintech/Crypto/AI investors from the Sep 2026 VC Pitch Conf list plus 3 March 2026 conference speakers), with conference-derived considerations and sourced research on the top 28; `vanguard investors import/list`; the Load researched partners button also loads them; investor-specific factor labels on the partner page. Tests E2E-34, WEB-33. |
