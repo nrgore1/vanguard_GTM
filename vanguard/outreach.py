@@ -607,16 +607,40 @@ def record_reply(ws, partner_id: int, summary: str, when: date | None = None, ou
     return {"classification": cls, "outcome": outcome, "cancelled_steps": cancelled, "stage": upd.get("stage", p["stage"])}
 
 
+# Where the quoted original starts in a reply. Everything from here on is our own email, including the footer's
+# 'Reply "unsubscribe"' line, so it must never be read as the person's words.
+_QUOTE_START = re.compile(
+    r"^\s*(>|On .+wrote:\s*$|On .+(\d{4}|[AP]M).*$|-{2,}\s*Original Message\s*-{2,}|_{8,}|From:\s.+|Sent from my )", re.I)
+_HTML_QUOTE = re.compile(r'<blockquote|<div[^>]+(class="gmail_quote|id="divRplyFwdMsg|id="appendonsend|class="yahoo_quoted)', re.I)
+_OUR_FOOTER = re.compile(r"(You're receiving this one-to-one note[^\n]*|Reply \"unsubscribe\" and we won't email you again\.?)", re.I)
+
+
 def _body_text(msg: email.message.Message) -> str:
     part = msg.get_body(preferencelist=("plain", "html")) if hasattr(msg, "get_body") else msg
     text = part.get_content() if part is not None else ""
-    text = re.sub(r"<[^>]+>", " ", text)
+    if part is not None and part.get_content_type() == "text/html":
+        q = _HTML_QUOTE.search(text)
+        text = text[:q.start()] if q else text
+        text = re.sub(r"(?i)<br\s*/?>|</(p|div)>", "\n", text)
+        text = re.sub(r"<[^>]+>", " ", text)
     keep = []
     for line in text.splitlines():  # drop the quoted original
-        if line.startswith(">") or re.match(r"^On .+ wrote:$", line.strip()):
+        if _QUOTE_START.match(line):
             break
         keep.append(line)
-    return re.sub(r"\s+", " ", " ".join(keep)).strip()[:1500]
+    text = _OUR_FOOTER.sub(" ", "\n".join(keep))
+    return re.sub(r"\s+", " ", text).strip()[:1500]
+
+
+def _reply_text(msg: email.message.Message) -> str:
+    """What the person wrote, plus the subject when it isn't just 'Re: <our subject>'. An unsubscribe sent by
+    a mail client's Unsubscribe button (our List-Unsubscribe mailto) is a new email whose subject says
+    'unsubscribe' and whose body may be empty or boilerplate."""
+    body = _body_text(msg)
+    subj = (msg.get("Subject") or "").strip()
+    if subj and not re.match(r"^(re|aw|sv|antw)\s*:", subj, re.I) and OPT_OUT.search(subj):
+        return f"{subj} {body}".strip()
+    return body
 
 
 def process_inbound(ws, messages: Iterable[email.message.Message], actor: int | None = None) -> dict:
@@ -661,7 +685,7 @@ def process_inbound(ws, messages: Iterable[email.message.Message], actor: int | 
         if row is None:
             stats["unmatched"] += 1
             continue
-        text = _body_text(msg)
+        text = _reply_text(msg)
         res = record_reply(ws, row["partner_id"], text or msg.get("Subject", "(no text)"), outreach_id=row["id"],
                            from_addr=from_addr, actor=actor)
         ws.insert("inbound_emails", {"message_id": mid, "partner_id": row["partner_id"], "outreach_id": row["id"],

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.2 — 2026-10-02
+
+### Fixed: unsubscribes and replies
+- A reply from Outlook, or an HTML-only reply, that quoted our email was read as an opt-out because the quoted
+  footer contains the word "unsubscribe". Quoted text and our footer are now ignored.
+- The Unsubscribe button in Gmail and other mail apps (an email with the subject "unsubscribe") is now
+  recognised as an opt-out.
+
+
 ## 0.13.1 — 2026-10-02
 
 ### Fixed: sent emails now appear in your mailbox's Sent folder

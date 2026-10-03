@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.13.1 |
+| **Version** | 0.13.2 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -850,6 +850,22 @@ SMTP delivers but keeps no copy, so emails sent from the app didn't appear in th
 copy is best-effort: the send is recorded either way, and the report's `copy` field carries the folder or the
 reason it wasn't saved. Outbox and Postmark transports are unchanged.
 
+### 15.15 Reading replies and unsubscribes (v0.13.2)
+
+Every email ends with 'Reply "unsubscribe" and we won't email you again.' and carries
+`List-Unsubscribe: <mailto:sender?subject=unsubscribe>`. Two things broke that before v0.13.2: a reply that
+quoted our email without `>` markers (Outlook's From:/Sent: block, or HTML-only replies with a
+`gmail_quote` / `blockquote`) still contained the footer, so "Happy to talk" was filed as an opt-out; and a
+mail client's Unsubscribe button sends a new email whose subject is "unsubscribe" and whose body is
+boilerplate, which was filed as neutral.
+
+`_body_text` now cuts at any of: a `>` line, an "On … wrote:" attribution (also when wrapped), an Outlook
+"From:" header or "-----Original Message-----", an underscore rule, "Sent from my …"; for HTML, at the first
+`blockquote`, `gmail_quote`, `divRplyFwdMsg`, `appendonsend` or `yahoo_quoted` element. It then removes our
+footer sentences wherever they appear. `_reply_text` adds the subject when it isn't a reply ("Re:", "AW:",
+"SV:", "Antw:") and matches the opt-out words. Opt-outs suppress the address, mark the partner `opted_out`,
+cancel queued emails, and any later approved email to that address is cancelled at send time.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -994,6 +1010,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.13.2 | 2026-10-02 | **Replies and unsubscribes** (§15.15): a quoted footer in Outlook-style or HTML replies is no longer read as an opt-out; the Unsubscribe button's email (subject "unsubscribe") now opts out. Test WEB-38. |
 | 0.13.1 | 2026-10-02 | **Copy in Sent** (§15.14): each SMTP send is also saved to the mailbox's Sent folder over IMAP (found by the `\\Sent` flag or name; `IMAP_SENT_FOLDER`, `VANGUARD_SAVE_SENT`); never fails the send; the send report and Write email say where the copy went. Test WEB-37. |
 | 0.13.0 | 2026-10-02 | **A mailbox per property** (§15.13): `VANGUARD_MAILBOXES` and `VANGUARD_MAILBOX_<NAME>_*` give listed properties their own sender, SMTP, IMAP and daily cap (Vireoka, LiqMint and LiqMint Institutional from vireoka.com); `EmailConfig.for_property`, `MailRouter` for outreach and intro asks, `from_email` on `outreach_messages` and `intro_requests`, reply sync over every inbox, per-mailbox status in `/outreach/stats` and `vanguard outreach status`. One-off sends log "Sent email from …". Test WEB-36. |
 | 0.12.0 | 2026-10-02 | **One-off emails** (§15.12): "Write email" on any named partner (investors included) creates a single draft (`one_off`, steps 101+), saves the address as the contact email, runs the claim rules, needs admin approval and sends through the normal path; "Approve & send" sends only that message (`send_due(only=…)`, `POST /outreach/send-due {ids}`); a reply doesn't cancel a one-off. Lint: a sentence about our own raise is exempt from the attribution rule (`attribution.exempt_pattern`). Tests WEB-35, UI-18. |

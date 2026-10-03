@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.13.1 · updated 2026-10-02
+Version 0.13.2 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -96,6 +96,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-35 | One-off email to an investor | Write an email to an investor partner with a bad address, an unknown partner, then a good address; a second with an unsourced market figure; approve as user then admin; send only that id; record a reply; write and send a follow-up | 422 and 404; the draft is step 101, `one_off`, lint pass (the raise sentence needs no source) and the address is saved lower-cased; the market figure is blocked and can't be approved; user approval is 403; only Andrew's email is sent while another approved message stays queued; he moves to contacted with an email on the timeline; the follow-up after his reply still sends. |
 | WEB-36 | A mailbox per property | Default mailbox atmakosh, a `vireoka` mailbox for vireoka, liqmint and liqmint-institutional with a daily cap of 1; one-off emails to a Vireoka, a LiqMint and a Jodibana partner; send; read stats; sync replies; then a missing password in smtp mode and a property in two mailboxes | The mailbox inherits host, name and address and uses its own user and password; Vireoka's email goes from vireoka and Jodibana's from atmakosh (From headers and `from_email`), LiqMint's is held by the vireoka cap; stats list both mailboxes and the LiqMint sender with no password in the response; reply sync reads both inboxes; both config errors are reported and sending returns 409. |
 | WEB-37 | A copy in the Sent folder | smtp mode with fake SMTP and IMAP servers and a vireoka mailbox; send a one-off; make the IMAP append fail and send another; set `VANGUARD_SAVE_SENT=0` and send a third | The first is appended, marked read, to `INBOX.Sent` (found by its `\\Sent` flag) under the vireoka login and the report says so; the second is still sent and the report says the copy wasn't saved and why; the third makes no copy. |
+| WEB-38 | Replies and unsubscribes | Send a one-off; replies that quote our footer in Gmail (`>`), Outlook (From:/Sent:) and HTML (gmail_quote) form; then an Unsubscribe-button email (subject "unsubscribe", no threading headers); then another send; then a plain reply "Please unsubscribe me" | The sent email has a List-Unsubscribe mailto and the footer; all three quoted replies are positive and nothing is suppressed; the button email opts the address out, marks the partner opted out with next step "Opted out - do not contact", and the next approved email is cancelled; the plain unsubscribe reply also suppresses the address. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 

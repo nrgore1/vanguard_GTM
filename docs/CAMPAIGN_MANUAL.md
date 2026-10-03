@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.13.1 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.13.2 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -275,6 +275,13 @@ When a reply is recorded:
   permanently and the next step becomes "Opted out - do not contact".
 
 Answer every reply yourself, from your own mailbox or LinkedIn, within one business day.
+
+**Unsubscribes** (v0.13.2). Every email ends with a line telling the person to reply "unsubscribe", and
+carries an unsubscribe link that mail apps show as an Unsubscribe button. Both arrive in the sending mailbox.
+**Check replies** (or the scheduler) reads them: the address is never emailed again, the partner is marked
+opted out, and anything queued for them is cancelled. If IMAP isn't set up for that mailbox, open the partner
+and use **Record reply** with their words; "unsubscribe", "remove me", "opt out" and similar are always
+treated as an opt-out. Our own footer quoted back in a normal reply is ignored.
 
 ### 3.7 Meetings, pilots and agreements
 - After a call, **Log an interaction** with **Type: Meeting** (or Demo for a product demo). Meetings
