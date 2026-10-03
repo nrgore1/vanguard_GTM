@@ -555,7 +555,7 @@ def _outreach_loop(minutes: float, db_path) -> None:
             try:
                 cfg = EmailConfig.from_env()
                 r = send_due(ws, cfg)
-                if cfg.imap_host:
+                if any(c.imap_host and c.imap_user for c in cfg.all_mailboxes()):
                     sync_replies(ws, cfg)
                 if r.get("sent"):
                     logging.getLogger("vanguard.outreach").info("scheduler sent %d", len(r["sent"]))

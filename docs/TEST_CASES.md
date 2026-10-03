@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.13.2 · updated 2026-10-02
+Version 0.14.0 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -97,6 +97,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-36 | A mailbox per property | Default mailbox atmakosh, a `vireoka` mailbox for vireoka, liqmint and liqmint-institutional with a daily cap of 1; one-off emails to a Vireoka, a LiqMint and a Jodibana partner; send; read stats; sync replies; then a missing password in smtp mode and a property in two mailboxes | The mailbox inherits host, name and address and uses its own user and password; Vireoka's email goes from vireoka and Jodibana's from atmakosh (From headers and `from_email`), LiqMint's is held by the vireoka cap; stats list both mailboxes and the LiqMint sender with no password in the response; reply sync reads both inboxes; both config errors are reported and sending returns 409. |
 | WEB-37 | A copy in the Sent folder | smtp mode with fake SMTP and IMAP servers and a vireoka mailbox; send a one-off; make the IMAP append fail and send another; set `VANGUARD_SAVE_SENT=0` and send a third | The first is appended, marked read, to `INBOX.Sent` (found by its `\\Sent` flag) under the vireoka login and the report says so; the second is still sent and the report says the copy wasn't saved and why; the third makes no copy. |
 | WEB-38 | Replies and unsubscribes | Send a one-off; replies that quote our footer in Gmail (`>`), Outlook (From:/Sent:) and HTML (gmail_quote) form; then an Unsubscribe-button email (subject "unsubscribe", no threading headers); then another send; then a plain reply "Please unsubscribe me" | The sent email has a List-Unsubscribe mailto and the footer; all three quoted replies are positive and nothing is suppressed; the button email opts the address out, marks the partner opted out with next step "Opted out - do not contact", and the next approved email is cancelled; the plain unsubscribe reply also suppresses the address. |
+| WEB-39 | Scheduled sending | Write an email with a bad time, a time without a zone, then 9:00 -04:00 in 2099; approve; send; reschedule as user; send at a simulated later time; schedule five drafts from Fri 9:00 Eastern, 2 a day, 10 min apart, weekdays only; a Saturday start; clear; reschedule a sent one | 422, 422; stored as 13:00 UTC; held with "scheduled for …"; user refused for an approved email; sent once its time passes; Fri 9:00, 9:10, Mon 9:00, 9:10, Tue 9:00 (UTC); still drafts; Saturday moves to Monday; cleared; a sent email is refused; stats report automatic sending off. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
@@ -124,6 +125,7 @@ Atmakosh.
 | UI-17 | Introductions in the browser | Import a LinkedIn .zip on Partners; Introductions, Find paths; open the Lead Bank path; draft; admin approves; send approved emails | The import reports warm ties; an insider path to Lead Bank appears with a 2nd-degree search link; the drafted ask shows the note to forward; after approval the send report shows the email to the connector. |
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
 | UI-18 | One-off email in the browser | Open the investor Andrew Brackin; Write email; fill To, Subject, Message; Approve & save to outbox | The dialog warns that email isn't connected; the report says it was saved to the outbox; the partner shows a one-off email to the new address. |
+| UI-19 | Scheduling in the browser | Write email to Andrew Brackin on a date and time; Approve & schedule; open Outreach, Queued; select it; Schedule from a Saturday | The dialog warns that automatic sending is off; the toast and partner page show the scheduled Friday; the queue shows it; rescheduling from Saturday moves it to Monday. |
 
 ## Database tests (`tests/test_db.py`)
 

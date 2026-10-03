@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.13.2 |
+| **Version** | 0.14.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -866,6 +866,24 @@ footer sentences wherever they appear. `_reply_text` adds the subject when it is
 "SV:", "Antw:") and matches the opt-out words. Opt-outs suppress the address, mark the partner `opted_out`,
 cancel queued emails, and any later approved email to that address is cancelled at send time.
 
+### 15.16 Scheduled sending (v0.14.0)
+
+`outreach_messages.send_at` (UTC ISO, nullable) is a "not before" time. `send_due` holds an approved message
+whose `send_at` is in the future ("scheduled for …") and otherwise applies every existing rule, so the daily
+cap, opt-outs, the sequence order and a step's delay after the previous step all still hold: a scheduled step
+2 goes at the later of its delay and its time. Scheduling never approves; approval never sends early.
+
+Times come from the browser as ISO 8601 with an offset (`parse_send_at` refuses a time without a zone) and
+are shown back in the viewer's zone. `schedule(ids, send_at, per_day, gap_min, weekdays_only, tz_offset_min)`
+sets one time, or spreads a batch: `per_day` per day at the same time of day, `gap_min` minutes apart within a
+day, skipping Saturday and Sunday in the viewer's zone (a weekend start moves to Monday). `send_at` None clears
+it. Drafts can be scheduled by any user; an approved message only by an admin (it is already in the queue).
+
+Sending on time needs the scheduler (`VANGUARD_OUTREACH_EVERY_MIN`, §1.4 of the campaign manual); without it a
+scheduled email goes the first time an admin clicks Send due now after its time. `/outreach/stats` reports
+`email.auto_every_min` and the UI warns when scheduling while it is 0. Campaign "next due" uses `send_at`. The
+scheduler tick now also syncs replies when only a per-property mailbox has IMAP.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -1010,6 +1028,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.14.0 | 2026-10-02 | **Scheduled sending** (§15.16): `send_at` on outreach messages; Write email takes a date and time; Outreach schedules selected emails at once or spread N per day, minutes apart, weekdays only; the editor sets or clears a single schedule; `POST /outreach/schedule`; `send_due` holds until the time; status reports whether automatic sending is on. Tests WEB-39, UI-19. |
 | 0.13.2 | 2026-10-02 | **Replies and unsubscribes** (§15.15): a quoted footer in Outlook-style or HTML replies is no longer read as an opt-out; the Unsubscribe button's email (subject "unsubscribe") now opts out. Test WEB-38. |
 | 0.13.1 | 2026-10-02 | **Copy in Sent** (§15.14): each SMTP send is also saved to the mailbox's Sent folder over IMAP (found by the `\\Sent` flag or name; `IMAP_SENT_FOLDER`, `VANGUARD_SAVE_SENT`); never fails the send; the send report and Write email say where the copy went. Test WEB-37. |
 | 0.13.0 | 2026-10-02 | **A mailbox per property** (§15.13): `VANGUARD_MAILBOXES` and `VANGUARD_MAILBOX_<NAME>_*` give listed properties their own sender, SMTP, IMAP and daily cap (Vireoka, LiqMint and LiqMint Institutional from vireoka.com); `EmailConfig.for_property`, `MailRouter` for outreach and intro asks, `from_email` on `outreach_messages` and `intro_requests`, reply sync over every inbox, per-mailbox status in `/outreach/stats` and `vanguard outreach status`. One-off sends log "Sent email from …". Test WEB-36. |

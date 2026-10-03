@@ -380,6 +380,31 @@ test.describe.serial("Vanguard-GTM web app", () => {
     await expect(page.getByText(/andrew@gradient.example/).first()).toBeVisible();
   });
 
+  test("UI-19 admin schedules an email for a date, sees it queued, and reschedules in bulk", async ({ page }) => {
+    await login(page, ADMIN);
+    await page.goto("/partners?property=vireoka");
+    await page.getByRole("link", { name: "Andrew Brackin", exact: true }).first().click();
+    await page.getByRole("button", { name: "Write email" }).click();
+    const d = page.getByRole("dialog");
+    await d.getByLabel("Subject").fill("Following up next week");
+    await d.getByLabel("Message").fill("Hi {{first_name}},\n\nFollowing up on my note about policy checks for AI agents. Open to 20 minutes?\n\nNarendra");
+    await d.getByLabel("When").selectOption("later");
+    await d.getByLabel("Send on (your time)").fill("2099-10-09T09:00");
+    await expect(d.getByText(/Automatic sending is off/)).toBeVisible();
+    await d.getByRole("button", { name: "Approve & schedule" }).click();
+    await expect(page.getByText(/Approved - goes Fri, Oct 9/)).toBeVisible();
+    await expect(page.getByText(/scheduled Fri, Oct 9/).first()).toBeVisible();
+    await page.goto("/outreach?tab=approved");
+    const row = page.getByRole("row").filter({ hasText: "Following up next week" });
+    await expect(row.getByText(/scheduled Fri, Oct 9/)).toBeVisible();
+    await row.getByRole("checkbox").check();
+    await page.getByRole("button", { name: /Schedule 1/ }).click();
+    await page.getByRole("dialog").getByLabel("Start", { exact: true }).fill("2099-10-10T09:00");
+    await page.getByRole("dialog").getByRole("button", { name: "Schedule", exact: true }).click();
+    await expect(page.getByText(/Scheduled 1, last Mon, Oct 12/)).toBeVisible();
+    await expect(row.getByText(/scheduled Mon, Oct 12/)).toBeVisible();
+  });
+
   test("UI-11 theme toggle and sign-out", async ({ page }) => {
     await login(page, UMA);
     await page.getByRole("button", { name: "Toggle theme" }).click();

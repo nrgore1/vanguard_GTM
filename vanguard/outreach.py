@@ -189,6 +189,7 @@ class EmailConfig:
                   "daily_cap": c.daily_cap, "imap_configured": bool(c.imap_host and c.imap_user)}
                  for c in self.all_mailboxes()]
         return {"mode": self.mode, "live": self.mode in ("smtp", "postmark") and not self.problems(),
+                "auto_every_min": float(os.getenv("VANGUARD_OUTREACH_EVERY_MIN", "0") or 0),
                 "mailboxes": boxes, "senders": {pid: next(b["sender"] for b in boxes if b["name"] == n)
                                                 for pid, n in self.property_mailbox.items()},
                 "problems": self.problems(), "sender": f"{self.sender_name} <{self.sender_email}>" if self.sender_email else "",
@@ -347,8 +348,67 @@ def postmark_used_this_month(ws) -> int:
 ONE_OFF_BASE = 100   # one-off emails are numbered 101, 102, ... so they never collide with sequence steps 1-5
 
 
+def parse_send_at(value: str | None) -> str | None:
+    """An ISO date-time with a UTC offset (what the browser sends) -> UTC ISO string; '' or None -> None."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError(f"{value!r} is not a date and time (expected ISO 8601, e.g. 2026-10-09T09:00:00-04:00)")
+    if dt.tzinfo is None:
+        raise ValueError("send_at needs a time zone (e.g. -04:00 or Z)")
+    return dt.astimezone(timezone.utc).isoformat(timespec="seconds")
+
+
+def schedule(ws, ids: Iterable[int], send_at: str | None, per_day: int | None = None, gap_min: int = 0,
+             weekdays_only: bool = False, tz_offset_min: int = 0, is_admin: bool = False) -> dict:
+    """Set (or clear, with send_at None) when messages may go out. With per_day, the messages are spread over
+    days at the same time of day, per_day each, gap_min minutes apart within a day, skipping Saturdays and
+    Sundays (in the user's time zone, tz_offset_min east of UTC) when weekdays_only. A scheduled time is a
+    "not before": approval is still required, and a sequence step still waits for its delay after the previous
+    step. Approved messages can only be rescheduled by an admin."""
+    start = parse_send_at(send_at)
+    ok, refused = [], []
+    rows = []
+    for mid in ids:
+        m = ws.one("SELECT m.id, m.status, p.is_segment FROM outreach_messages m JOIN partners p ON p.id=m.partner_id "
+                   "WHERE m.id=?", (mid,))
+        if not m:
+            refused.append({"id": mid, "reason": "not found"})
+        elif m["is_segment"]:
+            refused.append({"id": mid, "reason": "segment template - schedule the named organisations' copies"})
+        elif m["status"] not in ("draft", "approved"):
+            refused.append({"id": mid, "reason": f"status is {m['status']}"})
+        elif m["status"] == "approved" and not is_admin:
+            refused.append({"id": mid, "reason": "already approved - only an admin can reschedule it"})
+        else:
+            rows.append(m["id"])
+    if start is None:
+        for mid in rows:
+            ws.update("outreach_messages", "id", mid, {"send_at": None, "updated_at": now()})
+            ok.append({"id": mid, "send_at": None})
+        return {"scheduled": ok, "refused": refused}
+    local = timedelta(minutes=tz_offset_min)
+    t0 = datetime.fromisoformat(start)
+    day, slot = t0, 0
+    if weekdays_only:
+        while (day + local).weekday() >= 5:
+            day += timedelta(days=1)
+    for mid in rows:
+        if per_day and slot >= per_day:
+            slot, day = 0, day + timedelta(days=1)
+            while weekdays_only and (day + local).weekday() >= 5:
+                day += timedelta(days=1)
+        at = day + timedelta(minutes=gap_min * slot)
+        ws.update("outreach_messages", "id", mid, {"send_at": at.isoformat(timespec="seconds"), "updated_at": now()})
+        ok.append({"id": mid, "send_at": at.isoformat(timespec="seconds")})
+        slot += 1
+    return {"scheduled": ok, "refused": refused}
+
+
 def compose(ws, partner_id: int, subject: str, body: str, user_id: int | None = None,
-            contact_email: str | None = None) -> dict:
+            contact_email: str | None = None, send_at: str | None = None) -> dict:
     """Write a single email to one partner (an investor, a reply, a follow-up). It is a draft like any other:
     it goes through the claim rules, needs an admin's approval, and only leaves through send_due."""
     p = ws.one("SELECT id, property_id, is_segment, contact_email FROM partners WHERE id=?", (partner_id,))
@@ -368,8 +428,9 @@ def compose(ws, partner_id: int, subject: str, body: str, user_id: int | None = 
             ws.update("partners", "id", partner_id, {"contact_email": addr, "updated_at": ts})
     from .intros import _lint
     last = ws.one("SELECT MAX(step) AS n FROM outreach_messages WHERE partner_id=?", (partner_id,))["n"] or 0
+    when = parse_send_at(send_at)
     mid = ws.insert("outreach_messages", {"partner_id": partner_id, "step": max(last, ONE_OFF_BASE) + 1, "delay_days": 0,
-                                          "subject": subject, "body": body, "status": "draft", "one_off": 1,
+                                          "subject": subject, "body": body, "status": "draft", "one_off": 1, "send_at": when,
                                           "created_by": user_id, "created_at": ts, "updated_at": ts}
                     | _lint(ws, p["property_id"], subject, body))
     ws.audit(user_id, "compose", "outreach", mid, {"partner_id": partner_id})
@@ -493,6 +554,8 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
         elif _suppressed(ws, m["contact_email"]):
             ws.update("outreach_messages", "id", m["id"], {"status": "cancelled", "error": "address suppressed"})
             why = "address opted out / bounced - cancelled"
+        elif m["send_at"] and datetime.fromisoformat(m["send_at"]) > at:
+            why = f"scheduled for {m['send_at']}"
         elif m["one_off"]:
             pass        # written by hand for this partner: no sequence order, and a reply doesn't stop it
         elif ws.one("SELECT 1 FROM outreach_messages WHERE partner_id=? AND status='replied'", (m["partner_id"],)):

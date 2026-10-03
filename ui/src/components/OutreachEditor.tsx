@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, XCircle, Send, AlertTriangle } from "lucide-react";
+import { ShieldCheck, XCircle, Send, AlertTriangle, CalendarClock } from "lucide-react";
 import { api, type OutreachMessage } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { label, shortDate } from "../lib/format";
 import { Badge, Button, ErrorNote, Field, Input, Modal, Textarea, statusTone, useToast } from "./ui";
+import { fmtWhen, isFuture, isoToLocal, localToIso, nextMorning } from "./Schedule";
 
 export const OUTREACH_TONE: Record<string, string> = {
   draft: "gray", approved: "sky", sent: "violet", replied: "green", cancelled: "gray", failed: "rose", bounced: "rose",
@@ -25,10 +26,11 @@ export function OutreachEditor({ msg, onClose, onChanged }: { msg: OutreachMessa
   const [error, setError] = useState<unknown>(null);
   const [findings, setFindings] = useState<{ rule_id: string; message: string; excerpt: string; severity: string }[]>([]);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const [when, setWhen] = useState("");
 
   useEffect(() => {
     if (!msg) return;
-    setSubject(msg.subject); setBody(msg.body); setError(null); setTab("edit");
+    setSubject(msg.subject); setBody(msg.body); setError(null); setTab("edit"); setWhen(isoToLocal(msg.send_at) || nextMorning());
     try { setFindings(msg.lint_findings ? JSON.parse(msg.lint_findings) : []); } catch { setFindings([]); }
   }, [msg]);
   if (!msg) return null;
@@ -72,8 +74,22 @@ export function OutreachEditor({ msg, onClose, onChanged }: { msg: OutreachMessa
         {msg.step > 1 && !msg.one_off && <span className="text-muted">· sends {msg.delay_days} days after step {msg.step - 1}</span>}
         {msg.approved_by && <span className="text-muted">· approved by {msg.approved_by} {shortDate(msg.approved_at)}</span>}
         {msg.sent_at && <span className="text-muted">· sent {shortDate(msg.sent_at)}</span>}
+        {!msg.sent_at && msg.send_at && <span className={isFuture(msg.send_at) ? "text-vireo" : "text-muted"}>· {isFuture(msg.send_at) ? "scheduled for" : "was scheduled for"} {fmtWhen(msg.send_at)}</span>}
         {msg.error && <span className="text-rose">· {msg.error}</span>}
       </div>
+      {editable && (isAdmin || msg.status === "draft") && (
+        <div className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-line p-3 text-xs">
+          <CalendarClock size={14} className="mb-2 text-vireo" />
+          <Field label="Send on (your time)"><Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></Field>
+          <Button size="sm" loading={busy === "sched"} disabled={!when} onClick={() => run("sched", async () => {
+            const r = await api.scheduleOutreach({ ids: [msg.id], send_at: localToIso(when) });
+            if (r.refused.length) throw new Error(r.refused[0].reason);
+          }, `Scheduled for ${fmtWhen(localToIso(when))}`)}>Schedule</Button>
+          {msg.send_at && <Button size="sm" variant="ghost" loading={busy === "unsched"} onClick={() => run("unsched", async () => {
+            const r = await api.scheduleOutreach({ ids: [msg.id], send_at: null });
+            if (r.refused.length) throw new Error(r.refused[0].reason);
+          }, "Schedule cleared - it goes as soon as it's due")}>Clear</Button>}
+        </div>)}
       {findings.length > 0 && (
         <div className="mb-4 space-y-1.5 rounded-lg border border-amber/30 bg-amber-soft p-3 text-xs">
           {findings.map((f, i) => <div key={i} className="flex gap-2"><AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber" />

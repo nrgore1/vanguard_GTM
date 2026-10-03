@@ -1276,3 +1276,42 @@ def test_web_38_replies_and_unsubscribe(env, monkeypatch):
     reply = inbound(5, "Re: Policy checks", "Please unsubscribe me.\n\nOn Fri, Oct 2, 2026 Narendra wrote:\n> hi\n")
     sync_replies(s, fetch=lambda cfg: [reply])
     assert s.one("SELECT 1 FROM email_suppression WHERE email='andrew@example.com'")
+
+
+def test_web_39_scheduled_sending(env, monkeypatch):
+    """WEB-39: an email can be written with a send date and time, and drafts can be scheduled in bulk, spread N per
+    day at a set gap, on weekdays only in the user's time zone. Scheduling never approves; an approved email waits
+    until its time, then the normal send path sends it. Only an admin can reschedule an approved email; a schedule
+    can be cleared; bad times are refused; the status says whether automatic sending is on."""
+    from datetime import datetime, timezone
+    from vanguard.outreach import send_due
+    monkeypatch.setenv("VANGUARD_OUTPUT", str(env["tmp"] / "out"))
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    pids = [c.post("/api/partners", json={"property_id": "vireoka", "name": f"Fund {i}", "kind": "investor", "contact_name": f"Pat {i}",
+                                          "contact_email": f"pat{i}@example.com"}, headers=U).json()["id"] for i in range(6)]
+    body = {"subject": "Hello there", "body": ANDREW}
+    assert c.post(f"/api/partners/{pids[0]}/email", json=body | {"send_at": "next tuesday"}, headers=U).status_code == 422
+    assert c.post(f"/api/partners/{pids[0]}/email", json=body | {"send_at": "2026-10-09T09:00:00"}, headers=U).status_code == 422
+    one = c.post(f"/api/partners/{pids[0]}/email", json=body | {"send_at": "2099-10-09T09:00:00-04:00"}, headers=U).json()
+    assert one["send_at"] == "2099-10-09T13:00:00+00:00" and one["status"] == "draft"
+    c.post("/api/outreach/approve", json={"ids": [one["id"]]}, headers=A)
+    r = c.post("/api/outreach/send-due", json={"ids": [one["id"]]}, headers=A).json()
+    assert r["sent"] == [] and r["skipped"][0]["reason"] == "scheduled for 2099-10-09T13:00:00+00:00"
+    assert c.post("/api/outreach/schedule", json={"ids": [one["id"]], "send_at": None}, headers=U).json()["refused"][0]["reason"].startswith("already approved")
+    r = send_due(s, at=datetime(2099, 10, 9, 13, 1, tzinfo=timezone.utc), only=[one["id"]])
+    assert [x["partner"] for x in r["sent"]] == ["Fund 0"]
+    # bulk: Friday 9:00 Eastern, 2 a day, 10 minutes apart, weekdays only -> Fri, Fri, Mon, Mon, Tue
+    ids = [c.post(f"/api/partners/{p}/email", json=body, headers=U).json()["id"] for p in pids[1:]]
+    r = c.post("/api/outreach/schedule", json={"ids": ids, "send_at": "2026-10-09T09:00:00-04:00", "per_day": 2, "gap_min": 10,
+                                                "weekdays_only": True, "tz_offset_min": -240}, headers=U).json()
+    assert [x["send_at"] for x in r["scheduled"]] == ["2026-10-09T13:00:00+00:00", "2026-10-09T13:10:00+00:00",
+                                                     "2026-10-12T13:00:00+00:00", "2026-10-12T13:10:00+00:00",
+                                                     "2026-10-13T13:00:00+00:00"]
+    assert all(m["status"] == "draft" for m in c.get("/api/outreach?status=draft", headers=U).json())
+    # a weekend start moves to Monday
+    r = c.post("/api/outreach/schedule", json={"ids": ids[:1], "send_at": "2026-10-10T09:00:00-04:00", "weekdays_only": True,
+                                                "tz_offset_min": -240}, headers=U).json()
+    assert r["scheduled"][0]["send_at"] == "2026-10-12T13:00:00+00:00"
+    assert c.post("/api/outreach/schedule", json={"ids": ids[:1], "send_at": None}, headers=U).json()["scheduled"] == [{"id": ids[0], "send_at": None}]
+    assert c.post("/api/outreach/schedule", json={"ids": [one["id"]], "send_at": None}, headers=A).json()["refused"][0]["reason"] == "status is sent"
+    assert c.get("/api/outreach/stats", headers=U).json()["email"]["auto_every_min"] == 0

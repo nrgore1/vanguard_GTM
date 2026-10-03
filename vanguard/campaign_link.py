@@ -10,7 +10,7 @@ clicks from another tool, signups, revenue, spend. The campaign's totals add the
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .store import now
 
@@ -82,7 +82,7 @@ def campaign_outreach(ws, cid: int) -> dict:
         return {"partners": [], "totals": empty, "queue": {"drafts": 0, "approved": 0, "missing_email": 0, "next_due": None}}
     ids = [p["id"] for p in partners]
     mk = _marks(len(ids))
-    msgs = ws.q(f"SELECT partner_id, step, delay_days, status, sent_at, replied_at FROM outreach_messages "
+    msgs = ws.q(f"SELECT partner_id, step, delay_days, status, sent_at, replied_at, send_at, one_off FROM outreach_messages "
                 f"WHERE partner_id IN ({mk}) ORDER BY partner_id, step", ids)
     acts = ws.q(f"SELECT partner_id, type, MAX(date) AS last, COUNT(*) AS n FROM partner_interactions "
                 f"WHERE partner_id IN ({mk}) AND summary NOT LIKE '{CONNECTED_PREFIX}%' GROUP BY partner_id, type", ids)
@@ -134,11 +134,13 @@ def _next_due(ms: list[dict]) -> str | None:
     for m in ms:
         if m["status"] != "approved":
             continue
-        if m["step"] == 1:
-            return "now"
+        later = m.get("send_at") if m.get("send_at") and m["send_at"] > datetime.now(timezone.utc).isoformat() else None
+        if m["step"] == 1 or m.get("one_off"):
+            return later[:10] if later else "now"
         prev = next((x for x in ms if x["step"] == m["step"] - 1), None)
         if prev and prev["sent_at"]:
-            return (datetime.fromisoformat(prev["sent_at"]) + timedelta(days=m["delay_days"])).date().isoformat()
+            due = (datetime.fromisoformat(prev["sent_at"]) + timedelta(days=m["delay_days"])).date().isoformat()
+            return max(due, later[:10]) if later else due
         return None
     return None
 

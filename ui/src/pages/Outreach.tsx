@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Send, ShieldCheck, Inbox, MailCheck, MailWarning, RefreshCw, Sparkles, AlertTriangle, BellRing, Waypoints } from "lucide-react";
+import { Send, ShieldCheck, CalendarClock, Inbox, MailCheck, MailWarning, RefreshCw, Sparkles, AlertTriangle, BellRing, Waypoints } from "lucide-react";
 import { api, type OutreachMessage } from "../lib/api";
 import { useAuth, useLoad } from "../lib/auth";
 import { label, relTime } from "../lib/format";
 import { Badge, Button, Card, Empty, ErrorNote, Modal, PageHeader, Select, Spinner, Stat, cx, kindTone, statusTone, useToast } from "../components/ui";
 import { OUTREACH_TONE, OutreachEditor, preview } from "../components/OutreachEditor";
+import { AutoSendNote, ScheduleModal, fmtWhen, isFuture } from "../components/Schedule";
 
 const TABS = [
   { id: "draft", label: "Needs approval" }, { id: "approved", label: "Queued" }, { id: "sent", label: "Sent" },
@@ -25,6 +26,7 @@ export default function Outreach() {
   const [sel, setSel] = useState<number[]>([]);
   const [open, setOpen] = useState<OutreachMessage | null>(null);
   const [busy, setBusy] = useState("");
+  const [sched, setSched] = useState(false);
   const [report, setReport] = useState<{ title: string; lines: string[] } | null>(null);
   const setFilter = (k: string, v: string) => { const n = new URLSearchParams(sp); if (v) n.set(k, v); else n.delete(k); setSp(n, { replace: true }); setSel([]); };
   const refresh = () => { reload(); stats.reload(); };
@@ -35,7 +37,9 @@ export default function Outreach() {
     for (const m of data ?? []) { c[m.status] = (c[m.status] ?? 0) + 1; if (STOPPED.has(m.status)) c.stopped++; }
     return c;
   }, [data]);
-  const approvable = rows.filter((m) => m.status === "draft" && m.lint_status !== "blocked");
+  const selectable = (m: OutreachMessage) => m.status === "draft" || (isAdmin && m.status === "approved");
+  const canSelect = tab === "draft" || (isAdmin && tab === "approved");
+  const scheduledLater = (data ?? []).filter((m) => (m.status === "draft" || m.status === "approved") && isFuture(m.send_at)).length;
 
   const act = async (key: string, fn: () => Promise<void>) => { setBusy(key); try { await fn(); } catch (e) { toast(String((e as Error).message), "err"); } finally { setBusy(""); refresh(); } };
   const approveSel = () => act("approve", async () => {
@@ -127,10 +131,12 @@ export default function Outreach() {
           <option value="">All properties</option>{properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select>
         <Select value={campaign} onChange={(e) => setFilter("campaign", e.target.value)} className="w-auto" aria-label="Filter by campaign">
           <option value="">All campaigns</option>{(campaigns.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
-        {isAdmin && tab === "draft" && (
+        {canSelect && (
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setSel(sel.length ? [] : approvable.map((m) => m.id))}>{sel.length ? "Clear" : `Select all ${approvable.length}`}</Button>
-            <Button size="sm" variant="primary" icon={<ShieldCheck size={13} />} disabled={!sel.length} loading={busy === "approve"} onClick={approveSel}>Approve {sel.length || ""}</Button>
+            <Button size="sm" variant="ghost" onClick={() => setSel(sel.length ? [] : rows.filter(selectable).map((m) => m.id))}>
+              {sel.length ? "Clear" : `Select all ${rows.filter(selectable).length}`}</Button>
+            <Button size="sm" icon={<CalendarClock size={13} />} disabled={!sel.length} onClick={() => setSched(true)}>Schedule {sel.length || ""}</Button>
+            {isAdmin && tab === "draft" && <Button size="sm" variant="primary" icon={<ShieldCheck size={13} />} disabled={!sel.length} loading={busy === "approve"} onClick={approveSel}>Approve {sel.length || ""}</Button>}
           </div>
         )}
       </div>
@@ -144,15 +150,15 @@ export default function Outreach() {
           <div className="overflow-x-auto scroll-thin">
             <table className="w-full min-w-[980px] text-sm">
               <thead><tr className="border-b border-line text-left text-xs text-muted">
-                {isAdmin && tab === "draft" && <th className="w-8 px-3" />}
+                {canSelect && <th className="w-8 px-3" />}
                 {["Priority", "Partner", "Step", "Subject", "To", "Status", ""].map((h, i) => <th key={i} className="px-3 py-2.5 font-medium">{h}</th>)}</tr></thead>
               <tbody>
                 {rows.map((m) => {
                   const noContact = !m.contact_email && !m.to_email;
                   return (
                     <tr key={m.id} onClick={() => setOpen(m)} className="cursor-pointer border-b border-line align-top last:border-0 hover:bg-surface-2">
-                      {isAdmin && tab === "draft" && <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" aria-label={`Select message ${m.id}`} disabled={m.lint_status === "blocked"} checked={sel.includes(m.id)}
+                      {canSelect && <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" aria-label={`Select message ${m.id}`} disabled={!selectable(m)} checked={sel.includes(m.id)}
                           onChange={(e) => setSel(e.target.checked ? [...sel, m.id] : sel.filter((x) => x !== m.id))} className="accent-[var(--vireo)]" /></td>}
                       <td className="whitespace-nowrap px-3 py-3"><Badge tone={statusTone(m.priority ?? "P2")}>{m.priority ?? "–"}</Badge> <span className="num text-xs text-muted">{m.priority_score ?? ""}</span></td>
                       <td className="max-w-[260px] px-3 py-3"><Link to={`/partners/${m.partner_id}`} onClick={(e) => e.stopPropagation()} className="line-clamp-2 font-medium hover:text-vireo">{m.partner_name}</Link>
@@ -164,7 +170,8 @@ export default function Outreach() {
                       <td className="whitespace-nowrap px-3 py-3"><Badge tone={OUTREACH_TONE[m.status]}>{m.status}</Badge>
                         {m.transport && m.transport !== "outbox" && <Badge tone={m.transport === "postmark" ? "violet" : "gray"}>{m.transport}</Badge>}
                         {m.opened_at ? <span className="ml-1 text-[11px] text-vireo">opened</span> : m.delivered_at ? <span className="ml-1 text-[11px] text-muted">delivered</span> : null}
-                        <div className="mt-0.5 text-[11px] text-faint">{m.sent_at ? `sent ${relTime(m.sent_at)}` : m.approved_by ? `by ${m.approved_by}` : ""}</div></td>
+                        <div className="mt-0.5 text-[11px] text-faint">{m.sent_at ? `sent ${relTime(m.sent_at)}` : m.approved_by ? `by ${m.approved_by}` : ""}</div>
+                        {!m.sent_at && isFuture(m.send_at) && <div className="mt-0.5 text-[11px] text-vireo">scheduled {fmtWhen(m.send_at)}</div>}</td>
                       <td className="px-3 py-3 text-right text-xs text-vireo">Open</td>
                     </tr>
                   );
@@ -174,7 +181,9 @@ export default function Outreach() {
           </div>
         )}
       </Card>
+      {scheduledLater > 0 && <div className="mt-3"><AutoSendNote every={mode?.auto_every_min} /></div>}
       <OutreachEditor msg={open} onClose={() => setOpen(null)} onChanged={refresh} />
+      <ScheduleModal ids={sel} open={sched} onClose={() => setSched(false)} onDone={() => { setSel([]); refresh(); }} autoEvery={mode?.auto_every_min} />
       <Modal open={!!report} onClose={() => setReport(null)} title={report?.title ?? ""}>
         <ul className="space-y-1 text-sm">{report?.lines.map((l, i) => <li key={i} className={l.startsWith("✓") ? "text-ink" : "text-muted"}>{l}</li>)}</ul>
         {report?.lines.length === 0 && <p className="text-sm text-muted">Nothing was due.</p>}

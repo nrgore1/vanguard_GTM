@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.13.2 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.14.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -115,7 +115,7 @@ IMAP_USER=naren@atmakosh.com
 IMAP_PASSWORD=<the mailbox password>
 ```
 
-### 1.4 Automatic sending (optional)
+### 1.4 Automatic sending (needed for scheduled emails)
 With this line, approved emails go out on their own as they fall due. Without it, they go out only
 when an admin clicks **Send due now**.
 
@@ -123,6 +123,7 @@ when an admin clicks **Send due now**.
 VANGUARD_OUTREACH_EVERY_MIN=30
 ```
 
+Use 10 if you schedule emails for specific times (§3.4), so they go within 10 minutes of their time.
 Every 30 minutes, the app then sends what's due (only approved emails, within the daily cap) and,
 if IMAP is set, checks for replies.
 
@@ -221,6 +222,20 @@ someone on LinkedIn, leave their email sequence unapproved until you know whethe
 Otherwise they get the same pitch twice.
 
 ### 3.4 Send
+**Schedule it** (v0.14.0). Any email can have a send date and time; it still needs approval, and it won't go
+before that time:
+- **One email:** in **Write email**, set **When** to "On a date and time". An admin's button then reads
+  **Approve & schedule**. To change it later, open the email (Outreach, or the partner's page) and use
+  **Schedule** or **Clear**.
+- **A campaign's emails:** on **Outreach**, filter by the campaign, tick the emails (Needs approval, or
+  Queued for an admin), click **Schedule**, and choose the start, how many per day, minutes apart, and
+  weekdays only. For example 40 emails, 10 a day, 5 minutes apart from Tuesday 9:00 runs Tuesday to the
+  following Monday, skipping the weekend.
+- Times are in your time zone. Follow-up steps still wait for their delay after the previous email; a
+  scheduled follow-up goes at whichever is later. The daily cap still applies.
+- Scheduled emails go on time only when automatic sending is on (§1.4). Otherwise they go the first time an
+  admin clicks **Send due now** after their time; the app warns you about this when you schedule.
+
 - **Automatically**, if §1.4 is on: due messages go out at the next 30-minute tick.
 - **By hand:** **Outreach → Send due now**. A report lists what was sent and why anything was held.
 
@@ -228,6 +243,7 @@ Otherwise they get the same pitch twice.
 |---|---|
 | no contact email on the partner yet | Add one (§2.2). It goes out on the next run. |
 | waiting for step N to be sent / due {date} | Nothing. Step 2 waits until step 1 has gone out and its wait (usually 4 days) has passed. Step 3 waits about 9 days after step 2. |
+| scheduled for {time} | Nothing: it goes at that time (with automatic sending on). Change it from the email's Schedule box. |
 | daily cap of 20 reached | It goes tomorrow. Raise `VANGUARD_EMAIL_DAILY_CAP` only once replies show your mailbox is trusted. |
 | partner already replied - sequence stopped | Correct: answer the reply yourself (§3.6). |
 | address opted out / bounced - cancelled | Never email that address again. Use another route. |

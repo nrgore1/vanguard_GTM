@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.0 — 2026-10-02
+
+### Added: scheduled sending
+- **Write email** has a **When** option: as soon as it's approved, or on a date and time. Admins get
+  **Approve & schedule**.
+- On **Outreach**, tick emails and click **Schedule**: one start time for all, or spread them a number per
+  day, minutes apart, on weekdays only. Open any email to set or clear its time.
+- Scheduled emails still need approval, still respect the daily cap, opt-outs and follow-up delays, and are
+  held until their time. The queue, partner page and editor show when each will go.
+- The app warns when automatic sending (`VANGUARD_OUTREACH_EVERY_MIN`) is off, because then scheduled emails
+  only go when an admin clicks Send due now.
+
+
 ## 0.13.2 — 2026-10-02
 
 ### Fixed: unsubscribes and replies

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Send, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CalendarClock, Send, ShieldCheck } from "lucide-react";
 import { api, type EmailStatus, type OutreachMessage, type Partner } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { Button, ErrorNote, Field, Input, Modal, Textarea, useToast } from "./ui";
+import { Button, ErrorNote, Field, Input, Modal, Select, Textarea, useToast } from "./ui";
+import { AutoSendNote, fmtWhen, localToIso, nextMorning } from "./Schedule";
 
 type Finding = { rule_id: string; message: string; excerpt: string; severity: string };
 
@@ -14,6 +15,8 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [later, setLater] = useState(false);
+  const [when, setWhen] = useState("");
   const [saved, setSaved] = useState<OutreachMessage | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [email, setEmail] = useState<EmailStatus | null>(null);
@@ -22,7 +25,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
 
   useEffect(() => {
     if (!open) return;
-    setTo(p.contact_email ?? ""); setSubject(""); setBody(`Hi {{first_name}},\n\n`); setSaved(null); setFindings([]); setError(null);
+    setTo(p.contact_email ?? ""); setSubject(""); setBody(`Hi {{first_name}},\n\n`); setSaved(null); setFindings([]); setError(null); setLater(false); setWhen(nextMorning());
     api.outreachStats().then((s) => setEmail(s.email)).catch(() => setEmail(null));
   }, [open, p.contact_email]);
 
@@ -36,9 +39,10 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
       if (addr && addr.toLowerCase() !== (p.contact_email ?? "")) await api.updatePartner(p.id, { contact_email: addr });
       const r = await api.editOutreach(saved.id, { subject, body });
       setFindings(r.lint_findings);
+      await api.scheduleOutreach({ ids: [saved.id], send_at: sendAt });
       return { id: saved.id, blocked: r.lint_status === "blocked" };
     }
-    const m = await api.composeEmail(p.id, { subject, body, contact_email: addr || undefined });
+    const m = await api.composeEmail(p.id, { subject, body, contact_email: addr || undefined, send_at: sendAt });
     setSaved(m);
     const fs: Finding[] = m.lint_findings ? JSON.parse(m.lint_findings) : [];
     setFindings(fs);
@@ -50,7 +54,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
     try {
       const r = await save();
       if (r.blocked) { toast("Saved, but the claim rules block it - fix the flagged lines", "err"); return; }
-      toast(isAdmin ? "Draft saved - approve it here or in Outreach" : "Draft saved - an admin approves it in Outreach");
+      toast((sendAt ? `Draft saved for ${fmtWhen(sendAt)} - ` : "Draft saved - ") + (isAdmin ? "approve it here or in Outreach" : "an admin approves it in Outreach"));
       onChanged(); onClose();
     } catch (e) { setError(e); } finally { setBusy(""); }
   };
@@ -62,6 +66,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
       if (r.blocked) { toast("Not sent: the claim rules block it - fix the flagged lines", "err"); return; }
       const a = await api.approveOutreach([r.id]);
       if (a.refused.length) throw new Error(a.refused[0].reason);
+      if (sendAt) { toast(`Approved - goes ${fmtWhen(sendAt)}`); onChanged(); onClose(); return; }
       const s = await api.sendDue([r.id]);
       const x = s.sent[0];
       if (x) toast(s.mode === "outbox" ? `Saved to the outbox (email isn't connected) - not sent to ${x.to}`
@@ -72,7 +77,8 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
     } catch (e) { setError(e); } finally { setBusy(""); }
   };
 
-  const ready = subject.trim().length >= 3 && body.trim().length >= 20 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to.trim());
+  const sendAt = later ? localToIso(when) : null;
+  const ready = (!later || !!when) && subject.trim().length >= 3 && body.trim().length >= 20 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to.trim());
   return (
     <Modal open={open} onClose={close} wide title={`Write to ${p.contact_name || p.name}`}
       footer={<>
@@ -80,7 +86,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
         <div className="flex-1" />
         <Button onClick={saveDraft} loading={busy === "save"} disabled={!ready}>Save draft</Button>
         {isAdmin && <Button variant="primary" icon={email?.live ? <Send size={14} /> : <ShieldCheck size={14} />} loading={busy === "send"}
-          disabled={!ready} onClick={approveAndSend}>{email?.live ? "Approve & send" : "Approve & save to outbox"}</Button>}
+          disabled={!ready} onClick={approveAndSend}>{sendAt ? "Approve & schedule" : email?.live ? "Approve & send" : "Approve & save to outbox"}</Button>}
       </>}>
       <ErrorNote error={error} />
       {email && !email.live && (
@@ -103,6 +109,12 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
         <Field label="Subject"><Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={140} /></Field>
         <Field label="Message" hint="{{first_name}} becomes their first name. The footer is added when it sends.">
           <Textarea rows={14} value={body} onChange={(e) => setBody(e.target.value)} /></Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="When"><Select value={later ? "later" : "now"} onChange={(e) => setLater(e.target.value === "later")}>
+            <option value="now">As soon as it's approved</option><option value="later">On a date and time</option></Select></Field>
+          {later && <Field label="Send on (your time)"><Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></Field>}
+        </div>
+        {later && <div className="flex items-start gap-2"><CalendarClock size={14} className="mt-0.5 shrink-0 text-vireo" /><AutoSendNote every={email?.auto_every_min} /></div>}
       </div>
     </Modal>
   );

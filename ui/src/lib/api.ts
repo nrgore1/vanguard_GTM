@@ -76,7 +76,7 @@ export interface PostmarkStatus {
   cold_via_smtp: boolean; monthly_cap: number; track_opens: boolean; webhook_auth: boolean; used_this_month?: number;
 }
 export interface EmailStatus {
-  mode: string; live: boolean; problems: string[]; sender: string; daily_cap: number; imap_configured: boolean;
+  mode: string; live: boolean; problems: string[]; sender: string; daily_cap: number; imap_configured: boolean; auto_every_min?: number;
   mailboxes?: { name: string; sender: string; properties: string[] | null; daily_cap: number; imap_configured: boolean }[];
   senders?: Record<string, string>;
   postmark: PostmarkStatus | null;
@@ -90,7 +90,7 @@ export interface OutreachMessage {
   partner_name?: string; property_id?: string; partner_kind?: string; partner_stage?: string; contact_email?: string | null;
   contact_name?: string | null; priority_score?: number | null; priority?: string | null;
   transport?: string | null; pm_message_id?: string | null; delivered_at?: string | null; opened_at?: string | null;
-  campaign_id?: number | null; campaign_name?: string | null; one_off?: number | null;
+  campaign_id?: number | null; campaign_name?: string | null; one_off?: number | null; send_at?: string | null;
 }
 export interface OutreachStats {
   draft: number; approved: number; sent: number; replied: number; cancelled: number; failed: number; bounced: number;
@@ -240,8 +240,10 @@ export const api = {
     req<{ ok: boolean; lint_status: string; lint_findings: { rule_id: string; message: string; excerpt: string; severity: string }[] }>("PATCH", `/outreach/${id}`, b),
   approveOutreach: (ids: number[]) => req<{ approved: number[]; refused: { id: number; reason: string }[] }>("POST", "/outreach/approve", { ids }),
   cancelOutreach: (id: number) => req("POST", `/outreach/${id}/cancel`),
-  composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string }) =>
+  composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string; send_at?: string | null }) =>
     req<OutreachMessage>("POST", `/partners/${pid}/email`, b),
+  scheduleOutreach: (b: { ids: number[]; send_at: string | null; per_day?: number | null; gap_min?: number; weekdays_only?: boolean; tz_offset_min?: number }) =>
+    req<{ scheduled: { id: number; send_at: string | null }[]; refused: { id: number; reason: string }[] }>("POST", "/outreach/schedule", b),
   sendDue: (ids?: number[]) => req<{ sent: { id: number; partner: string; step: number; to: string; transport?: string; from?: string; copy?: string | null }[]; skipped: { id: number; partner: string; step: number; reason: string }[]; mode: string }>("POST", "/outreach/send-due", ids ? { ids } : undefined),
   syncReplies: () => req<{ matched: number; bounces: number; unmatched: number; duplicates: number }>("POST", "/outreach/sync-replies"),
   sendDigest: () => req<{ sent: number; transport?: string; reason?: string }>("POST", "/outreach/digest"),

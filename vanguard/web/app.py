@@ -221,6 +221,16 @@ class ComposeIn(BaseModel):
     subject: str = Field(min_length=3, max_length=140)
     body: str = Field(min_length=20, max_length=5000)
     contact_email: str | None = Field(default=None, max_length=200)
+    send_at: str | None = Field(default=None, max_length=40)
+
+
+class ScheduleIn(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=500)
+    send_at: str | None = Field(default=None, max_length=40)       # None clears the schedule
+    per_day: int | None = Field(default=None, ge=1, le=200)
+    gap_min: int = Field(default=0, ge=0, le=720)
+    weekdays_only: bool = False
+    tz_offset_min: int = Field(default=0, ge=-840, le=840)
 
 
 class SendIn(BaseModel):
@@ -872,11 +882,25 @@ def compose_email(pid: int, body: ComposeIn, u: dict = Depends(current_user)):
     the normal send path (daily cap, opt-outs, footer, timeline entry)."""
     from ..outreach import compose
     try:
-        return compose(store(), pid, body.subject, body.body, u["id"], body.contact_email)
+        return compose(store(), pid, body.subject, body.body, u["id"], body.contact_email, body.send_at)
     except KeyError:
         raise HTTPException(404)
     except ValueError as e:
         raise HTTPException(422, str(e))
+
+
+@api.post("/outreach/schedule")
+def schedule_outreach(body: ScheduleIn, u: dict = Depends(current_user)):
+    """Set when messages may go out (or clear it). Scheduling never approves or sends anything."""
+    from ..outreach import schedule
+    try:
+        res = schedule(store(), body.ids, body.send_at, body.per_day, body.gap_min, body.weekdays_only,
+                       body.tz_offset_min, is_admin=u["role"] == "admin")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    store().audit(u["id"], "schedule", "outreach", ",".join(str(x["id"]) for x in res["scheduled"]),
+                  {"send_at": body.send_at, "per_day": body.per_day})
+    return res
 
 
 @api.post("/outreach/send-due")

@@ -6,6 +6,7 @@ import { useAuth } from "../lib/auth";
 import { label, relTime, shortDate, today } from "../lib/format";
 import { Badge, Button, Card, CardHeader, ErrorNote, Field, Input, Modal, Select, Textarea, statusTone, useToast } from "./ui";
 import { OUTREACH_TONE, OutreachEditor, preview } from "./OutreachEditor";
+import { fmtWhen, isFuture } from "./Schedule";
 
 function shortUrl(u: string) {
   const t = u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
@@ -179,7 +180,7 @@ export function SequenceCard({ p, onChanged }: { p: Partner; onChanged: () => vo
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{p.is_segment ? m.subject : preview(m.subject, m)}</div>
                 <div className="mt-0.5 text-xs text-faint">{m.one_off ? "one-off email" : m.step === 1 ? "first email" : `${m.delay_days} days after step ${m.step - 1}`}
-                  {m.sent_at && ` · sent ${relTime(m.sent_at)}${m.transport ? ` via ${m.transport}` : ""}`}{m.delivered_at && " · delivered"}{m.opened_at && " · opened"}{m.approved_by && !m.sent_at && ` · approved by ${m.approved_by}`}{m.error && ` · ${m.error}`}</div>
+                  {m.sent_at && ` · sent ${relTime(m.sent_at)}${m.transport ? ` via ${m.transport}` : ""}`}{!m.sent_at && isFuture(m.send_at) && ` · scheduled ${fmtWhen(m.send_at)}`}{m.delivered_at && " · delivered"}{m.opened_at && " · opened"}{m.approved_by && !m.sent_at && ` · approved by ${m.approved_by}`}{m.error && ` · ${m.error}`}</div>
               </div>
               {m.lint_status !== "pass" && <Badge tone={statusTone(m.lint_status)}>claims {m.lint_status}</Badge>}
               <Badge tone={OUTREACH_TONE[m.status]}>{m.status}</Badge>
