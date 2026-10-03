@@ -34,6 +34,7 @@ class LintGate:
         self.attr_number = re.compile(a["number_pattern"], re.I) if a else None
         self.attr_source = re.compile(a["source_pattern"]) if a else None  # case-sensitive on purpose
         self.attr_severity = a.get("severity", "block")
+        self.attr_exempt = re.compile(a["exempt_pattern"]) if a.get("exempt_pattern") else None
 
     # ------------------------------------------------------------------
     def check_text(self, text: str, location: str, profile: str,
@@ -50,6 +51,8 @@ class LintGate:
                                        excerpt=_window(text, m.start(), m.end()), message=rule.message))
         if profile in self.attr_profiles and self.attr_number:
             for sentence in _SENTENCE.split(text):
+                if self.attr_exempt and self.attr_exempt.search(sentence):
+                    continue
                 if self.attr_number.search(sentence) and not self.attr_source.search(sentence):
                     out.append(LintFinding(
                         rule_id="unattributed-figure", severity=self.attr_severity, location=location,

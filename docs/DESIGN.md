@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.11.0 |
+| **Version** | 0.12.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -801,6 +801,26 @@ LinkedIn (same mailer, footer and daily cap as outreach; opted-out addresses are
 hand on LinkedIn and marked sent. Sending logs "Asked X for an introduction" on the target's timeline; outcomes
 log there too, and "introduced" moves an identified target to contacted.
 
+### 15.12 One-off emails (v0.12.0)
+
+Sequences come from recommendations; investors and ad-hoc follow-ups have none. `outreach.compose` writes a
+single email to one partner as an ordinary `outreach_messages` draft with `one_off = 1` and a step number from
+101 up (`ONE_OFF_BASE`), so it never collides with sequence steps 1-5 and keeps the `(partner_id, step)` key.
+An address typed in the dialog is validated and saved as the partner's `contact_email`.
+
+Everything else is the existing path: the claim rules (the property's lint profile) run on save and edit, only
+an admin approves, and it leaves only through `send_due` with the daily cap, opt-out list, footer, Postmark
+consent policy (§16.2: a cold first touch in postmark mode needs SMTP), timeline entry and move to contacted.
+Two sequence rules don't apply to a one-off: it doesn't wait for an earlier step, and a recorded reply
+neither stops it in `send_due` nor cancels it in `record_reply` (a one-off is often the answer to that reply).
+
+`send_due(only=[ids])` sends just the named approved messages; "Approve & send" uses it so one email doesn't
+release the rest of the queue. `POST /outreach/send-due` takes an optional `{ids}`.
+
+**Attribution exemption.** `lint_gate.yaml` `attribution.exempt_pattern` skips the source-required rule for a
+sentence about our own raise ("We're raising a $3M seed"): a fact about Vireoka, not a market claim. Any other
+figure in the same email still needs a source.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -945,6 +965,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.12.0 | 2026-10-02 | **One-off emails** (§15.12): "Write email" on any named partner (investors included) creates a single draft (`one_off`, steps 101+), saves the address as the contact email, runs the claim rules, needs admin approval and sends through the normal path; "Approve & send" sends only that message (`send_due(only=…)`, `POST /outreach/send-due {ids}`); a reply doesn't cancel a one-off. Lint: a sentence about our own raise is exempt from the attribution rule (`attribution.exempt_pattern`). Tests WEB-35, UI-18. |
 | 0.11.0 | 2026-10-02 | **Introductions** (§15.11): full LinkedIn export import (message counts, endorsements, tie strength, role tags; no message text stored); path finder (insiders at the target, likely bridges named in the target's background or in the same world, a LinkedIn 2nd-degree search link per target, at most 4 asks per connector); double opt-in asks with a forwardable blurb, lint-checked, admin-approved, emailed or sent on LinkedIn by hand; outcomes on the partner timeline; Introductions page and a Paths in card on partners; `vanguard intros suggest/list/draft/send`. **Investor list:** 118 more Fintech/Crypto/AI investors from the full 80-page vcconf.com export (310 total), 15 more researched. Tests E2E-35, WEB-34, UI-17. |
 | 0.10.0 | 2026-10-02 | **Investor targets** (§15.10): `config/investor_targets.yaml` ranks 192 investors for LiqMint (189 Fintech/Crypto/AI investors from the Sep 2026 VC Pitch Conf list plus 3 March 2026 conference speakers), with conference-derived considerations and sourced research on the top 28; `vanguard investors import/list`; the Load researched partners button also loads them; investor-specific factor labels on the partner page. Tests E2E-34, WEB-33. |
 | 0.9.1 | 2026-10-02 | **Investor contacts:** partners can have kind `investor` (web API, UI type picker, filter, rose badge), so fundraising contacts sit in the same pipeline with stages, interactions and next steps. No drafts are generated for them; the agent playbook schema is unchanged. Test WEB-32. |

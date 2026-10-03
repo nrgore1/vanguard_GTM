@@ -1064,3 +1064,46 @@ def test_web_34_introductions(env):
     assert any("made the introduction" in i["summary"] for i in p["interactions"])
     assert any("Asked Sam Okafor for an introduction" in i["summary"] for i in p["interactions"])
     assert [i["status"] for i in p["intros"] if i["id"] == lead["id"]] == ["introduced"]
+
+
+ANDREW = ("Hi {{first_name}},\n\nAt the March VC conference you named security and governance for enterprise AI agents as a "
+          "priority. That is what we are building at Vireoka.\n\nWe are raising a $3M seed. Would 20 minutes in the next "
+          "two weeks work?\n\nBest,\nNarendra")
+
+
+def test_web_35_one_off_email(env, monkeypatch):
+    """WEB-35: any user writes a one-off email to a partner (here an investor with no sequence), adding the
+    address on the way; it is a draft that passes the claim rules (a sentence about our own raise needs no source,
+    other figures still do), needs an admin to approve, and "Approve & send" sends only that message, logs it on
+    the timeline and moves the partner to contacted. A reply doesn't cancel a later one-off; bad input is refused."""
+    monkeypatch.setenv("VANGUARD_OUTPUT", str(env["tmp"] / "out"))
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    pid = c.post("/api/partners", json={"property_id": "vireoka", "name": "Andrew Brackin", "kind": "investor",
+                                        "contact_name": "Andrew Brackin"}, headers=U).json()["id"]
+    assert c.post(f"/api/partners/{pid}/email", json={"subject": "Hi there", "body": ANDREW,
+                  "contact_email": "not-an-address"}, headers=U).status_code == 422
+    assert c.post("/api/partners/99999/email", json={"subject": "Hi there", "body": ANDREW}, headers=U).status_code == 404
+    m = c.post(f"/api/partners/{pid}/email", json={"subject": "Governance before AI agents move money", "body": ANDREW,
+               "contact_email": "Andrew@Example.com"}, headers=U).json()
+    assert (m["status"], m["lint_status"], m["one_off"], m["step"]) == ("draft", "pass", 1, 101)
+    assert s.one("SELECT contact_email FROM partners WHERE id=?", (pid,))["contact_email"] == "andrew@example.com"
+    bad = c.post(f"/api/partners/{pid}/email", json={"subject": "Market size", "body": ANDREW + "\nThe market is $4 trillion."},
+                 headers=U).json()
+    assert bad["lint_status"] == "blocked" and bad["step"] == 102
+    assert "lint" in c.post("/api/outreach/approve", json={"ids": [bad["id"]]}, headers=A).json()["refused"][0]["reason"]
+    # an unrelated approved message stays queued when only this one is sent
+    other = c.post("/api/partners", json={"property_id": "vireoka", "name": "Other Fund", "kind": "investor",
+                                          "contact_email": "o@example.com"}, headers=U).json()["id"]
+    om = c.post(f"/api/partners/{other}/email", json={"subject": "Hello there", "body": ANDREW}, headers=U).json()
+    assert c.post("/api/outreach/approve", json={"ids": [m["id"]]}, headers=U).status_code == 403
+    assert c.post("/api/outreach/approve", json={"ids": [m["id"], om["id"]]}, headers=A).json()["approved"] == [m["id"], om["id"]]
+    r = c.post("/api/outreach/send-due", json={"ids": [m["id"]]}, headers=A).json()
+    assert [(x["partner"], x["to"]) for x in r["sent"]] == [("Andrew Brackin", "andrew@example.com")] and r["skipped"] == []
+    assert s.one("SELECT status FROM outreach_messages WHERE id=?", (om["id"],))["status"] == "approved"
+    p = c.get(f"/api/partners/{pid}", headers=U).json()
+    assert p["stage"] == "contacted" and any(i["type"] == "email" for i in p["interactions"])
+    # he replies; a follow-up one-off written afterwards still goes out
+    c.post(f"/api/partners/{pid}/reply", json={"date": "2026-10-05", "summary": "Happy to talk", "kind": "email"}, headers=U)
+    f = c.post(f"/api/partners/{pid}/email", json={"subject": "Times for next week", "body": ANDREW}, headers=U).json()
+    c.post("/api/outreach/approve", json={"ids": [f["id"]]}, headers=A)
+    assert [x["partner"] for x in c.post("/api/outreach/send-due", json={"ids": [f["id"]]}, headers=A).json()["sent"]] == ["Andrew Brackin"]

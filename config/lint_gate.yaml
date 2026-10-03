@@ -14,6 +14,9 @@ attribution:
   # keywords case-insensitive; "per X" and "(Org, 2025)" need a capitalised name
   source_pattern: '((?i:\bsources?:|\baccording to\b|\bdata from\b|\breports?\b)|\bper [A-Z]|\(\s?[A-Z][\w&.\- ]+,? \d{4}\s?\))'
   severity: block
+  # A sentence about our own raise ("We're raising a $3M seed") states a fact about Vireoka, not a market claim,
+  # so it needs no source. Only that: any other figure in the same email is still checked.
+  exempt_pattern: '(?i:\bwe(?:''re| are)? raising\b|\braising (?:a|an|our)\b|\bour (?:round|raise)\b)'
 
 profiles:
 

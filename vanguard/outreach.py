@@ -225,6 +225,38 @@ def postmark_used_this_month(ws) -> int:
 
 
 # ---------------------------------------------------------------- approval
+ONE_OFF_BASE = 100   # one-off emails are numbered 101, 102, ... so they never collide with sequence steps 1-5
+
+
+def compose(ws, partner_id: int, subject: str, body: str, user_id: int | None = None,
+            contact_email: str | None = None) -> dict:
+    """Write a single email to one partner (an investor, a reply, a follow-up). It is a draft like any other:
+    it goes through the claim rules, needs an admin's approval, and only leaves through send_due."""
+    p = ws.one("SELECT id, property_id, is_segment, contact_email FROM partners WHERE id=?", (partner_id,))
+    if not p:
+        raise KeyError(partner_id)
+    if p["is_segment"]:
+        raise ValueError("this is a segment - add a named organisation under it and write to them")
+    subject, body = (subject or "").strip(), (body or "").strip()
+    if not subject or not body:
+        raise ValueError("subject and body are both required")
+    ts = now()
+    if contact_email:
+        addr = contact_email.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", addr):
+            raise ValueError(f"{contact_email!r} is not an email address")
+        if addr != (p["contact_email"] or ""):
+            ws.update("partners", "id", partner_id, {"contact_email": addr, "updated_at": ts})
+    from .intros import _lint
+    last = ws.one("SELECT MAX(step) AS n FROM outreach_messages WHERE partner_id=?", (partner_id,))["n"] or 0
+    mid = ws.insert("outreach_messages", {"partner_id": partner_id, "step": max(last, ONE_OFF_BASE) + 1, "delay_days": 0,
+                                          "subject": subject, "body": body, "status": "draft", "one_off": 1,
+                                          "created_by": user_id, "created_at": ts, "updated_at": ts}
+                    | _lint(ws, p["property_id"], subject, body))
+    ws.audit(user_id, "compose", "outreach", mid, {"partner_id": partner_id})
+    return ws.one("SELECT * FROM outreach_messages WHERE id=?", (mid,))
+
+
 def approve(ws, ids: Iterable[int], approver: str) -> dict:
     ok, refused = [], []
     for mid in ids:
@@ -255,12 +287,15 @@ def _suppressed(ws, addr: str) -> bool:
 
 
 def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | None = None,
-             limit: int | None = None, actor: int | None = None, cold_mailer=None) -> dict:
+             limit: int | None = None, actor: int | None = None, cold_mailer=None,
+             only: Iterable[int] | None = None) -> dict:
     """Send every approved message that is due, in priority order, within the daily cap.
 
     postmark mode: warm partners (replied / opted in / existing relationship) go through the Postmark outreach
     stream; cold first-touch goes through your own SMTP mailbox if configured, otherwise it is held - Postmark
-    only permits permission-based email (unless VANGUARD_POSTMARK_ALLOW_COLD=1)."""
+    only permits permission-based email (unless VANGUARD_POSTMARK_ALLOW_COLD=1).
+
+    only: send just these approved message ids (the "Approve & send" button on a one-off email)."""
     cfg = cfg or EmailConfig.from_env()
     if cfg.problems():
         return {"sent": [], "skipped": [], "error": "; ".join(cfg.problems())}
@@ -275,6 +310,9 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
     rows = ws.q("SELECT m.*, p.name AS p_name, p.contact_email, p.contact_name, p.stage, p.property_id, "
                 "p.priority_score, p.is_segment, p.email_consent FROM outreach_messages m JOIN partners p ON p.id=m.partner_id "
                 "WHERE m.status='approved' ORDER BY COALESCE(p.priority_score,0) DESC, m.partner_id, m.step")
+    if only is not None:
+        keep = {int(i) for i in only}
+        rows = [r for r in rows if r["id"] in keep]
     sent, skipped = [], []
     for m in rows:
         partner = {"name": m["p_name"], "contact_email": m["contact_email"], "contact_name": m["contact_name"]}
@@ -289,6 +327,8 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
         elif _suppressed(ws, m["contact_email"]):
             ws.update("outreach_messages", "id", m["id"], {"status": "cancelled", "error": "address suppressed"})
             why = "address opted out / bounced - cancelled"
+        elif m["one_off"]:
+            pass        # written by hand for this partner: no sequence order, and a reply doesn't stop it
         elif ws.one("SELECT 1 FROM outreach_messages WHERE partner_id=? AND status='replied'", (m["partner_id"],)):
             ws.update("outreach_messages", "id", m["id"], {"status": "cancelled", "error": "partner replied"})
             why = "partner already replied - sequence stopped"
@@ -375,7 +415,8 @@ def record_reply(ws, partner_id: int, summary: str, when: date | None = None, ou
         ws.update("outreach_messages", "id", outreach_id, {"status": "replied", "replied_at": ts, "updated_at": ts})
     with ws.conn() as c:
         cancelled = c.execute("UPDATE outreach_messages SET status='cancelled', error='partner replied', updated_at=? "
-                              "WHERE partner_id=? AND status IN ('draft','approved')", (ts, partner_id)).rowcount
+                              "WHERE partner_id=? AND status IN ('draft','approved') AND COALESCE(one_off,0)=0",
+                              (ts, partner_id)).rowcount
     ws.insert("partner_interactions", {"partner_id": partner_id, "date": (when or datetime.now(timezone.utc).date()).isoformat(), "type": kind,
                                        "summary": ("Reply: " + summary.strip())[:4000], "outcome": outcome,
                                        "next_step": "Opted out - do not contact" if cls == "optout" else "Respond to reply",

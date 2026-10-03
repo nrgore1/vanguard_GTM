@@ -217,6 +217,16 @@ class IdsIn(BaseModel):
     ids: list[int] = Field(min_length=1, max_length=500)
 
 
+class ComposeIn(BaseModel):
+    subject: str = Field(min_length=3, max_length=140)
+    body: str = Field(min_length=20, max_length=5000)
+    contact_email: str | None = Field(default=None, max_length=200)
+
+
+class SendIn(BaseModel):
+    ids: list[int] | None = Field(default=None, max_length=500)
+
+
 class RecommendIn(BaseModel):
     property_id: str
     mode: Literal["offline", "model"] = "offline"
@@ -856,10 +866,23 @@ def cancel_outreach(mid: int, a: dict = Depends(admin_user)):
     return {"ok": True}
 
 
+@api.post("/partners/{pid}/email")
+def compose_email(pid: int, body: ComposeIn, u: dict = Depends(current_user)):
+    """Write a one-off email to this partner. It is saved as a draft; an admin approves it and it leaves through
+    the normal send path (daily cap, opt-outs, footer, timeline entry)."""
+    from ..outreach import compose
+    try:
+        return compose(store(), pid, body.subject, body.body, u["id"], body.contact_email)
+    except KeyError:
+        raise HTTPException(404)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
 @api.post("/outreach/send-due")
-def send_outreach(a: dict = Depends(admin_user)):
+def send_outreach(body: SendIn | None = None, a: dict = Depends(admin_user)):
     from ..outreach import send_due
-    res = send_due(store(), actor=a["id"])
+    res = send_due(store(), actor=a["id"], only=body.ids if body else None)
     if res.get("error"):
         raise HTTPException(409, res["error"])
     return res

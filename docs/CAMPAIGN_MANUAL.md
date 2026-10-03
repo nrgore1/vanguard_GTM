@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.11.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.12.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -215,6 +215,14 @@ Otherwise they get the same pitch twice.
 | address opted out / bounced - cancelled | Never email that address again. Use another route. |
 | partner is declined - cancelled (or signed) | Correct: the deal is closed either way. |
 | this is a segment - add named organisations under it, then approve their messages | Segments are templates. Add the real organisation under the segment and approve its copy. |
+
+**One-off emails** (v0.12.0). Investors, and anyone you want to write to outside a sequence: open the partner
+and click **Write email**. Fill in **To** (only an address the person or their firm published or shared with
+you; it is saved as the contact email), the subject and the message. **Save draft** puts it in the approval
+queue; an admin can click **Approve & send** to send just that one email at once. The claim rules apply as
+usual, except that a sentence about our own raise ("We're raising a $3M seed") needs no source. A one-off
+isn't stopped by a reply, so it is also how you answer one from the app. If the dialog says
+**Email isn't connected yet**, do §1.2 first; until then it only saves to the outbox.
 
 Each sent email automatically adds a dated **"Sent step N"** entry to the partner's timeline and
 moves the partner from Identified to **Contacted**.

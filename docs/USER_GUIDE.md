@@ -116,7 +116,8 @@ and why, ranks them, and drafts the first emails. For Jodibana, for example, it 
    unsourced numbers.
 4. **Approve** (admin): approve single emails, or a partner's whole sequence with **Approve 3**.
    Nothing is ever sent without an admin's approval, and any edit needs a fresh approval.
-5. **Send** (admin): Outreach → **Send due now**.
+5. **Send** (admin): Outreach → **Send due now**. To write a single email to anyone (an investor, a
+   follow-up), use **Write email** on their page; see the Campaigns & Outreach manual §3.4.
    - The first email goes straight away.
    - Follow-ups go only when their delay has passed and nobody has replied.
    - A daily cap and the opt-out list are always respected.

@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.11.0 · updated 2026-10-02
+Version 0.12.0 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -93,6 +93,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-32 | Investor contacts | Create "Robert Fabbio" as kind investor under Vireoka, log a note that moves the stage, filter by kind, try an unknown kind | Created with no drafted emails; stage contacted; the investor filter returns only him; an unknown kind is 422. |
 | WEB-33 | Investor targets | Check the YAML; Load researched partners as admin; set the top investor to contacted with an email; load again | Ranks 1..N, priorities match scores, five factors each, https sources, no published email; every investor created as kind investor under Vireoka with "Rank #1 of", key considerations and sources; no outreach drafts; the re-load refreshes all and keeps the stage and email. |
 | WEB-34 | Introductions | A bad zip; a synthetic export with messages and an endorsement; Find paths; draft; approve as user then admin; send; mark sent on LinkedIn; record introduced | 400 for the bad zip; message counts 6 and 13, one endorsement, strength ordered, no message text stored; Sam (at Lead) is an insider path for Lead Bank, Eleni (the target) is not proposed, only Andrea (TA Ventures) bridges to investors and for at most 4 of them; the draft names Eleni, is double opt-in and has a note to forward; user approval is 403; the email goes only to the connector who shared an address, the other is held for LinkedIn; marking an emailed ask as sent on LinkedIn is 409; the outcome and the ask are on the partner timeline. |
+| WEB-35 | One-off email to an investor | Write an email to an investor partner with a bad address, an unknown partner, then a good address; a second with an unsourced market figure; approve as user then admin; send only that id; record a reply; write and send a follow-up | 422 and 404; the draft is step 101, `one_off`, lint pass (the raise sentence needs no source) and the address is saved lower-cased; the market figure is blocked and can't be approved; user approval is 403; only Andrew's email is sent while another approved message stays queued; he moves to contacted with an email on the timeline; the follow-up after his reply still sends. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
@@ -119,6 +120,7 @@ Atmakosh.
 | UI-16 | LinkedIn campaign in the browser | A user imports a Connections.csv on Partners, creates a LiqMint Institutional campaign and adds Lead Bank. The import reports Lead Bank's named contact; the campaign funnel shows 1 partner; Lead Bank shows "People you know here" with the named contact, a link to the campaign and a "Connected on LinkedIn" timeline entry. |
 | UI-17 | Introductions in the browser | Import a LinkedIn .zip on Partners; Introductions, Find paths; open the Lead Bank path; draft; admin approves; send approved emails | The import reports warm ties; an insider path to Lead Bank appears with a 2nd-degree search link; the drafted ask shows the note to forward; after approval the send report shows the email to the connector. |
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
+| UI-18 | One-off email in the browser | Open the investor Andrew Brackin; Write email; fill To, Subject, Message; Approve & save to outbox | The dialog warns that email isn't connected; the report says it was saved to the outbox; the partner shows a one-off email to the new address. |
 
 ## Database tests (`tests/test_db.py`)
 

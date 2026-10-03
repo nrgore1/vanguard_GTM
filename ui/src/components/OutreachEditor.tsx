@@ -51,7 +51,7 @@ export function OutreachEditor({ msg, onClose, onChanged }: { msg: OutreachMessa
   };
 
   return (
-    <Modal open wide onClose={onClose} title={`Step ${msg.step} · ${msg.partner_name ?? "partner"}`}
+    <Modal open wide onClose={onClose} title={`${msg.one_off ? "One-off email" : `Step ${msg.step}`} · ${msg.partner_name ?? "partner"}`}
       footer={<>
         {isAdmin && editable && <Button variant="ghost" icon={<XCircle size={14} />} loading={busy === "cancel"}
           onClick={() => run("cancel", () => api.cancelOutreach(msg.id), "Message cancelled")}>Cancel message</Button>}
@@ -69,7 +69,7 @@ export function OutreachEditor({ msg, onClose, onChanged }: { msg: OutreachMessa
         <Badge tone={statusTone(msg.lint_status)}>claims check: {msg.lint_status}</Badge>
         {msg.partner_id && <Link to={`/partners/${msg.partner_id}`} className="text-vireo hover:underline" onClick={onClose}>Open partner</Link>}
         <span className="text-muted">To: {msg.to_email ?? msg.contact_email ?? <span className="text-amber">no contact email yet</span>}</span>
-        {msg.step > 1 && <span className="text-muted">· sends {msg.delay_days} days after step {msg.step - 1}</span>}
+        {msg.step > 1 && !msg.one_off && <span className="text-muted">· sends {msg.delay_days} days after step {msg.step - 1}</span>}
         {msg.approved_by && <span className="text-muted">· approved by {msg.approved_by} {shortDate(msg.approved_at)}</span>}
         {msg.sent_at && <span className="text-muted">· sent {shortDate(msg.sent_at)}</span>}
         {msg.error && <span className="text-rose">· {msg.error}</span>}

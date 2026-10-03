@@ -48,8 +48,8 @@ export default function Outreach() {
     const r = await api.sendDue();
     const how = r.mode === "postmark" ? "Postmark + your mailbox" : r.mode === "smtp" ? "live email" : "outbox - nothing left this machine";
     setReport({ title: `${r.sent.length} sent (${how})`,
-      lines: [...r.sent.map((x) => `✓ ${x.partner} · step ${x.step} → ${x.to}${x.transport && x.transport !== r.mode ? ` (via ${x.transport})` : ""}`),
-        ...r.skipped.map((x) => `· ${x.partner} · step ${x.step}: ${x.reason}`)] });
+      lines: [...r.sent.map((x) => `✓ ${x.partner} · ${x.step > 100 ? "one-off" : `step ${x.step}`} → ${x.to}${x.transport && x.transport !== r.mode ? ` (via ${x.transport})` : ""}`),
+        ...r.skipped.map((x) => `· ${x.partner} · ${x.step > 100 ? "one-off" : `step ${x.step}`}: ${x.reason}`)] });
   });
   const digest = () => act("digest", async () => {
     const r = await api.sendDigest();
@@ -157,7 +157,7 @@ export default function Outreach() {
                       <td className="max-w-[260px] px-3 py-3"><Link to={`/partners/${m.partner_id}`} onClick={(e) => e.stopPropagation()} className="line-clamp-2 font-medium hover:text-vireo">{m.partner_name}</Link>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint"><Badge tone={kindTone(m.partner_kind ?? "")}>{label(m.partner_kind ?? "")}</Badge>{propName(m.property_id ?? "")}</div>
                         {m.campaign_name && <div className="mt-0.5 truncate text-[11px] text-vireo">{m.campaign_name}</div>}</td>
-                      <td className="num px-3 py-3 text-muted">{m.step}</td>
+                      <td className="num px-3 py-3 text-muted">{m.one_off ? "one-off" : m.step}</td>
                       <td className="max-w-[320px] px-3 py-3"><div className="truncate">{preview(m.subject, m)}</div>{m.lint_status !== "pass" && <Badge tone={statusTone(m.lint_status)}>claims: {m.lint_status}</Badge>}</td>
                       <td className="px-3 py-3 text-xs">{noContact ? <span className="text-amber">needs contact email</span> : <span className="text-muted">{m.to_email ?? m.contact_email}</span>}</td>
                       <td className="whitespace-nowrap px-3 py-3"><Badge tone={OUTREACH_TONE[m.status]}>{m.status}</Badge>

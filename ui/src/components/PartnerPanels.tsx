@@ -164,7 +164,7 @@ export function SequenceCard({ p, onChanged }: { p: Partner; onChanged: () => vo
   };
   return (
     <Card>
-      <CardHeader title={<span className="flex items-center gap-2"><Mail size={14} className="text-vireo" />Outreach sequence</span>}
+      <CardHeader title={<span className="flex items-center gap-2"><Mail size={14} className="text-vireo" />{msgs.every((m) => m.one_off) ? "Emails" : "Outreach sequence"}</span>}
         sub={p.is_segment ? "Template for this segment - named targets get their own copy" : !p.contact_email ? "Add a contact email (Edit) before this can send" : `To ${p.contact_email}`}
         action={<div className="flex gap-2">
           {!p.is_segment && <Button size="sm" icon={<Reply size={13} />} onClick={() => setReply(true)}>Record reply</Button>}
@@ -175,10 +175,10 @@ export function SequenceCard({ p, onChanged }: { p: Partner; onChanged: () => vo
         {msgs.map((m) => (
           <li key={m.id}>
             <button onClick={() => setOpen(m)} className="flex w-full items-start gap-3 px-5 py-3 text-left text-sm hover:bg-surface-2">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line-strong text-[11px] text-muted">{m.step}</span>
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line-strong text-[11px] text-muted">{m.one_off ? <Mail size={11} /> : m.step}</span>
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{p.is_segment ? m.subject : preview(m.subject, m)}</div>
-                <div className="mt-0.5 text-xs text-faint">{m.step === 1 ? "first email" : `${m.delay_days} days after step ${m.step - 1}`}
+                <div className="mt-0.5 text-xs text-faint">{m.one_off ? "one-off email" : m.step === 1 ? "first email" : `${m.delay_days} days after step ${m.step - 1}`}
                   {m.sent_at && ` · sent ${relTime(m.sent_at)}${m.transport ? ` via ${m.transport}` : ""}`}{m.delivered_at && " · delivered"}{m.opened_at && " · opened"}{m.approved_by && !m.sent_at && ` · approved by ${m.approved_by}`}{m.error && ` · ${m.error}`}</div>
               </div>
               {m.lint_status !== "pass" && <Badge tone={statusTone(m.lint_status)}>claims {m.lint_status}</Badge>}

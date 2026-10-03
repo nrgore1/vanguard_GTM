@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0 — 2026-10-02
+
+### Added: write an email to one person
+- **Write email** on any partner or investor page: type the address, subject and message, then **Save draft**
+  or, as an admin, **Approve & send**. It is checked against the claim rules, needs an admin's approval, and
+  goes through the normal send path (daily cap, opt-outs, footer), then shows on the timeline and moves the
+  partner to Contacted. "Approve & send" sends only that email, not the rest of the queue.
+- A reply no longer cancels a one-off email, so you can answer from the app.
+- The claim rules no longer ask for a source on a sentence about our own raise ("We're raising a $3M seed").
+  Other figures still need one.
+- The dialog says plainly when email isn't connected and approved emails only go to the outbox.
+
+
 ## 0.11.0 — 2026-10-02
 
 ### Added: Introductions

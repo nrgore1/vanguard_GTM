@@ -364,6 +364,22 @@ test.describe.serial("Vanguard-GTM web app", () => {
     await expect(page.getByText(/emailed Sam Okafor <sam@lead.example>/)).toBeVisible();
   });
 
+  test("UI-18 admin writes a one-off email to an investor and approves it (outbox mode)", async ({ page }) => {
+    await login(page, ADMIN);
+    await page.goto("/partners?property=vireoka");
+    await page.getByRole("link", { name: "Andrew Brackin", exact: true }).first().click();
+    await page.getByRole("button", { name: "Write email" }).click();
+    const d = page.getByRole("dialog");
+    await expect(d.getByText(/Email isn't connected yet/)).toBeVisible();
+    await d.getByLabel("To").fill("andrew@gradient.example");
+    await d.getByLabel("Subject").fill("Governance before AI agents move money");
+    await d.getByLabel("Message").fill("Hi {{first_name}},\n\nYou named governance for enterprise AI agents as a priority. We are raising a $3M seed. Open to 20 minutes?\n\nNarendra");
+    await d.getByRole("button", { name: "Approve & save to outbox" }).click();
+    await expect(page.getByText(/Saved to the outbox/)).toBeVisible();
+    await expect(page.getByText("one-off email")).toBeVisible();
+    await expect(page.getByText(/andrew@gradient.example/).first()).toBeVisible();
+  });
+
   test("UI-11 theme toggle and sign-out", async ({ page }) => {
     await login(page, UMA);
     await page.getByRole("button", { name: "Toggle theme" }).click();

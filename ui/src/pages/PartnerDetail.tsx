@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Mail, Phone, Users, Presentation, FileText, StickyNote, Check, Linkedin, AtSign, Megaphone } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Mail, Send, Phone, Users, Presentation, FileText, StickyNote, Check, Linkedin, AtSign, Megaphone } from "lucide-react";
 import { api, type PartnerStage } from "../lib/api";
 import { useAuth, useLoad } from "../lib/auth";
 import { label, relTime, shortDate, STAGES, today } from "../lib/format";
@@ -8,6 +8,7 @@ import { Badge, Button, Card, CardHeader, Confirm, ErrorNote, Field, Input, Sele
 import { KIND_HELP, PartnerForm } from "./Partners";
 import { AgreementCard, PriorityCard, SequenceCard, TargetsCard } from "../components/PartnerPanels";
 import { ConnectionsCard } from "../components/LinkedInPanels";
+import { ComposeEmail } from "../components/ComposeEmail";
 import { IntroEditor, Strength } from "./Intros";
 import type { Intro } from "../lib/api";
 
@@ -27,6 +28,7 @@ export default function PartnerDetail() {
   const [busy, setBusy] = useState(false);
   const [formErr, setFormErr] = useState<unknown>(null);
   const [intro, setIntro] = useState<Intro | null>(null);
+  const [compose, setCompose] = useState(false);
 
   if (loading && !p) return <Spinner />;
   if (!p) return <ErrorNote error={error} />;
@@ -63,6 +65,7 @@ export default function PartnerDetail() {
             {p.website && <> · <a href={p.website} target="_blank" rel="noreferrer noopener" className="text-vireo hover:underline">{p.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</a></>}</p>
         </div>
         <div className="flex gap-2">
+          {!p.is_segment && <Button variant="primary" icon={<Send size={14} />} onClick={() => setCompose(true)}>Write email</Button>}
           <Button icon={<Pencil size={14} />} onClick={() => setEditing(true)}>Edit</Button>
           {isAdmin && <Button variant="danger" icon={<Trash2 size={14} />} onClick={() => setConfirm(true)}>Delete</Button>}
         </div>
@@ -158,6 +161,7 @@ export default function PartnerDetail() {
           )}
         </Card>
       </div>
+      {!p.is_segment && <ComposeEmail p={p} open={compose} onClose={() => setCompose(false)} onChanged={reload} />}
       <IntroEditor intro={intro} onClose={() => setIntro(null)} onChanged={() => { setIntro(null); reload(); }} />
       <PartnerForm open={editing} onClose={() => setEditing(false)} initial={p} onSaved={() => { setEditing(false); reload(); }} />
       <Confirm open={confirm} onClose={() => setConfirm(false)} onConfirm={del} title="Delete partner?"

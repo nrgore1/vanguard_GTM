@@ -88,7 +88,7 @@ export interface OutreachMessage {
   partner_name?: string; property_id?: string; partner_kind?: string; partner_stage?: string; contact_email?: string | null;
   contact_name?: string | null; priority_score?: number | null; priority?: string | null;
   transport?: string | null; pm_message_id?: string | null; delivered_at?: string | null; opened_at?: string | null;
-  campaign_id?: number | null; campaign_name?: string | null;
+  campaign_id?: number | null; campaign_name?: string | null; one_off?: number | null;
 }
 export interface OutreachStats {
   draft: number; approved: number; sent: number; replied: number; cancelled: number; failed: number; bounced: number;
@@ -238,7 +238,9 @@ export const api = {
     req<{ ok: boolean; lint_status: string; lint_findings: { rule_id: string; message: string; excerpt: string; severity: string }[] }>("PATCH", `/outreach/${id}`, b),
   approveOutreach: (ids: number[]) => req<{ approved: number[]; refused: { id: number; reason: string }[] }>("POST", "/outreach/approve", { ids }),
   cancelOutreach: (id: number) => req("POST", `/outreach/${id}/cancel`),
-  sendDue: () => req<{ sent: { id: number; partner: string; step: number; to: string; transport?: string }[]; skipped: { id: number; partner: string; step: number; reason: string }[]; mode: string }>("POST", "/outreach/send-due"),
+  composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string }) =>
+    req<OutreachMessage>("POST", `/partners/${pid}/email`, b),
+  sendDue: (ids?: number[]) => req<{ sent: { id: number; partner: string; step: number; to: string; transport?: string }[]; skipped: { id: number; partner: string; step: number; reason: string }[]; mode: string }>("POST", "/outreach/send-due", ids ? { ids } : undefined),
   syncReplies: () => req<{ matched: number; bounces: number; unmatched: number; duplicates: number }>("POST", "/outreach/sync-replies"),
   sendDigest: () => req<{ sent: number; transport?: string; reason?: string }>("POST", "/outreach/digest"),
   postmarkSync: () => req<{ stream: string; pulled: number; pushed: number; remote_total: number }>("POST", "/outreach/postmark-sync"),
