@@ -7,9 +7,11 @@ import { label, relTime } from "../lib/format";
 import { Badge, Button, Card, Empty, ErrorNote, Modal, PageHeader, Select, Spinner, Stat, cx, kindTone, statusTone, useToast } from "../components/ui";
 import { OUTREACH_TONE, OutreachEditor, preview } from "../components/OutreachEditor";
 import { AutoSendNote, ScheduleModal, fmtWhen, isFuture } from "../components/Schedule";
+import { CHANNEL_LABEL, ChannelBadge, SendByHand } from "../components/Channels";
+import type { ByHand } from "../lib/api";
 
 const TABS = [
-  { id: "draft", label: "Needs approval" }, { id: "approved", label: "Queued" }, { id: "sent", label: "Sent" },
+  { id: "draft", label: "Needs approval" }, { id: "approved", label: "Queued" }, { id: "hand", label: "By hand" }, { id: "sent", label: "Sent" },
   { id: "replied", label: "Replied" }, { id: "stopped", label: "Stopped" }, { id: "", label: "All" },
 ];
 const STOPPED = new Set(["cancelled", "failed", "bounced"]);
@@ -27,16 +29,18 @@ export default function Outreach() {
   const [open, setOpen] = useState<OutreachMessage | null>(null);
   const [busy, setBusy] = useState("");
   const [sched, setSched] = useState(false);
+  const hand = useLoad(api.byHand);
+  const [sendHand, setSendHand] = useState<ByHand | null>(null);
   const [report, setReport] = useState<{ title: string; lines: string[] } | null>(null);
   const setFilter = (k: string, v: string) => { const n = new URLSearchParams(sp); if (v) n.set(k, v); else n.delete(k); setSp(n, { replace: true }); setSel([]); };
-  const refresh = () => { reload(); stats.reload(); };
+  const refresh = () => { reload(); stats.reload(); hand.reload(); };
 
   const rows = useMemo(() => (data ?? []).filter((m) => tab === "" ? true : tab === "stopped" ? STOPPED.has(m.status) : m.status === tab), [data, tab]);
   const counts = useMemo(() => {
-    const c: Record<string, number> = { "": (data ?? []).length, stopped: 0 };
+    const c: Record<string, number> = { "": (data ?? []).length, stopped: 0, hand: (hand.data ?? []).filter((m) => m.due).length };
     for (const m of data ?? []) { c[m.status] = (c[m.status] ?? 0) + 1; if (STOPPED.has(m.status)) c.stopped++; }
     return c;
-  }, [data]);
+  }, [data, hand.data]);
   const selectable = (m: OutreachMessage) => m.status === "draft" || (isAdmin && m.status === "approved");
   const canSelect = tab === "draft" || (isAdmin && tab === "approved");
   const scheduledLater = (data ?? []).filter((m) => (m.status === "draft" || m.status === "approved") && isFuture(m.send_at)).length;
@@ -113,7 +117,7 @@ export default function Outreach() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat label="Awaiting approval" value={st?.draft ?? "–"} sub={st?.blocked ? `${st.blocked} blocked by claim rules` : "drafts from the agent"} icon={<ShieldCheck size={14} />} tone="amber" />
-        <Stat label="Queued" value={st?.approved ?? "–"} sub="approved, sending when due" icon={<Send size={14} />} tone="sky" />
+        <Stat label="Queued" value={st?.approved ?? "–"} sub={st?.by_hand_due ? `${st.by_hand_due} LinkedIn/X due by hand` : "approved, sending when due"} icon={<Send size={14} />} tone="sky" />
         <Stat label="Partners contacted" value={st?.partners_contacted ?? "–"} sub={`${st?.ever_sent ?? 0} emails sent`} icon={<MailCheck size={14} />} tone="violet" />
         <Stat label="Replied" value={st?.partners_replied ?? "–"} sub={st?.reply_rate != null ? `${(st.reply_rate * 100).toFixed(0)}% reply rate` : "no sends yet"} icon={<Inbox size={14} />} />
         <Stat label="Stopped" value={(st?.cancelled ?? 0) + (st?.bounced ?? 0) + (st?.failed ?? 0)} sub={`${st?.suppressed ?? 0} addresses opted out/bounced`} icon={<AlertTriangle size={14} />} tone="rose" />
@@ -141,6 +145,23 @@ export default function Outreach() {
         )}
       </div>
       <ErrorNote error={error} />
+      {tab === "hand" ? (
+        <Card className="overflow-hidden">
+          <p className="border-b border-line px-5 py-3 text-xs text-muted">Approved LinkedIn and X messages. The app never posts for you: copy the text, send it from their profile, then click <b className="text-ink">I sent it</b> so the next step's wait starts.</p>
+          {(hand.data ?? []).length === 0 ? <Empty icon={<Sparkles size={22} />} title="Nothing to send by hand" body="Move a partner's sequence to LinkedIn or X on its page (Outreach sequence → channel), or write a LinkedIn/X message with Write email." /> : (
+            <ul className="divide-y divide-line">{(hand.data ?? []).filter((m) => !property || m.property_id === property).map((m) => (
+              <li key={m.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+                <ChannelBadge c={m.channel} />
+                <div className="min-w-0 flex-1">
+                  <Link to={`/partners/${m.partner_id}`} className="font-medium hover:text-vireo">{m.partner_name}</Link>
+                  <span className="ml-2 text-xs text-muted">{m.one_off ? "message" : `step ${m.step}`}</span>
+                  <div className="truncate text-xs text-faint">{preview(m.body, m)}</div>
+                </div>
+                {m.due ? <Badge tone="green">due now</Badge> : <span className="text-xs text-muted">{m.held?.startsWith("scheduled for") ? `scheduled ${fmtWhen(m.held.slice(14))}` : m.held}</span>}
+                <Button size="sm" variant={m.due ? "primary" : "outline"} onClick={() => setSendHand(m)}>Send on {CHANNEL_LABEL[m.channel ?? "linkedin"]}</Button>
+              </li>))}</ul>)}
+        </Card>
+      ) : (
       <Card className="overflow-hidden">
         {loading && !data ? <Spinner /> : rows.length === 0 ? (
           <Empty icon={<Sparkles size={22} />} title={tab === "draft" ? "Nothing waiting for approval" : "No messages here"}
@@ -164,7 +185,7 @@ export default function Outreach() {
                       <td className="max-w-[260px] px-3 py-3"><Link to={`/partners/${m.partner_id}`} onClick={(e) => e.stopPropagation()} className="line-clamp-2 font-medium hover:text-vireo">{m.partner_name}</Link>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint"><Badge tone={kindTone(m.partner_kind ?? "")}>{label(m.partner_kind ?? "")}</Badge>{propName(m.property_id ?? "")}</div>
                         {m.campaign_name && <div className="mt-0.5 truncate text-[11px] text-vireo">{m.campaign_name}</div>}</td>
-                      <td className="num px-3 py-3 text-muted">{m.one_off ? "one-off" : m.step}</td>
+                      <td className="num px-3 py-3 text-muted">{m.one_off ? "one-off" : m.step} <ChannelBadge c={m.channel} /></td>
                       <td className="max-w-[320px] px-3 py-3"><div className="truncate">{preview(m.subject, m)}</div>{m.lint_status !== "pass" && <Badge tone={statusTone(m.lint_status)}>claims: {m.lint_status}</Badge>}</td>
                       <td className="px-3 py-3 text-xs">{noContact ? <span className="text-amber">needs contact email</span> : <span className="text-muted">{m.to_email ?? m.contact_email}</span>}</td>
                       <td className="whitespace-nowrap px-3 py-3"><Badge tone={OUTREACH_TONE[m.status]}>{m.status}</Badge>
@@ -181,6 +202,8 @@ export default function Outreach() {
           </div>
         )}
       </Card>
+      )}
+      <SendByHand msg={sendHand} onClose={() => setSendHand(null)} onChanged={refresh} />
       {scheduledLater > 0 && <div className="mt-3"><AutoSendNote every={mode?.auto_every_min} /></div>}
       <OutreachEditor msg={open} onClose={() => setOpen(null)} onChanged={refresh} />
       <ScheduleModal ids={sel} open={sched} onClose={() => setSched(false)} onDone={() => { setSel([]); refresh(); }} autoEvery={mode?.auto_every_min} />

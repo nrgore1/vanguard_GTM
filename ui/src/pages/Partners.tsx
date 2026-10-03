@@ -48,6 +48,8 @@ export function PartnerForm({ open, onClose, initial, onSaved }: { open: boolean
         <Field label="Owner"><Select value={f.owner_id ?? ""} onChange={set("owner_id")}><option value="">Me</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
         <Field label="Contact name"><Input value={f.contact_name ?? ""} onChange={set("contact_name")} /></Field>
         <Field label="Contact email"><Input type="email" value={f.contact_email ?? ""} onChange={set("contact_email")} /></Field>
+        <Field label="LinkedIn profile" hint="linkedin.com/in/… - for LinkedIn sequences"><Input value={f.linkedin_url ?? ""} onChange={set("linkedin_url")} placeholder="https://www.linkedin.com/in/…" /></Field>
+        <Field label="X handle" hint="@name - for X sequences"><Input value={f.x_handle ?? ""} onChange={set("x_handle")} placeholder="@name" /></Field>
         <Field label="Value-sharing model"><Input value={f.value_sharing_model ?? ""} onChange={set("value_sharing_model")} placeholder="revenue share, referral fee…" /></Field>
         <Field label="Next step date"><Input type="date" value={f.next_step_date ?? ""} onChange={set("next_step_date")} /></Field>
         <Field label="Next step" className="sm:col-span-2"><Input value={f.next_step ?? ""} onChange={set("next_step")} /></Field>

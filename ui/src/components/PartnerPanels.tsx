@@ -7,6 +7,8 @@ import { label, relTime, shortDate, today } from "../lib/format";
 import { Badge, Button, Card, CardHeader, ErrorNote, Field, Input, Modal, Select, Textarea, statusTone, useToast } from "./ui";
 import { OUTREACH_TONE, OutreachEditor, preview } from "./OutreachEditor";
 import { fmtWhen, isFuture } from "./Schedule";
+import { ChannelBadge, ChannelSwitch, SendByHand, CHANNEL_LABEL } from "./Channels";
+import type { Channel } from "../lib/api";
 
 function shortUrl(u: string) {
   const t = u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
@@ -153,9 +155,13 @@ export function SequenceCard({ p, onChanged }: { p: Partner; onChanged: () => vo
   const { isAdmin } = useAuth();
   const toast = useToast();
   const [open, setOpen] = useState<OutreachMessage | null>(null);
+  const [hand, setHand] = useState<OutreachMessage | null>(null);
   const [reply, setReply] = useState(false);
   const [busy, setBusy] = useState(false);
-  const msgs = (p.outreach ?? []).map((m) => ({ ...m, partner_name: p.name, contact_name: p.contact_name, contact_email: p.contact_email }));
+  const msgs = (p.outreach ?? []).map((m) => ({ ...m, partner_name: p.name, contact_name: p.contact_name, contact_email: p.contact_email,
+    linkedin_url: p.linkedin_url, x_handle: p.x_handle }));
+  const unsent = msgs.filter((m) => m.status === "draft" || m.status === "approved");
+  const current: Channel = (unsent[0]?.channel ?? p.preferred_channel ?? "email") as Channel;
   if (!msgs.length) return null;
   const drafts = msgs.filter((m) => m.status === "draft" && m.lint_status !== "blocked").map((m) => m.id);
   const approveAll = async () => {
@@ -166,16 +172,19 @@ export function SequenceCard({ p, onChanged }: { p: Partner; onChanged: () => vo
   return (
     <Card>
       <CardHeader title={<span className="flex items-center gap-2"><Mail size={14} className="text-vireo" />{msgs.every((m) => m.one_off) ? "Emails" : "Outreach sequence"}</span>}
-        sub={p.is_segment ? "Template for this segment - named targets get their own copy" : !p.contact_email ? "Add a contact email (Edit) before this can send" : `To ${p.contact_email}`}
-        action={<div className="flex gap-2">
+        sub={p.is_segment ? "Template for this segment - named targets get their own copy" : current === "linkedin" ? `On LinkedIn: ${p.linkedin_url ?? "add a profile link (Edit)"} - sent by you, from Outreach → By hand`
+          : current === "x" ? `On X: @${p.x_handle} - sent by you, from Outreach → By hand` : !p.contact_email ? "Add a contact email (Edit) before this can send" : `To ${p.contact_email}`}
+        action={<div className="flex flex-wrap items-center gap-2">
+          {!p.is_segment && unsent.length > 0 && <ChannelSwitch pid={p.id} value={current} onChanged={onChanged}
+            has={{ email: true, linkedin: !!p.linkedin_url, x: !!p.x_handle }} />}
           {!p.is_segment && <Button size="sm" icon={<Reply size={13} />} onClick={() => setReply(true)}>Record reply</Button>}
           {isAdmin && !p.is_segment && drafts.length > 0 && <Button size="sm" variant="primary" icon={<ShieldCheck size={13} />} loading={busy} onClick={approveAll}>Approve {drafts.length}</Button>}
         </div>} />
       {!p.is_segment && <ConsentRow p={p} onChanged={onChanged} />}
       <ol className="divide-y divide-line">
         {msgs.map((m) => (
-          <li key={m.id}>
-            <button onClick={() => setOpen(m)} className="flex w-full items-start gap-3 px-5 py-3 text-left text-sm hover:bg-surface-2">
+          <li key={m.id} className="flex items-center">
+            <button onClick={() => setOpen(m)} className="flex min-w-0 flex-1 items-start gap-3 px-5 py-3 text-left text-sm hover:bg-surface-2">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line-strong text-[11px] text-muted">{m.one_off ? <Mail size={11} /> : m.step}</span>
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{p.is_segment ? m.subject : preview(m.subject, m)}</div>
@@ -183,11 +192,15 @@ export function SequenceCard({ p, onChanged }: { p: Partner; onChanged: () => vo
                   {m.sent_at && ` · sent ${relTime(m.sent_at)}${m.transport ? ` via ${m.transport}` : ""}`}{!m.sent_at && isFuture(m.send_at) && ` · scheduled ${fmtWhen(m.send_at)}`}{m.delivered_at && " · delivered"}{m.opened_at && " · opened"}{m.approved_by && !m.sent_at && ` · approved by ${m.approved_by}`}{m.error && ` · ${m.error}`}</div>
               </div>
               {m.lint_status !== "pass" && <Badge tone={statusTone(m.lint_status)}>claims {m.lint_status}</Badge>}
+              <ChannelBadge c={m.channel} />
               <Badge tone={OUTREACH_TONE[m.status]}>{m.status}</Badge>
             </button>
+            {m.status === "approved" && m.channel && m.channel !== "email" &&
+              <Button size="sm" className="mr-4" onClick={() => setHand(m)}>Send on {CHANNEL_LABEL[m.channel]}</Button>}
           </li>))}
       </ol>
       <OutreachEditor msg={open} onClose={() => setOpen(null)} onChanged={onChanged} />
+      <SendByHand msg={hand} onClose={() => setHand(null)} onChanged={onChanged} />
       <ReplyModal open={reply} onClose={() => setReply(false)} pid={p.id} onSaved={onChanged} />
     </Card>
   );

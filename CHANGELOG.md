@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.0 — 2026-10-03
+
+### Added: LinkedIn and X as outreach channels
+- Partners have a **LinkedIn profile** and **X handle**. A partner's 3-step sequence, or a single message, can
+  run on email, LinkedIn or X (switch on the partner page; Write email has a Channel option).
+- LinkedIn and X steps are approved and scheduled like emails. When one is due it appears on **Outreach → By
+  hand** with the text to copy and a link to the profile; you send it yourself and click **I sent it**, which
+  logs it and starts the next step's wait. The app never posts on LinkedIn or X.
+- A warning when a LinkedIn first message is longer than a connection note allows (200 characters).
+- Importing your LinkedIn connections fills in profile links for named contacts.
+
+
 ## 0.14.0 — 2026-10-02
 
 ### Added: scheduled sending

@@ -130,7 +130,7 @@ def _link_contacts(ws, user_id: int | None) -> dict:
     for c in conns:
         by_first.setdefault(norm_person(f"{c['first_name']} {c['last_name']}")[0], []).append(c)
     connected, emails = [], []
-    for p in ws.q("SELECT id, name, contact_name, contact_email FROM partners WHERE contact_name IS NOT NULL "
+    for p in ws.q("SELECT id, name, contact_name, contact_email, linkedin_url FROM partners WHERE contact_name IS NOT NULL "
                   "AND COALESCE(is_segment,0)=0"):
         keys = partner_keys(p["name"])
         want = norm_person(p["contact_name"])
@@ -140,6 +140,8 @@ def _link_contacts(ws, user_id: int | None) -> dict:
         if not hit:
             continue
         who = f"{hit['first_name']} {hit['last_name']}"
+        if not p["linkedin_url"] and (hit["profile_url"] or "").startswith("http"):   # for LinkedIn sequences
+            ws.update("partners", "id", p["id"], {"linkedin_url": hit["profile_url"]})
         if not ws.one("SELECT 1 FROM partner_interactions WHERE partner_id=? AND type='linkedin' AND summary LIKE ?",
                       (p["id"], f"Connected on LinkedIn: {who}%")):
             since = f" since {hit['connected_on']}" if hit["connected_on"] else ""

@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.14.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.15.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -276,6 +276,24 @@ The app never sends LinkedIn or X messages for you. The person who sends one log
 To spot accepted requests without checking LinkedIn person by person, re-import your connections
 every week (§4). When a partner's named contact (its Contact name) appears in your export, the
 partner gets a **"Connected on LinkedIn"** entry.
+
+### 3.5b LinkedIn and X sequences (v0.15.0)
+Any partner's 3-step sequence (first message, follow-up, final nudge) can run on LinkedIn or X instead of email:
+
+1. **Edit** the partner and add their **LinkedIn profile** link or **X handle**. A LinkedIn import fills the
+   profile for named contacts who are already connections.
+2. On the partner page, in **Outreach sequence**, pick **LinkedIn** or **X**. Unsent steps move to that channel
+   and go back to **Needs approval**. Keep step 1 under 200 characters on LinkedIn if you aren't connected:
+   it goes as the connection-request note (the app warns you).
+3. An admin approves the steps as usual; schedule them if you like (§3.4).
+4. When a step is due it shows on **Outreach → By hand** as **due now**. Click **Send on LinkedIn/X**: copy the
+   message, **Open profile**, send it there (Connect → Add a note for a first LinkedIn step if not connected,
+   otherwise Message), then click **I sent it**. That logs the touch, moves the partner to Contacted, and
+   starts the wait before the next step.
+5. When they reply, use **Record reply** with the channel. The remaining steps stop.
+
+The app never posts on LinkedIn or X for you (no automation, no scraping), which keeps your accounts safe.
+For a single message, **Write email** has a **Channel** option for LinkedIn or X.
 
 ### 3.6 Replies
 - **Email replies** are picked up from your inbox if IMAP is set (§1.3): every tick with automatic

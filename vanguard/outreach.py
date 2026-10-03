@@ -408,10 +408,14 @@ def schedule(ws, ids: Iterable[int], send_at: str | None, per_day: int | None = 
 
 
 def compose(ws, partner_id: int, subject: str, body: str, user_id: int | None = None,
-            contact_email: str | None = None, send_at: str | None = None) -> dict:
+            contact_email: str | None = None, send_at: str | None = None, channel: str = "email",
+            linkedin_url: str | None = None, x_handle: str | None = None) -> dict:
     """Write a single email to one partner (an investor, a reply, a follow-up). It is a draft like any other:
     it goes through the claim rules, needs an admin's approval, and only leaves through send_due."""
-    p = ws.one("SELECT id, property_id, is_segment, contact_email FROM partners WHERE id=?", (partner_id,))
+    from .channels import CHANNELS, _contact_problem, norm_linkedin, norm_x, relint
+    if channel not in CHANNELS:
+        raise ValueError(f"channel must be one of {', '.join(CHANNELS)}")
+    p = ws.one("SELECT * FROM partners WHERE id=?", (partner_id,))
     if not p:
         raise KeyError(partner_id)
     if p["is_segment"]:
@@ -426,13 +430,19 @@ def compose(ws, partner_id: int, subject: str, body: str, user_id: int | None = 
             raise ValueError(f"{contact_email!r} is not an email address")
         if addr != (p["contact_email"] or ""):
             ws.update("partners", "id", partner_id, {"contact_email": addr, "updated_at": ts})
-    from .intros import _lint
+            p["contact_email"] = addr
+    for key, val in (("linkedin_url", norm_linkedin(linkedin_url)), ("x_handle", norm_x(x_handle))):
+        if val and val != p.get(key):
+            ws.update("partners", "id", partner_id, {key: val, "updated_at": ts})
+            p[key] = val
+    if channel != "email" and _contact_problem(p, channel):
+        raise ValueError(_contact_problem(p, channel))
     last = ws.one("SELECT MAX(step) AS n FROM outreach_messages WHERE partner_id=?", (partner_id,))["n"] or 0
     when = parse_send_at(send_at)
     mid = ws.insert("outreach_messages", {"partner_id": partner_id, "step": max(last, ONE_OFF_BASE) + 1, "delay_days": 0,
                                           "subject": subject, "body": body, "status": "draft", "one_off": 1, "send_at": when,
-                                          "created_by": user_id, "created_at": ts, "updated_at": ts}
-                    | _lint(ws, p["property_id"], subject, body))
+                                          "channel": channel, "created_by": user_id, "created_at": ts, "updated_at": ts})
+    relint(ws, mid)
     ws.audit(user_id, "compose", "outreach", mid, {"partner_id": partner_id})
     return ws.one("SELECT * FROM outreach_messages WHERE id=?", (mid,))
 
@@ -463,11 +473,14 @@ def _sent_today(ws, cfg: "EmailConfig | None" = None) -> int:
     with no from_email, count for the default mailbox)."""
     day = _utc_day()
     if cfg is None:
-        return ws.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE substr(sent_at,1,10)=?", (day,))["n"]
+        return ws.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE substr(sent_at,1,10)=? "
+                      "AND COALESCE(channel,'email')='email'", (day,))["n"]
     cond, args = ("from_email=?", [cfg.sender_email.lower()]) if cfg.mailbox != "default" else \
         ("(from_email IS NULL OR from_email=?)", [cfg.sender_email.lower()])
-    return sum(ws.one(f"SELECT COUNT(*) AS n FROM {t} WHERE substr(sent_at,1,10)=? AND {cond}", [day] + args)["n"]
-               for t in ("outreach_messages", "intro_requests"))
+    return (ws.one(f"SELECT COUNT(*) AS n FROM outreach_messages WHERE substr(sent_at,1,10)=? AND {cond} "
+                   "AND COALESCE(channel,'email')='email'", [day] + args)["n"]
+            + ws.one(f"SELECT COUNT(*) AS n FROM intro_requests WHERE substr(sent_at,1,10)=? AND {cond} AND channel='email'",
+                     [day] + args)["n"])
 
 
 class MailRouter:
@@ -536,7 +549,8 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
     pm_room = cfg.postmark_monthly_cap - postmark_used_this_month(ws) if cfg.mode == "postmark" else None
     rows = ws.q("SELECT m.*, p.name AS p_name, p.contact_email, p.contact_name, p.stage, p.property_id, "
                 "p.priority_score, p.is_segment, p.email_consent FROM outreach_messages m JOIN partners p ON p.id=m.partner_id "
-                "WHERE m.status='approved' ORDER BY COALESCE(p.priority_score,0) DESC, m.partner_id, m.step")
+                "WHERE m.status='approved' AND COALESCE(m.channel,'email')='email' "
+                "ORDER BY COALESCE(p.priority_score,0) DESC, m.partner_id, m.step")      # LinkedIn/X go by hand
     if only is not None:
         keep = {int(i) for i in only}
         rows = [r for r in rows if r["id"] in keep]

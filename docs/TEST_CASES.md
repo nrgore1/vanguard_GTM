@@ -1,6 +1,6 @@
 # Vanguard-GTM — Test Case Catalogue
 
-Version 0.14.0 · updated 2026-10-02
+Version 0.15.0 · updated 2026-10-02
 
 Run with `pytest -q`. Everything below except the `L` cases runs offline and costs $0.
 Each automated test's docstring starts with its ID. `tests/test_docs_sync.py` checks that
@@ -98,6 +98,7 @@ every E2E ID in this file exists in the code, and every one in the code exists h
 | WEB-37 | A copy in the Sent folder | smtp mode with fake SMTP and IMAP servers and a vireoka mailbox; send a one-off; make the IMAP append fail and send another; set `VANGUARD_SAVE_SENT=0` and send a third | The first is appended, marked read, to `INBOX.Sent` (found by its `\\Sent` flag) under the vireoka login and the report says so; the second is still sent and the report says the copy wasn't saved and why; the third makes no copy. |
 | WEB-38 | Replies and unsubscribes | Send a one-off; replies that quote our footer in Gmail (`>`), Outlook (From:/Sent:) and HTML (gmail_quote) form; then an Unsubscribe-button email (subject "unsubscribe", no threading headers); then another send; then a plain reply "Please unsubscribe me" | The sent email has a List-Unsubscribe mailto and the footer; all three quoted replies are positive and nothing is suppressed; the button email opts the address out, marks the partner opted out with next step "Opted out - do not contact", and the next approved email is cancelled; the plain unsubscribe reply also suppresses the address. |
 | WEB-39 | Scheduled sending | Write an email with a bad time, a time without a zone, then 9:00 -04:00 in 2099; approve; send; reschedule as user; send at a simulated later time; schedule five drafts from Fri 9:00 Eastern, 2 a day, 10 min apart, weekdays only; a Saturday start; clear; reschedule a sent one | 422, 422; stored as 13:00 UTC; held with "scheduled for …"; user refused for an approved email; sent once its time passes; Fri 9:00, 9:10, Mon 9:00, 9:10, Tue 9:00 (UTC); still drafts; Saturday moves to Monday; cleared; a sent email is refused; stats report automatic sending off. |
+| WEB-40 | LinkedIn and X sequences | A named partner with a 3-step sequence: switch to LinkedIn with no profile; bad profile link and handle; good ones; approve, then switch; approve again; send due; by-hand list; mark step 1 sent; age it; reply; a one-off on X; mark an email sent by hand; a LinkedIn one-off with no profile | 422 (no profile), 422, 422; profile and handle normalised; all three steps move to LinkedIn as drafts, step 1 warned over 200 characters; mark-sent before approval is 409; no email is sent and the email cap is untouched; step 1 due with the profile link, step 2 waiting for step 1; after marking, a LinkedIn touch is logged and the partner is contacted; step 2 due after its delay; the reply cancels steps 2-3; the X one-off links x.com/handle and logs "Sent message on X"; the email is refused ("Send due now"); the LinkedIn one-off is 422. |
 
 ## Browser end-to-end cases (`ui/e2e/app.spec.ts`, Playwright)
 
@@ -126,6 +127,7 @@ Atmakosh.
 | UI-11 | Theme + sign-out | The toggle switches to the light theme; sign-out returns to /login |
 | UI-18 | One-off email in the browser | Open the investor Andrew Brackin; Write email; fill To, Subject, Message; Approve & save to outbox | The dialog warns that email isn't connected; the report says it was saved to the outbox; the partner shows a one-off email to the new address. |
 | UI-19 | Scheduling in the browser | Write email to Andrew Brackin on a date and time; Approve & schedule; open Outreach, Queued; select it; Schedule from a Saturday | The dialog warns that automatic sending is off; the toast and partner page show the scheduled Friday; the queue shows it; rescheduling from Saturday moves it to Monday. |
+| UI-20 | LinkedIn by hand in the browser | Add Andrew Brackin's LinkedIn profile; Write email as a LinkedIn message; Approve; Outreach → By hand; Send on LinkedIn; I sent it | The profile link is normalised and shown; the To field fills from it; the item is due now with an Open profile link and the 200-character note hint; after I sent it the partner's timeline shows "Sent message on LinkedIn: Hi Andrew…". |
 
 ## Database tests (`tests/test_db.py`)
 

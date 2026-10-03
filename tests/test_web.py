@@ -1315,3 +1315,64 @@ def test_web_39_scheduled_sending(env, monkeypatch):
     assert c.post("/api/outreach/schedule", json={"ids": ids[:1], "send_at": None}, headers=U).json()["scheduled"] == [{"id": ids[0], "send_at": None}]
     assert c.post("/api/outreach/schedule", json={"ids": [one["id"]], "send_at": None}, headers=A).json()["refused"][0]["reason"] == "status is sent"
     assert c.get("/api/outreach/stats", headers=U).json()["email"]["auto_every_min"] == 0
+
+
+def test_web_40_linkedin_and_x_sequences(env, monkeypatch):
+    """WEB-40: a partner gets a LinkedIn profile link and an X handle (normalised; junk refused); its 3-step
+    sequence moves to LinkedIn (back to draft, a long first step warned against the 200-character note limit);
+    approved LinkedIn steps are never emailed and don't use the email cap; the by-hand list shows step 1 due with
+    the profile link and step 2 waiting; marking step 1 sent logs a LinkedIn touch, moves the partner to contacted
+    and starts step 2's delay; a reply stops the rest. A one-off X message works the same; emails can't be marked
+    sent by hand; a channel without a contact is refused."""
+    monkeypatch.setenv("VANGUARD_OUTPUT", str(env["tmp"] / "out"))
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    _recommend(env)
+    _, pid = _named(env)
+    assert c.post(f"/api/partners/{pid}/channel", json={"channel": "linkedin"}, headers=U).status_code == 422   # no profile yet
+    assert c.patch(f"/api/partners/{pid}", json={"linkedin_url": "https://example.com/meera"}, headers=U).status_code == 422
+    assert c.patch(f"/api/partners/{pid}", json={"x_handle": "not a handle!"}, headers=U).status_code == 422
+    c.patch(f"/api/partners/{pid}", json={"linkedin_url": "linkedin.com/in/meera-shah/", "x_handle": "https://x.com/@MeeraShah"}, headers=U)
+    p = c.get(f"/api/partners/{pid}", headers=U).json()
+    assert (p["linkedin_url"], p["x_handle"]) == ("https://www.linkedin.com/in/meera-shah", "MeeraShah")
+    ids = [m["id"] for m in p["outreach"]]
+    c.post("/api/outreach/approve", json={"ids": ids}, headers=A)
+    r = c.post(f"/api/partners/{pid}/channel", json={"channel": "linkedin"}, headers=U).json()
+    assert sorted(r["changed"]) == sorted(ids)
+    msgs = c.get(f"/api/outreach?partner_id={pid}", headers=U).json()
+    assert all(m["channel"] == "linkedin" and m["status"] == "draft" for m in msgs)
+    step1 = next(m for m in msgs if m["step"] == 1)
+    assert len(step1["body"]) > 200 and "linkedin-note-length" in step1["lint_findings"]
+    assert c.post(f"/api/outreach/{step1['id']}/mark-sent", headers=U).status_code == 409       # not approved yet
+    c.post("/api/outreach/approve", json={"ids": ids}, headers=A)
+    assert c.post("/api/outreach/send-due", headers=A).json()["sent"] == []
+    hand = {m["step"]: m for m in c.get("/api/outreach/by-hand", headers=U).json() if m["partner_id"] == pid}
+    assert hand[1]["due"] and hand[1]["profile_url"] == "https://www.linkedin.com/in/meera-shah"
+    assert not hand[2]["due"] and hand[2]["held"] == "waiting for step 1 to be sent"
+    assert c.get("/api/outreach/stats", headers=U).json()["by_hand_due"] == 1
+    assert c.post(f"/api/outreach/{step1['id']}/mark-sent", headers=U).json()["channel"] == "linkedin"
+    p = c.get(f"/api/partners/{pid}", headers=U).json()
+    assert p["stage"] == "contacted" and p["interactions"][0]["type"] == "linkedin"
+    assert p["interactions"][0]["summary"].startswith("Sent step 1 on LinkedIn: ")
+    hand = {m["step"]: m for m in c.get("/api/outreach/by-hand", headers=U).json() if m["partner_id"] == pid}
+    assert hand[2]["held"].startswith("due ")
+    s.q("UPDATE outreach_messages SET sent_at='2026-01-01T09:00:00+00:00' WHERE id=?", (step1["id"],))
+    assert {m["step"]: m["due"] for m in c.get("/api/outreach/by-hand", headers=U).json() if m["partner_id"] == pid}[2]
+    from vanguard.outreach import _sent_today
+    assert _sent_today(s) == 0
+    c.post(f"/api/partners/{pid}/reply", json={"date": "2026-10-05", "summary": "Happy to talk", "kind": "linkedin"}, headers=U)
+    assert [m["status"] for m in c.get(f"/api/outreach?partner_id={pid}", headers=U).json()] == ["replied", "cancelled", "cancelled"]
+    # one-off on X
+    x = c.post(f"/api/partners/{pid}/email", json={"subject": "Thanks", "body": ANDREW, "channel": "x"}, headers=U).json()
+    assert x["channel"] == "x" and x["one_off"] == 1
+    c.post("/api/outreach/approve", json={"ids": [x["id"]]}, headers=A)
+    assert next(m for m in c.get("/api/outreach/by-hand", headers=U).json() if m["id"] == x["id"])["profile_url"] == "https://x.com/MeeraShah"
+    c.post(f"/api/outreach/{x['id']}/mark-sent", headers=U)
+    assert any(i["type"] == "x" and i["summary"].startswith("Sent message on X: ")
+               for i in c.get(f"/api/partners/{pid}", headers=U).json()["interactions"])
+    # an email can't be marked sent by hand; a one-off on LinkedIn with no profile is refused
+    other = c.post("/api/partners", json={"property_id": "vireoka", "name": "No Profile Fund", "kind": "investor",
+                                          "contact_email": "n@example.com"}, headers=U).json()["id"]
+    e = c.post(f"/api/partners/{other}/email", json={"subject": "Hello there", "body": ANDREW}, headers=U).json()
+    c.post("/api/outreach/approve", json={"ids": [e["id"]]}, headers=A)
+    assert "Send due now" in c.post(f"/api/outreach/{e['id']}/mark-sent", headers=U).json()["detail"]
+    assert c.post(f"/api/partners/{other}/email", json={"subject": "Hi", "body": ANDREW, "channel": "linkedin"}, headers=U).status_code == 422

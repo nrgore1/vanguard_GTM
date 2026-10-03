@@ -405,6 +405,36 @@ test.describe.serial("Vanguard-GTM web app", () => {
     await expect(row.getByText(/scheduled Mon, Oct 12/)).toBeVisible();
   });
 
+  test("UI-20 user moves a sequence to LinkedIn; admin approves; it is sent by hand and logged", async ({ page }) => {
+    await login(page, ADMIN);
+    await page.goto("/partners?property=vireoka");
+    await page.getByRole("link", { name: "Andrew Brackin", exact: true }).first().click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("dialog").getByLabel("LinkedIn profile").fill("linkedin.com/in/andrewbrackin/");
+    await page.getByRole("dialog").getByRole("button", { name: /Save/ }).click();
+    await expect(page.getByRole("link", { name: "LinkedIn profile" })).toHaveAttribute("href", "https://www.linkedin.com/in/andrewbrackin");
+    await page.getByRole("button", { name: "Write email" }).click();
+    const d = page.getByRole("dialog");
+    await d.getByLabel("Channel").selectOption("linkedin");
+    await expect(d.getByLabel("To")).toHaveValue("https://www.linkedin.com/in/andrewbrackin");
+    await d.getByLabel("Label (for your records)").fill("LinkedIn note");
+    await d.getByLabel("Message").fill("Hi {{first_name}}, you named governance for AI agents as a priority. I'm building the policy check before agents move money. Would value connecting.");
+    await d.getByRole("button", { name: "Approve", exact: true }).click();
+    await expect(page.getByText(/send it from Outreach → By hand/)).toBeVisible();
+    await page.goto("/outreach?tab=hand");
+    const row = page.getByRole("listitem").filter({ hasText: "Andrew Brackin" }).filter({ hasText: "you named governance" });
+    await expect(row.getByText("due now")).toBeVisible();
+    await row.getByRole("button", { name: "Send on LinkedIn" }).click();
+    const s = page.getByRole("dialog");
+    await expect(s.getByRole("link", { name: /Open profile/ })).toHaveAttribute("href", "https://www.linkedin.com/in/andrewbrackin");
+    await expect(s.getByText(/connection notes: 200 free/)).toBeVisible();
+    await s.getByRole("button", { name: "I sent it" }).click();
+    await expect(page.getByText("Logged: sent on LinkedIn")).toBeVisible();
+    await page.goto("/partners?property=vireoka");
+    await page.getByRole("link", { name: "Andrew Brackin", exact: true }).first().click();
+    await expect(page.getByText(/Sent message on LinkedIn: Hi Andrew/)).toBeVisible();
+  });
+
   test("UI-11 theme toggle and sign-out", async ({ page }) => {
     await login(page, UMA);
     await page.getByRole("button", { name: "Toggle theme" }).click();

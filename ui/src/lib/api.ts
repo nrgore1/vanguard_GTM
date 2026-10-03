@@ -50,7 +50,10 @@ export interface Partner {
   segment_name?: string | null; email_consent?: EmailConsent | null;
   campaign_id?: number | null; campaign_name?: string | null;
   connections?: number | LinkedInConnection[]; intros?: Intro[]; mutuals_url?: string;
+  linkedin_url?: string | null; x_handle?: string | null; preferred_channel?: Channel | null;
 }
+export type Channel = "email" | "linkedin" | "x";
+export interface ByHand extends OutreachMessage { due: boolean; held: string | null; profile_url: string | null }
 export interface LinkedInConnection {
   id: number; first_name: string; last_name: string; profile_url: string | null; email: string | null; company: string | null;
   position: string | null; connected_on: string | null; owner_name: string | null; is_contact: boolean;
@@ -90,11 +93,11 @@ export interface OutreachMessage {
   partner_name?: string; property_id?: string; partner_kind?: string; partner_stage?: string; contact_email?: string | null;
   contact_name?: string | null; priority_score?: number | null; priority?: string | null;
   transport?: string | null; pm_message_id?: string | null; delivered_at?: string | null; opened_at?: string | null;
-  campaign_id?: number | null; campaign_name?: string | null; one_off?: number | null; send_at?: string | null;
+  campaign_id?: number | null; campaign_name?: string | null; one_off?: number | null; send_at?: string | null; channel?: Channel | null; linkedin_url?: string | null; x_handle?: string | null;
 }
 export interface OutreachStats {
   draft: number; approved: number; sent: number; replied: number; cancelled: number; failed: number; bounced: number;
-  ever_sent: number; blocked: number; partners_contacted: number; partners_replied: number; reply_rate: number | null;
+  ever_sent: number; blocked: number; by_hand_due?: number; partners_contacted: number; partners_replied: number; reply_rate: number | null;
   sent_today: number; suppressed: number;
   email: EmailStatus;
 }
@@ -240,7 +243,10 @@ export const api = {
     req<{ ok: boolean; lint_status: string; lint_findings: { rule_id: string; message: string; excerpt: string; severity: string }[] }>("PATCH", `/outreach/${id}`, b),
   approveOutreach: (ids: number[]) => req<{ approved: number[]; refused: { id: number; reason: string }[] }>("POST", "/outreach/approve", { ids }),
   cancelOutreach: (id: number) => req("POST", `/outreach/${id}/cancel`),
-  composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string; send_at?: string | null }) =>
+  setChannel: (pid: number, channel: Channel) => req<{ changed: number[]; channel: Channel }>("POST", `/partners/${pid}/channel`, { channel }),
+  byHand: () => req<ByHand[]>("GET", "/outreach/by-hand"),
+  markSent: (id: number) => req<{ id: number; status: string; channel: Channel }>("POST", `/outreach/${id}/mark-sent`),
+  composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string; send_at?: string | null; channel?: Channel; linkedin_url?: string; x_handle?: string }) =>
     req<OutreachMessage>("POST", `/partners/${pid}/email`, b),
   scheduleOutreach: (b: { ids: number[]; send_at: string | null; per_day?: number | null; gap_min?: number; weekdays_only?: boolean; tz_offset_min?: number }) =>
     req<{ scheduled: { id: number; send_at: string | null }[]; refused: { id: number; reason: string }[] }>("POST", "/outreach/schedule", b),

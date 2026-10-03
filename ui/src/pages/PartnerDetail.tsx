@@ -118,6 +118,10 @@ export default function PartnerDetail() {
                 ["First ask", p.first_ask ?? "—"], ["Next step", p.next_step ?? "—"], ["Due", shortDate(p.next_step_date)],
               ] as const).map(([k, v]) => <Fragment key={k}><dt className="text-muted">{k}</dt><dd className="min-w-0 break-words">{v}</dd></Fragment>)}
             </dl>
+            {(p.linkedin_url || p.x_handle) && <div className="flex flex-wrap gap-4 border-t border-line px-5 py-3 text-xs">
+              {p.linkedin_url && <a href={p.linkedin_url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-vireo hover:underline"><Linkedin size={12} />LinkedIn profile</a>}
+              {p.x_handle && <a href={`https://x.com/${p.x_handle}`} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-vireo hover:underline"><AtSign size={12} />@{p.x_handle}</a>}
+            </div>}
             {p.mutual_value && <div className="border-t border-line px-5 py-4 text-sm"><div className="mb-1 text-xs text-muted">Why both sides win</div><p className="whitespace-pre-line leading-relaxed">{p.mutual_value}</p></div>}
           </Card>
           <Card>

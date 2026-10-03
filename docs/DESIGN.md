@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.14.0 |
+| **Version** | 0.15.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -884,6 +884,27 @@ scheduled email goes the first time an admin clicks Send due now after its time.
 `email.auto_every_min` and the UI warns when scheduling while it is 0. Campaign "next due" uses `send_at`. The
 scheduler tick now also syncs replies when only a per-property mailbox has IMAP.
 
+### 15.17 LinkedIn and X sequences (v0.15.0)
+
+Partners carry `linkedin_url` (normalised to `https://www.linkedin.com/in|company/<id>`) and `x_handle`
+(`@name`, `x.com/name` or `twitter.com/name` -> `name`); anything else is a 422. `outreach_messages.channel` is
+`email` (default), `linkedin` or `x`, and `partners.preferred_channel` remembers the last choice.
+
+`channels.set_channel(partner, channel)` moves every unsent message (sequence steps and one-offs) to that
+channel; changed messages return to draft for fresh approval and are re-linted. The channel needs its contact
+(profile or handle) first. `compose` takes a channel too. `relint` adds platform limits to the claim rules: a
+LinkedIn step 1 or one-off over 200 characters is warned, since a connection-request note is limited to 200 on
+a free account (300 with Premium).
+
+LinkedIn and X are never automated: no API, no browser automation, no scraping. `send_due` only sends email;
+approved LinkedIn/X messages appear in `by_hand()` with `due` and the reason they're held (`hold_reason`, the
+same rules as email: stage, replies, sequence order and delay after the previous step, `send_at`, contact
+present). The user sends the text from the profile and calls `mark_sent`, which records `sent_at` and
+`transport`, logs a `linkedin`/`x` interaction ("Sent step N on LinkedIn: …", merge tags rendered), moves an
+identified partner to contacted and starts the next step's delay. Replies stop the sequence as for email.
+Email daily caps and "emails sent" counts include email only; LinkedIn/X sends count as social touches in
+campaign metrics. A LinkedIn import now fills `linkedin_url` for named contacts who are connections.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -1028,6 +1049,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.15.0 | 2026-10-03 | **LinkedIn and X sequences** (§15.17): LinkedIn profile and X handle on partners; a partner's 3-step sequence (or a one-off) can run on email, LinkedIn or X; LinkedIn/X steps are approved and timed like email, then sent by hand from Outreach → By hand (copy, open profile, I sent it), which logs the touch and starts the next delay; 200-character connection-note warning; `POST /partners/{id}/channel`, `GET /outreach/by-hand`, `POST /outreach/{id}/mark-sent`. Tests WEB-40, UI-20. |
 | 0.14.0 | 2026-10-02 | **Scheduled sending** (§15.16): `send_at` on outreach messages; Write email takes a date and time; Outreach schedules selected emails at once or spread N per day, minutes apart, weekdays only; the editor sets or clears a single schedule; `POST /outreach/schedule`; `send_due` holds until the time; status reports whether automatic sending is on. Tests WEB-39, UI-19. |
 | 0.13.2 | 2026-10-02 | **Replies and unsubscribes** (§15.15): a quoted footer in Outlook-style or HTML replies is no longer read as an opt-out; the Unsubscribe button's email (subject "unsubscribe") now opts out. Test WEB-38. |
 | 0.13.1 | 2026-10-02 | **Copy in Sent** (§15.14): each SMTP send is also saved to the mailbox's Sent folder over IMAP (found by the `\\Sent` flag or name; `IMAP_SENT_FOLDER`, `VANGUARD_SAVE_SENT`); never fails the send; the send report and Write email say where the copy went. Test WEB-37. |

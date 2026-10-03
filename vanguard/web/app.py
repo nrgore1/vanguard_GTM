@@ -161,6 +161,8 @@ class PartnerIn(BaseModel):
     next_step: str | None = Field(default=None, max_length=2000)
     next_step_date: _date | None = None
     owner_id: int | None = None
+    linkedin_url: str | None = Field(default=None, max_length=300)
+    x_handle: str | None = Field(default=None, max_length=100)
 
 
 class PartnerPatch(PartnerIn):
@@ -222,6 +224,13 @@ class ComposeIn(BaseModel):
     body: str = Field(min_length=20, max_length=5000)
     contact_email: str | None = Field(default=None, max_length=200)
     send_at: str | None = Field(default=None, max_length=40)
+    channel: Literal["email", "linkedin", "x"] = "email"
+    linkedin_url: str | None = Field(default=None, max_length=300)
+    x_handle: str | None = Field(default=None, max_length=100)
+
+
+class ChannelIn(BaseModel):
+    channel: Literal["email", "linkedin", "x"]
 
 
 class ScheduleIn(BaseModel):
@@ -289,6 +298,19 @@ class RunIn(BaseModel):
 def _clean(model: BaseModel, fields: list[str]) -> dict:
     d = model.model_dump(exclude_unset=True)
     return {k: (v.isoformat() if isinstance(v, _date) else v) for k, v in d.items() if k in fields}
+
+
+def _social(data: dict) -> dict:
+    """Normalise a LinkedIn profile link and an X handle; 422 if they aren't one."""
+    from ..channels import norm_linkedin, norm_x
+    try:
+        if "linkedin_url" in data:
+            data["linkedin_url"] = norm_linkedin(data["linkedin_url"])
+        if "x_handle" in data:
+            data["x_handle"] = norm_x(data["x_handle"])
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return data
 
 
 # ------------------------------------------------------------------ routes
@@ -548,7 +570,7 @@ def create_partner(body: PartnerIn, u: dict = Depends(current_user)):
     valid_property(body.property_id)
     if s.one("SELECT id FROM partners WHERE property_id=? AND name=?", (body.property_id, body.name)):
         raise HTTPException(409, "this partner already exists for that property")
-    data = _clean(body, PARTNER_FIELDS) | {"created_by": u["id"], "created_at": now(), "updated_at": now()}
+    data = _social(_clean(body, PARTNER_FIELDS)) | {"created_by": u["id"], "created_at": now(), "updated_at": now()}
     data.setdefault("owner_id", u["id"])
     pid = s.insert("partners", data)
     s.audit(u["id"], "create", "partner", pid, {"name": body.name})
@@ -695,7 +717,7 @@ def patch_partner(pid: int, body: PartnerPatch, u: dict = Depends(current_user))
     s = store()
     if not s.one("SELECT id FROM partners WHERE id=?", (pid,)):
         raise HTTPException(404)
-    data = _clean(body, PARTNER_FIELDS)
+    data = _social(_clean(body, PARTNER_FIELDS))
     if data.get("agreement_status") == "signed":
         data.setdefault("agreement_signed_date", _date.today().isoformat())
         data["stage"] = "signed"
@@ -807,7 +829,7 @@ def import_research(a: dict = Depends(admin_user)):
 def list_outreach(status: str | None = None, property_id: str | None = None, partner_id: int | None = None,
                   campaign_id: int | None = None, u: dict = Depends(current_user)):
     sql = ("SELECT m.*, p.name AS partner_name, p.property_id, p.kind AS partner_kind, p.stage AS partner_stage, "
-           "p.contact_email, p.contact_name, p.priority_score, p.priority, p.is_segment, p.campaign_id, "
+           "p.contact_email, p.contact_name, p.linkedin_url, p.x_handle, p.priority_score, p.priority, p.is_segment, p.campaign_id, "
            "cc.name AS campaign_name FROM outreach_messages m "
            "JOIN partners p ON p.id=m.partner_id LEFT JOIN campaigns cc ON cc.id=p.campaign_id WHERE 1=1")
     args: list = []
@@ -828,7 +850,9 @@ def list_outreach(status: str | None = None, property_id: str | None = None, par
 def outreach_stats(u: dict = Depends(current_user)):
     from ..outreach import EmailConfig, postmark_used_this_month, queue_stats
     cfg = EmailConfig.from_env()
+    from ..channels import by_hand
     st = queue_stats(store()) | {"email": cfg.status()}
+    st["by_hand_due"] = sum(1 for m in by_hand(store()) if m["due"])
     if st["email"]["postmark"]:
         st["email"]["postmark"]["used_this_month"] = postmark_used_this_month(store())
     return st
@@ -851,8 +875,10 @@ def edit_outreach(mid: int, body: OutreachEdit, u: dict = Depends(current_user))
                                               "lint_findings": json.dumps([f.model_dump() for f in fs]),
                                               "status": "draft", "approved_by": None, "approved_at": None,
                                               "updated_at": now()})   # any edit needs fresh approval
+    from ..channels import relint
+    res = relint(s, mid)                                              # adds LinkedIn length limits
     s.audit(u["id"], "update", "outreach", mid)
-    return {"ok": True, "lint_status": lint, "lint_findings": [f.model_dump() for f in fs]}
+    return {"ok": True, "lint_status": res["lint_status"], "lint_findings": json.loads(res["lint_findings"])}
 
 
 @api.post("/outreach/approve")
@@ -882,11 +908,43 @@ def compose_email(pid: int, body: ComposeIn, u: dict = Depends(current_user)):
     the normal send path (daily cap, opt-outs, footer, timeline entry)."""
     from ..outreach import compose
     try:
-        return compose(store(), pid, body.subject, body.body, u["id"], body.contact_email, body.send_at)
+        return compose(store(), pid, body.subject, body.body, u["id"], body.contact_email, body.send_at,
+                       body.channel, body.linkedin_url, body.x_handle)
     except KeyError:
         raise HTTPException(404)
     except ValueError as e:
         raise HTTPException(422, str(e))
+
+
+@api.post("/partners/{pid}/channel")
+def set_partner_channel(pid: int, body: ChannelIn, u: dict = Depends(current_user)):
+    """Run this partner's unsent messages on email, LinkedIn or X. Changed messages go back to draft."""
+    from ..channels import set_channel
+    try:
+        return set_channel(store(), pid, body.channel, u["id"])
+    except KeyError:
+        raise HTTPException(404)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@api.get("/outreach/by-hand")
+def outreach_by_hand(u: dict = Depends(current_user)):
+    """Approved LinkedIn/X messages: due now or why not yet, with the profile link to send from."""
+    from ..channels import by_hand
+    return by_hand(store())
+
+
+@api.post("/outreach/{mid}/mark-sent")
+def outreach_mark_sent(mid: int, u: dict = Depends(current_user)):
+    """You sent this LinkedIn/X message yourself: log it, move the partner to contacted, start the next delay."""
+    from ..channels import mark_sent
+    try:
+        return mark_sent(store(), mid, u["id"])
+    except KeyError:
+        raise HTTPException(404)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
 
 
 @api.post("/outreach/schedule")

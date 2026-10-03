@@ -82,7 +82,7 @@ def campaign_outreach(ws, cid: int) -> dict:
         return {"partners": [], "totals": empty, "queue": {"drafts": 0, "approved": 0, "missing_email": 0, "next_due": None}}
     ids = [p["id"] for p in partners]
     mk = _marks(len(ids))
-    msgs = ws.q(f"SELECT partner_id, step, delay_days, status, sent_at, replied_at, send_at, one_off FROM outreach_messages "
+    msgs = ws.q(f"SELECT partner_id, step, delay_days, status, sent_at, replied_at, send_at, one_off, channel FROM outreach_messages "
                 f"WHERE partner_id IN ({mk}) ORDER BY partner_id, step", ids)
     acts = ws.q(f"SELECT partner_id, type, MAX(date) AS last, COUNT(*) AS n FROM partner_interactions "
                 f"WHERE partner_id IN ({mk}) AND summary NOT LIKE '{CONNECTED_PREFIX}%' GROUP BY partner_id, type", ids)
@@ -100,7 +100,7 @@ def campaign_outreach(ws, cid: int) -> dict:
     for p in partners:
         ms = by_msgs.get(p["id"], [])
         ac = by_acts.get(p["id"], {})
-        sent = [m for m in ms if m["sent_at"]]
+        sent = [m for m in ms if m["sent_at"] and (m["channel"] or "email") == "email"]   # LinkedIn/X sends log a touch
         social = sum(ac[k]["n"] for k in SOCIAL_TYPES if k in ac)
         meetings = sum(ac[k]["n"] for k in MEETING_TYPES if k in ac)
         replied = any(m["replied_at"] for m in ms) or (p["email_consent"] or "") in ("replied", "opted_out")
@@ -120,7 +120,7 @@ def campaign_outreach(ws, cid: int) -> dict:
         due = _next_due(ms)
         if due and (queue["next_due"] is None or due < queue["next_due"]):
             queue["next_due"] = due
-        last = max([a["last"] for a in ac.values()] + [m["sent_at"][:10] for m in sent], default=None)
+        last = max([a["last"] for a in ac.values()] + [m["sent_at"][:10] for m in ms if m["sent_at"]], default=None)
         rows.append(p | {"emails_sent": len(sent), "social_touches": social, "meetings": meetings, "replied": replied,
                          "drafts": drafts, "approved": len(approved), "steps": len(ms), "last_touch": last,
                          "next_due": due})
@@ -155,7 +155,8 @@ def outreach_totals_by_campaign(ws, cids: list[int]) -> dict[int, dict]:
                   f"GROUP BY p.campaign_id", cids):
         out[r["cid"]]["targets"] = r["n"]
     for r in ws.q(f"SELECT p.campaign_id AS cid, COUNT(*) AS n FROM outreach_messages m JOIN partners p "
-                  f"ON p.id=m.partner_id WHERE p.campaign_id IN ({mk}) AND m.sent_at IS NOT NULL GROUP BY p.campaign_id", cids):
+                  f"ON p.id=m.partner_id WHERE p.campaign_id IN ({mk}) AND m.sent_at IS NOT NULL "
+                  f"AND COALESCE(m.channel,'email')='email' GROUP BY p.campaign_id", cids):
         out[r["cid"]]["emails_sent"] = r["n"]
     for r in ws.q(f"SELECT p.campaign_id AS cid, COUNT(*) AS n FROM partners p WHERE p.campaign_id IN ({mk}) AND "
                   f"(p.email_consent IN ('replied','opted_out') OR EXISTS (SELECT 1 FROM outreach_messages m "
