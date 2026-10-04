@@ -29,7 +29,7 @@ export function PartnerForm({ open, onClose, initial, onSaved }: { open: boolean
   const save = async () => {
     setBusy(true); setError(null);
     const body: Record<string, unknown> = { ...f };
-    for (const k of ["id", "owner_name", "interactions", "last_contact", "created_by", "updated_at", "source_run_id", "created_at", "connections", "campaign_id", "campaign_name", "outreach", "targets"]) delete body[k];
+    for (const k of ["id", "owner_name", "interactions", "last_contact", "created_by", "updated_at", "source_run_id", "created_at", "connections", "campaign_id", "campaign_name", "outreach", "targets", "email_status", "intros", "mutuals_url"]) delete body[k];
     if (body.owner_id) body.owner_id = Number(body.owner_id);
     try {
       const id = initial?.id ? (await api.updatePartner(initial.id, body), initial.id) : (await api.createPartner(body)).id;
@@ -47,7 +47,11 @@ export function PartnerForm({ open, onClose, initial, onSaved }: { open: boolean
         <Field label="Stage"><Select value={f.stage ?? "identified"} onChange={set("stage")}>{STAGES.map((s) => <option key={s} value={s}>{label(s)}</option>)}</Select></Field>
         <Field label="Owner"><Select value={f.owner_id ?? ""} onChange={set("owner_id")}><option value="">Me</option>{users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
         <Field label="Contact name"><Input value={f.contact_name ?? ""} onChange={set("contact_name")} /></Field>
-        <Field label="Contact email"><Input type="email" value={f.contact_email ?? ""} onChange={set("contact_email")} /></Field>
+        <Field label="Contact email" hint="A named person's own address only - never support@, info@ or a shared inbox.">
+          <Input type="email" value={f.contact_email ?? ""} onChange={(e) => setF({ ...f, contact_email: e.target.value, email_named: false })} /></Field>
+        {f.contact_email && <label className="flex items-center gap-2 self-end pb-2 text-xs sm:col-span-1">
+          <input type="checkbox" checked={!!f.email_named} onChange={(e) => setF({ ...f, email_named: e.target.checked })} className="accent-[var(--vireo)]" />
+          This is {f.contact_name || "the contact"}'s own address</label>}
         <Field label="LinkedIn profile" hint="linkedin.com/in/… - for LinkedIn sequences"><Input value={f.linkedin_url ?? ""} onChange={set("linkedin_url")} placeholder="https://www.linkedin.com/in/…" /></Field>
         <Field label="X handle" hint="@name - for X sequences"><Input value={f.x_handle ?? ""} onChange={set("x_handle")} placeholder="@name" /></Field>
         <Field label="Value-sharing model"><Input value={f.value_sharing_model ?? ""} onChange={set("value_sharing_model")} placeholder="revenue share, referral fee…" /></Field>

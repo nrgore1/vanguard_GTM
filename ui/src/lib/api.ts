@@ -51,6 +51,7 @@ export interface Partner {
   campaign_id?: number | null; campaign_name?: string | null;
   connections?: number | LinkedInConnection[]; intros?: Intro[]; mutuals_url?: string;
   linkedin_url?: string | null; x_handle?: string | null; preferred_channel?: Channel | null;
+  email_named?: number | boolean | null; email_status?: "none" | "role" | "named" | "unverified";
 }
 export type Channel = "email" | "linkedin" | "x";
 export interface ByHand extends OutreachMessage { due: boolean; held: string | null; profile_url: string | null }
@@ -246,7 +247,7 @@ export const api = {
   setChannel: (pid: number, channel: Channel) => req<{ changed: number[]; channel: Channel }>("POST", `/partners/${pid}/channel`, { channel }),
   byHand: () => req<ByHand[]>("GET", "/outreach/by-hand"),
   markSent: (id: number) => req<{ id: number; status: string; channel: Channel }>("POST", `/outreach/${id}/mark-sent`),
-  composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string; send_at?: string | null; channel?: Channel; linkedin_url?: string; x_handle?: string }) =>
+  composeEmail: (pid: number, b: { subject: string; body: string; contact_email?: string; send_at?: string | null; channel?: Channel; linkedin_url?: string; x_handle?: string; named_confirmed?: boolean }) =>
     req<OutreachMessage>("POST", `/partners/${pid}/email`, b),
   scheduleOutreach: (b: { ids: number[]; send_at: string | null; per_day?: number | null; gap_min?: number; weekdays_only?: boolean; tz_offset_min?: number }) =>
     req<{ scheduled: { id: number; send_at: string | null }[]; refused: { id: number; reason: string }[] }>("POST", "/outreach/schedule", b),

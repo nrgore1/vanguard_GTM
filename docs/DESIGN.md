@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.15.0 |
+| **Version** | 0.15.1 |
 | **Owner** | Narendra Gore, Vireoka LLC |
 | **Last updated** | 2026-10-02 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
@@ -905,6 +905,29 @@ identified partner to contacted and starts the next step's delay. Replies stop t
 Email daily caps and "emails sent" counts include email only; LinkedIn/X sends count as social touches in
 campaign metrics. A LinkedIn import now fills `linkedin_url` for named contacts who are connections.
 
+### 15.18 Only named people are emailed (v0.15.1)
+
+Incident: on 2026-10-03 the first automatic send (scheduler just switched on) emailed 11 general inboxes
+(info@, hello@, support@, partnerships@) that research had stored as contact emails. Cold email to a shared inbox
+reaches whoever is on duty, not the person we mean, and reads as spam.
+
+`addresses.classify(addr, contact_name, confirmed)`:
+- `role`: the local part is a general inbox (a fixed list: info, support, hello, sales, partnerships, deals,
+  projects, events, press, careers ... plus forms like `info.us`). Never emailed.
+- `named`: the local part is built from the contact's name (first, last, first.last, flast, initials, or a
+  shortened first name such as naren for Narendra), or the address is confirmed (`partners.email_named`).
+- `unverified`: anything else. Held at send time until someone confirms it is that person's own address.
+
+Enforcement: `send_due` cancels a message to a `role` address and holds an `unverified` one; `compose` refuses
+both (an unverified address can be confirmed with `named_confirmed`); partner create/patch refuses a `role`
+contact email and resets `email_named` when the address changes; the research imports (`targets.py`,
+`investors.py`) only fill an address that is `named`; intro asks skip connectors' general inboxes; addresses a
+person shared themselves (LinkedIn export) are stored as confirmed. `purge()` (also `POST
+/partners/purge-general-inboxes`, `vanguard outreach purge-general`, and on every `vanguard serve` start) clears
+`role` addresses and imported `unverified` ones, keeps them as a How to find note, cancels unsent emails to them,
+and lists typed-in unconfirmed addresses. The research files keep such addresses only as `general_inbox` notes.
+`GET /partners/{id}` returns `email_status`.
+
 ## 16. Postmark message streams (v0.5.0)
 
 Postmark is an optional sending, tracking and inbound provider for partner email
@@ -1049,6 +1072,7 @@ readings; only admins pass or fail gates).
 
 | Version | Date | Change |
 |---|---|---|
+| 0.15.1 | 2026-10-03 | **Only named people are emailed** (§15.18): general inboxes (support@, info@, partnerships@ ...) are never emailed - refused, skipped by imports, cancelled at send and cleared on start; other addresses must be built from the contact's name or confirmed as their own; `email_named`, `email_status`, `POST /partners/purge-general-inboxes`, `vanguard outreach purge-general`; 34 published inboxes in the research files moved to `general_inbox` notes. Test WEB-41. |
 | 0.15.0 | 2026-10-03 | **LinkedIn and X sequences** (§15.17): LinkedIn profile and X handle on partners; a partner's 3-step sequence (or a one-off) can run on email, LinkedIn or X; LinkedIn/X steps are approved and timed like email, then sent by hand from Outreach → By hand (copy, open profile, I sent it), which logs the touch and starts the next delay; 200-character connection-note warning; `POST /partners/{id}/channel`, `GET /outreach/by-hand`, `POST /outreach/{id}/mark-sent`. Tests WEB-40, UI-20. |
 | 0.14.0 | 2026-10-02 | **Scheduled sending** (§15.16): `send_at` on outreach messages; Write email takes a date and time; Outreach schedules selected emails at once or spread N per day, minutes apart, weekdays only; the editor sets or clears a single schedule; `POST /outreach/schedule`; `send_due` holds until the time; status reports whether automatic sending is on. Tests WEB-39, UI-19. |
 | 0.13.2 | 2026-10-02 | **Replies and unsubscribes** (§15.15): a quoted footer in Outlook-style or HTML replies is no longer read as an opt-out; the Unsubscribe button's email (subject "unsubscribe") now opts out. Test WEB-38. |

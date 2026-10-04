@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.15.1 — 2026-10-03
+
+### Fixed: emails go only to named people
+- On Oct 3 the first automatic send emailed 11 general inboxes (info@, hello@, support@, partnerships@) that the
+  research had stored as contact emails. That can't happen again:
+  - general inboxes are refused as contact emails, skipped by the research imports, and any email queued to one
+    is cancelled;
+  - an address built from the contact's name is used; any other address waits until you confirm it is that
+    person's own (a tick box on Edit and in Write email);
+  - on start, the app removes general inboxes already on file (kept as a note under How to find) and cancels
+    unsent emails to them. Admins can also run it: `vanguard outreach purge-general`.
+- The research files keep the 34 published inboxes only as notes, not as contact emails.
+
+
 ## 0.15.0 — 2026-10-03
 
 ### Added: LinkedIn and X as outreach channels

@@ -18,6 +18,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
   const [body, setBody] = useState("");
   const [later, setLater] = useState(false);
   const [channel, setChannel] = useState<Channel>("email");
+  const [own, setOwn] = useState(false);
   const [when, setWhen] = useState("");
   const [saved, setSaved] = useState<OutreachMessage | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -27,7 +28,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
 
   useEffect(() => {
     if (!open) return;
-    setTo(p.contact_email ?? ""); setChannel("email"); setSubject(""); setBody(`Hi {{first_name}},\n\n`); setSaved(null); setFindings([]); setError(null); setLater(false); setWhen(nextMorning());
+    setTo(p.contact_email ?? ""); setChannel("email"); setOwn(!!p.email_named); setSubject(""); setBody(`Hi {{first_name}},\n\n`); setSaved(null); setFindings([]); setError(null); setLater(false); setWhen(nextMorning());
     api.outreachStats().then((s) => setEmail(s.email)).catch(() => setEmail(null));
   }, [open, p.contact_email]);
 
@@ -45,7 +46,7 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
       return { id: saved.id, blocked: r.lint_status === "blocked" };
     }
     const m = await api.composeEmail(p.id, { subject, body, send_at: sendAt, channel,
-      ...(channel === "email" ? { contact_email: addr || undefined } : channel === "linkedin" ? { linkedin_url: addr || undefined } : { x_handle: addr || undefined }) });
+      ...(channel === "email" ? { contact_email: addr || undefined, named_confirmed: own } : channel === "linkedin" ? { linkedin_url: addr || undefined } : { x_handle: addr || undefined }) });
     setSaved(m);
     const fs: Finding[] = m.lint_findings ? JSON.parse(m.lint_findings) : [];
     setFindings(fs);
@@ -112,10 +113,14 @@ export function ComposeEmail({ p, open, onClose, onChanged }: { p: Partner; open
           <Select value={channel} onChange={(e) => { const c = e.target.value as Channel; setChannel(c);
             setTo(c === "email" ? p.contact_email ?? "" : c === "linkedin" ? p.linkedin_url ?? "" : p.x_handle ? `@${p.x_handle}` : ""); }}>
             <option value="email">Email</option><option value="linkedin">LinkedIn message</option><option value="x">X message</option></Select></Field>
-        <Field label="To" hint={channel === "email" ? "Only an address the person or their firm published, or shared with you. It is saved as the contact email."
+        <Field label="To" hint={channel === "email" ? "A named person's own address, which they or their firm published or shared with you. Saved as the contact email."
           : channel === "linkedin" ? "Their LinkedIn profile link. Saved on the partner." : "Their X handle. Saved on the partner."}>
           <Input type={channel === "email" ? "email" : "text"} value={to} onChange={(e) => setTo(e.target.value)}
             placeholder={channel === "email" ? "name@firm.com" : channel === "linkedin" ? "https://www.linkedin.com/in/…" : "@name"} /></Field>
+        {channel === "email" && <label className="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked={own} onChange={(e) => setOwn(e.target.checked)} className="accent-[var(--vireo)]" />
+          This is {p.contact_name || "the contact"}'s own address, not support@, info@ or a shared inbox
+          <span className="text-faint">(needed when the address isn't built from their name)</span></label>}
         <Field label={channel === "email" ? "Subject" : "Label (for your records)"}><Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={140} /></Field>
         <Field label="Message" hint="{{first_name}} becomes their first name. The footer is added when it sends.">
           <Textarea rows={14} value={body} onChange={(e) => setBody(e.target.value)} /></Field>

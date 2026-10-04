@@ -388,7 +388,7 @@ test.describe.serial("Vanguard-GTM web app", () => {
     const d = page.getByRole("dialog");
     await d.getByLabel("Subject").fill("Following up next week");
     await d.getByLabel("Message").fill("Hi {{first_name}},\n\nFollowing up on my note about policy checks for AI agents. Open to 20 minutes?\n\nNarendra");
-    await d.getByLabel("When").selectOption("later");
+    await d.getByLabel("When", { exact: true }).selectOption("later");
     await d.getByLabel("Send on (your time)").fill("2099-10-09T09:00");
     await expect(d.getByText(/Automatic sending is off/)).toBeVisible();
     await d.getByRole("button", { name: "Approve & schedule" }).click();

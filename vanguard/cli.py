@@ -530,6 +530,14 @@ def cmd_outreach(a, store: Store):
     elif a.action == "digest":
         from .outreach import send_digest
         print(send_digest(ws, cfg))
+    elif a.action == "purge-general":
+        from .addresses import purge
+        r = purge(ws)
+        for x in r["removed"]:
+            print(f"removed  {x['partner']}: {x['address']} (general inbox; {x['cancelled']} unsent emails cancelled)")
+        for x in r["unverified"]:
+            print(f"held     {x['partner']}: {x['address']} - not confirmed as {x['contact'] or 'the contact'}'s own address")
+        print(f"{len(r['removed'])} general inboxes removed, {len(r['unverified'])} addresses held until confirmed")
     elif a.action in ("postmark-sync", "postmark-check"):
         if not cfg.postmark_token:
             sys.exit("POSTMARK_SERVER_TOKEN is not set")
@@ -568,6 +576,14 @@ def _outreach_loop(minutes: float, db_path) -> None:
 def cmd_serve(a, store: Store):
     import uvicorn
     from .web.app import UI_DIST
+    try:                                   # only named people are emailed: clear general inboxes on every start
+        from .addresses import purge
+        from .web.db import WebStore
+        r = purge(WebStore(store.path))
+        if r["removed"]:
+            print(f"Removed {len(r['removed'])} general-inbox addresses from partners (support@, info@ ...)")
+    except Exception as ex:                # never block the app from starting
+        logging.getLogger("vanguard").warning("general-inbox cleanup skipped: %s", ex)
     every = float(os.getenv("VANGUARD_OUTREACH_EVERY_MIN", "0") or 0)
     if every > 0:
         print(f"Outreach scheduler: every {every:g} min (sends only messages an admin approved)")
@@ -764,8 +780,9 @@ def main(argv=None):
                    "(default: $0 expert playbook)")
     s.add_argument("--provider", choices=["local", "claude"]); s.set_defaults(fn=cmd_partners)
     s = sub.add_parser("outreach", help="approval-gated partner emails: status | approve | send | sync-replies | "
-                       "digest | postmark-sync | postmark-check")
-    s.add_argument("action", choices=["status", "approve", "send", "sync-replies", "digest", "postmark-sync", "postmark-check"])
+                       "digest | postmark-sync | postmark-check | purge-general")
+    s.add_argument("action", choices=["status", "approve", "send", "sync-replies", "digest", "postmark-sync", "postmark-check",
+                                      "purge-general"])
     s.add_argument("ids", nargs="*", help="message ids (approve)"); s.add_argument("--by")
     s.set_defaults(fn=cmd_outreach)
     s = sub.add_parser("campaign", help="campaigns and their partners: list | show ID | attach ID PARTNER.. | detach ID PARTNER..")

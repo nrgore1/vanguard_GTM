@@ -173,7 +173,9 @@ export function SequenceCard({ p, onChanged }: { p: Partner; onChanged: () => vo
     <Card>
       <CardHeader title={<span className="flex items-center gap-2"><Mail size={14} className="text-vireo" />{msgs.every((m) => m.one_off) ? "Emails" : "Outreach sequence"}</span>}
         sub={p.is_segment ? "Template for this segment - named targets get their own copy" : current === "linkedin" ? `On LinkedIn: ${p.linkedin_url ?? "add a profile link (Edit)"} - sent by you, from Outreach → By hand`
-          : current === "x" ? `On X: @${p.x_handle} - sent by you, from Outreach → By hand` : !p.contact_email ? "Add a contact email (Edit) before this can send" : `To ${p.contact_email}`}
+          : current === "x" ? `On X: @${p.x_handle} - sent by you, from Outreach → By hand` : !p.contact_email ? "Add a named person's email (Edit) before this can send"
+          : p.email_status === "role" ? `${p.contact_email} is a general inbox - it won't be emailed. Find a named contact, or use LinkedIn/X`
+          : p.email_status === "unverified" ? `To ${p.contact_email} - held until you confirm it's ${p.contact_name || "the contact"}'s own address (Edit)` : `To ${p.contact_email}`}
         action={<div className="flex flex-wrap items-center gap-2">
           {!p.is_segment && unsent.length > 0 && <ChannelSwitch pid={p.id} value={current} onChanged={onChanged}
             has={{ email: true, linkedin: !!p.linkedin_url, x: !!p.x_handle }} />}

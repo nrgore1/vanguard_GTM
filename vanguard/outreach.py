@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from .store import now
+from .addresses import ROLE_REASON, UNVERIFIED_REASON, classify as classify_address
 
 log = logging.getLogger("vanguard.outreach")
 
@@ -409,7 +410,7 @@ def schedule(ws, ids: Iterable[int], send_at: str | None, per_day: int | None = 
 
 def compose(ws, partner_id: int, subject: str, body: str, user_id: int | None = None,
             contact_email: str | None = None, send_at: str | None = None, channel: str = "email",
-            linkedin_url: str | None = None, x_handle: str | None = None) -> dict:
+            linkedin_url: str | None = None, x_handle: str | None = None, named_confirmed: bool = False) -> dict:
     """Write a single email to one partner (an investor, a reply, a follow-up). It is a draft like any other:
     it goes through the claim rules, needs an admin's approval, and only leaves through send_due."""
     from .channels import CHANNELS, _contact_problem, norm_linkedin, norm_x, relint
@@ -428,9 +429,21 @@ def compose(ws, partner_id: int, subject: str, body: str, user_id: int | None = 
         addr = contact_email.strip().lower()
         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", addr):
             raise ValueError(f"{contact_email!r} is not an email address")
-        if addr != (p["contact_email"] or ""):
-            ws.update("partners", "id", partner_id, {"contact_email": addr, "updated_at": ts})
-            p["contact_email"] = addr
+        if addr != (p["contact_email"] or "") or named_confirmed:
+            ws.update("partners", "id", partner_id, {"contact_email": addr, "updated_at": ts,
+                                                     "email_named": 1 if named_confirmed else 0})
+            p["contact_email"], p["email_named"] = addr, 1 if named_confirmed else 0
+    if channel == "email" and named_confirmed and p.get("contact_email") and not p.get("email_named"):
+        ws.update("partners", "id", partner_id, {"email_named": 1, "updated_at": ts})
+        p["email_named"] = 1
+    if channel == "email" and p.get("contact_email"):
+        cls = classify_address(p["contact_email"], p.get("contact_name"), bool(p.get("email_named")))
+        if cls == "role":
+            raise ValueError(f"{p['contact_email']} is a general inbox, not a named person. Email only a named "
+                             f"person's own address, or send this on LinkedIn or X.")
+        if cls == "unverified":
+            raise ValueError(f"Confirm that {p['contact_email']} is {p.get('contact_name') or 'the contact'}'s own "
+                             f"address (not a shared inbox) before writing to it.")
     for key, val in (("linkedin_url", norm_linkedin(linkedin_url)), ("x_handle", norm_x(x_handle))):
         if val and val != p.get(key):
             ws.update("partners", "id", partner_id, {key: val, "updated_at": ts})
@@ -547,7 +560,7 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
     at = at or datetime.now(timezone.utc)
     router = MailRouter(ws, cfg, mailer, cold_mailer, limit)
     pm_room = cfg.postmark_monthly_cap - postmark_used_this_month(ws) if cfg.mode == "postmark" else None
-    rows = ws.q("SELECT m.*, p.name AS p_name, p.contact_email, p.contact_name, p.stage, p.property_id, "
+    rows = ws.q("SELECT m.*, p.name AS p_name, p.contact_email, p.contact_name, p.stage, p.property_id, p.email_named, "
                 "p.priority_score, p.is_segment, p.email_consent FROM outreach_messages m JOIN partners p ON p.id=m.partner_id "
                 "WHERE m.status='approved' AND COALESCE(m.channel,'email')='email' "
                 "ORDER BY COALESCE(p.priority_score,0) DESC, m.partner_id, m.step")      # LinkedIn/X go by hand
@@ -565,6 +578,11 @@ def send_due(ws, cfg: EmailConfig | None = None, mailer=None, at: datetime | Non
             why = "this is a segment - add named organisations under it, then approve their messages"
         elif not m["contact_email"]:
             why = "no contact email on the partner yet"
+        elif (cls := classify_address(m["contact_email"], m["contact_name"], bool(m["email_named"]))) == "role":
+            ws.update("outreach_messages", "id", m["id"], {"status": "cancelled", "error": "general inbox, not a named person"})
+            why = ROLE_REASON.format(addr=m["contact_email"]) + " - cancelled"
+        elif cls == "unverified":
+            why = UNVERIFIED_REASON.format(addr=m["contact_email"], who=m["contact_name"] or "the contact")
         elif _suppressed(ws, m["contact_email"]):
             ws.update("outreach_messages", "id", m["id"], {"status": "cancelled", "error": "address suppressed"})
             why = "address opted out / bounced - cancelled"

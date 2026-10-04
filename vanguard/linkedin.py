@@ -152,7 +152,8 @@ def _link_contacts(ws, user_id: int | None) -> dict:
                 "outcome": "positive", "next_step": "Send the follow-up message", "created_by": user_id, "created_at": now()})
             connected.append(p["name"])
         if hit["email"] and not p["contact_email"]:
-            ws.update("partners", "id", p["id"], {"contact_email": hit["email"], "updated_at": now()})
+            ws.update("partners", "id", p["id"], {"contact_email": hit["email"], "email_named": 1,   # their own, shared by them
+                                                  "updated_at": now()})
             emails.append(p["name"])
     return {"contacts_connected": connected, "emails_filled": emails}
 

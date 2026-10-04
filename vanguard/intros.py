@@ -398,6 +398,10 @@ def send_approved(ws, cfg=None, mailer=None, actor: int | None = None) -> dict:
                   "JOIN linkedin_connections c ON c.id=i.connection_id JOIN partners p ON p.id=i.partner_id "
                   "WHERE i.status='approved' ORDER BY i.score DESC"):
         who = f"{r['first_name']} {r['last_name']}"
+        from .addresses import is_role
+        if r["email"] and is_role(r["email"]):
+            skipped.append({"id": r["id"], "to": who, "reason": f"{r['email']} is a general inbox - send it on LinkedIn and mark it sent"})
+            continue
         if not r["email"]:
             skipped.append({"id": r["id"], "to": who, "reason": "no email shared on LinkedIn - send it on LinkedIn and mark it sent"})
             continue

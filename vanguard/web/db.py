@@ -89,7 +89,7 @@ MIGRATIONS = {
                  ("agreement_status", "TEXT DEFAULT 'none'"), ("agreement_signed_date", "TEXT"),
                  ("agreement_notes", "TEXT"), ("parent_id", "INTEGER"), ("email_consent", "TEXT DEFAULT 'none'"),
                  ("campaign_id", "INTEGER"), ("linkedin_url", "TEXT"), ("x_handle", "TEXT"),
-                 ("preferred_channel", "TEXT DEFAULT 'email'")],
+                 ("preferred_channel", "TEXT DEFAULT 'email'"), ("email_named", "INTEGER DEFAULT 0")],
     "linkedin_connections": [("msg_count", "INTEGER DEFAULT 0"), ("last_message_at", "TEXT"),
                              ("endorsements", "INTEGER DEFAULT 0"), ("strength", "DOUBLE PRECISION DEFAULT 0"),
                              ("tags", "TEXT")],
@@ -107,7 +107,7 @@ RESULT_FIELDS = ["date", "sent", "opens", "clicks", "replies", "meetings", "sign
 PARTNER_FIELDS = ["property_id", "name", "kind", "stage", "partner_type", "contact_name", "contact_email",
                   "value_sharing_model", "mutual_value", "first_ask", "next_step", "next_step_date", "owner_id",
                   "website", "category", "agreement_status", "agreement_signed_date", "agreement_notes", "email_consent",
-                  "linkedin_url", "x_handle"]
+                  "linkedin_url", "x_handle", "email_named"]
 INTERACTION_FIELDS = ["date", "type", "summary", "outcome", "next_step"]
 METRICS = ["sent", "opens", "clicks", "replies", "meetings", "signups", "conversions", "revenue_usd", "spend_usd"]
 

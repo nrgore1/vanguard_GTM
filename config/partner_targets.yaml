@@ -129,7 +129,8 @@ properties:
     why: Federally chartered digital-asset bank expanding institutional custody/settlement partnerships in 2026 (incl. State
       Street's stablecoin reserve fund) - a co-sell partner for governed workflows on its rails.
     evidence_url: https://www.crowdfundinsider.com/2026/05/281427-anchorage-digital-chosen-by-3iq-as-infrastructure-custody-partner-for-digital-assets-investment-platform/
-    contact_email: partnerships@anchorage.com
+    contact_email: null
+    general_inbox: partnerships@anchorage.com   # not used for outreach (not a named person)
     contact_url: https://www.anchorage.com/get-in-touch
     how_to_reach: "partnerships@ is published in Anchorage's own 2022 release (may be dated); the current form has 'Agentic banking' and 'Stablecoin issuance' interest boxes - use both."
     contacts:
@@ -219,7 +220,8 @@ properties:
     why: Issues OUSG, one of the largest tokenized US Treasury funds, with a formal partner ecosystem - tokenized treasury
       collateral for governed institutional workflows.
     evidence_url: https://ondo.finance/ousg
-    contact_email: support@ondo.finance
+    contact_email: null
+    general_inbox: support@ondo.finance   # not used for outreach (not a named person)
     contact_url: https://ondo.finance/ecosystem
     how_to_reach: "Ecosystem partner form ('Join Our Network of Top-Tier Partners'). Ondo's docs route partnership inquiries to support@. Timing risk: since the founder's death in May 2026 there is a control dispute (acting CEO limited to day-to-day operations by court order) - expect slow decisions."
     contacts:
@@ -323,7 +325,8 @@ properties:
     location: "Wyoming (SPDI charter)"
     why: "The other co-issuer of Avit/Hazel, live on Ethereum mainnet; a small founder-led Wyoming bank whose positioning is compliance-first, so independent policy evidence per conversion fits its story."
     evidence_url: "https://finance.yahoo.com/news/custodia-vantage-expand-pilot-live-212809514.html"
-    contact_email: info@custodiabank.com
+    contact_email: null
+    general_inbox: info@custodiabank.com   # not used for outreach (not a named person)
     contact_url: https://custodiabank.com
     how_to_reach: "Short note to the published general inbox, or to Caitlin Long, who is publicly active on X and LinkedIn. Pair with the Vantage Bank pitch."
     contacts:
@@ -666,7 +669,8 @@ properties:
     location: "Washington, DC (unverified)"
     why: "Bank and fintech regulatory boutique with a dedicated stablecoin issuer strategy and operations service; handles charters and launches for the exact issuers and banks LiqMint targets, with no audit practice to limit referrals."
     evidence_url: "https://www.klaros.com/stablecoin-issuer-strategy-operations"
-    contact_email: hello@klaros.com
+    contact_email: null
+    general_inbox: hello@klaros.com   # not used for outreach (not a named person)
     contact_url: https://www.klaros.com/contact
     how_to_reach: "Email the published general inbox, positioning LiqMint as the governance and evidence stack its stablecoin and charter clients need for examiner review; Klaros Capital (its investing arm) is a second route."
     contacts:
@@ -972,7 +976,8 @@ properties:
     why: EU AI Act-focused governance platform (AI Act classifier, mapped policies, audit evidence) - complements Atmakosh's
       runtime enforcement.
     evidence_url: https://www.saidot.ai/product
-    contact_email: sales@saidot.ai
+    contact_email: null
+    general_inbox: sales@saidot.ai   # not used for outreach (not a named person)
     contact_url: https://www.saidot.ai/
     priority_hint: P1
     confidence: high
@@ -1007,7 +1012,8 @@ properties:
     why: Runs the Lyceum Project pairing philosophers with AI developers, business and government - fits a multi-worldview
       deliberation council pilot or teaching case.
     evidence_url: https://www.oxford-aiethics.ox.ac.uk/lyceum-project-partners
-    contact_email: aiethics@philosophy.ox.ac.uk
+    contact_email: null
+    general_inbox: aiethics@philosophy.ox.ac.uk   # not used for outreach (not a named person)
     contact_url: https://www.oxford-aiethics.ox.ac.uk/contact-us
     priority_hint: P1
     confidence: high
@@ -1043,7 +1049,8 @@ properties:
     why: Free 7-week accelerator ending in an 'Investor Swarm' pitch with 25+ investors - cohorts need repeated hostile-Q&A
       rehearsal; already runs Twin Cities programs.
     evidence_url: https://www.gener8tor.com/gbeta
-    contact_email: info@gener8tor.com
+    contact_email: null
+    general_inbox: info@gener8tor.com   # not used for outreach (not a named person)
     contact_url: https://www.gener8tor.com/office-hours
     priority_hint: P0
     confidence: high
@@ -1114,7 +1121,8 @@ properties:
     why: Corporate communication-training firm with 1:1 presentation coaching - OratoPlus as between-session drilling its
       coaches can recommend.
     evidence_url: https://www.moxieinstitute.com/
-    contact_email: discover@moxieinstitute.com
+    contact_email: null
+    general_inbox: discover@moxieinstitute.com   # not used for outreach (not a named person)
     contact_url: https://www.moxieinstitute.com/
     priority_hint: P1
     confidence: high
@@ -1149,7 +1157,8 @@ properties:
     why: Runs formal partnerships (Rotary, LinkedIn Learning) through a published partnerships channel - a between-meeting
       practice supplement for members.
     evidence_url: https://www.toastmasters.org/about/partnerships-collaborations
-    contact_email: partnerships@toastmasters.org
+    contact_email: null
+    general_inbox: partnerships@toastmasters.org   # not used for outreach (not a named person)
     contact_url: https://www.toastmasters.org/about/partnerships-collaborations
     priority_hint: P1
     confidence: high
@@ -1206,7 +1215,8 @@ properties:
     why: Full-service Indian/South Asian wedding planner running multi-day weekends across 9+ US metros, including Minneapolis
       - exactly the multi-event coordination WeddingOS handles.
     evidence_url: https://thesimplyelegantgroup.com/indian-wedding-planner-houston/
-    contact_email: info@thesimplyelegantgroup.com
+    contact_email: null
+    general_inbox: info@thesimplyelegantgroup.com   # not used for outreach (not a named person)
     contact_url: https://thesimplyelegantgroup.com/contact
     priority_hint: P0
     confidence: high
@@ -1217,7 +1227,8 @@ properties:
     location: Irvine, CA
     why: Luxury South Asian and fusion wedding design studio with 10 years of active bookings and 2025-2026 real-wedding features.
     evidence_url: https://themarigoldcompany.com/
-    contact_email: hello@themarigoldcompany.com
+    contact_email: null
+    general_inbox: hello@themarigoldcompany.com   # not used for outreach (not a named person)
     contact_url: https://themarigoldcompany.com/contact/
     priority_hint: P0
     confidence: high
@@ -1228,7 +1239,8 @@ properties:
     location: New Jersey
     why: South Asian multi-day wedding planning across NJ/NY/PA/CT with vendor coordination and ceremony management.
     evidence_url: https://laksaevents.com/
-    contact_email: info@laksaevents.com
+    contact_email: null
+    general_inbox: info@laksaevents.com   # not used for outreach (not a named person)
     contact_url: https://laksaevents.com/contact-us/
     priority_hint: P0
     confidence: medium
@@ -1272,7 +1284,8 @@ properties:
     location: Houston, TX
     why: Positions itself as Houston's venue for Indian and Pakistani weddings, with a driveway built for baraat processions.
     evidence_url: https://www.citadelhouston.com/south-asian-weddings
-    contact_email: sales@citadelhouston.com
+    contact_email: null
+    general_inbox: sales@citadelhouston.com   # not used for outreach (not a named person)
     contact_url: https://www.citadelhouston.com/request-information
     priority_hint: P1
     confidence: high
@@ -1294,7 +1307,8 @@ properties:
     location: Riviera Maya / Los Cabos, Mexico
     why: Dedicated Indian Weddings program across its Mexico resorts (sangeet, varmala and more).
     evidence_url: https://www.velasweddings.com/experiences/indian-weddings
-    contact_email: weddings@velasresorts.com
+    contact_email: null
+    general_inbox: weddings@velasresorts.com   # not used for outreach (not a named person)
     contact_url: https://www.velasweddings.com/contact
     priority_hint: P1
     confidence: high
@@ -1316,7 +1330,8 @@ properties:
     location: New Jersey (Northeast)
     why: Indian wedding and fusion decor (mandaps, florals, stage and lighting) with a 2026 portfolio.
     evidence_url: https://partyam.com/indian-wedding-decor-company/
-    contact_email: partyamusa@gmail.com
+    contact_email: null
+    general_inbox: partyamusa@gmail.com   # not used for outreach (not a named person)
     contact_url: https://partyam.com/contact-party-am-llc/
     priority_hint: P2
     confidence: high
@@ -1349,7 +1364,8 @@ properties:
     location: National (US)
     why: Leading South Asian wedding media platform and vendor directory with advertiser and platinum-vendor programs.
     evidence_url: https://www.maharaniweddings.com/advertise-on-this-blog
-    contact_email: hello@maharaniweddings.com
+    contact_email: null
+    general_inbox: hello@maharaniweddings.com   # not used for outreach (not a named person)
     contact_url: https://www.maharaniweddings.com/become-a-platinum-vendor
     priority_hint: P1
     confidence: high
@@ -1360,7 +1376,8 @@ properties:
     location: Fort Lauderdale, FL (Chicago, Atlanta, Orlando expos)
     why: South Asian bridal expo series with upcoming Chicago, Atlanta and Orlando dates - vendor-facing launch venue.
     evidence_url: https://www.deshvidesh.com/my-shadi-bridal-expo/
-    contact_email: info@myshadibridalexpo.com
+    contact_email: null
+    general_inbox: info@myshadibridalexpo.com   # not used for outreach (not a named person)
     contact_url: https://myshadibridalexpo.com/contact/
     priority_hint: P1
     confidence: medium
@@ -1384,7 +1401,8 @@ properties:
     why: 501(c)(3) Gujarati cultural association with events and a community magazine - a built-in community of families to
       co-design verified matchmaking with.
     evidence_url: https://www.gstnj.org/
-    contact_email: feedback@gstnj.org
+    contact_email: null
+    general_inbox: feedback@gstnj.org   # not used for outreach (not a named person)
     contact_url: https://www.gstnj.org/get-in-touch-with-gujarati-samaj.aspx
     priority_hint: P0
     confidence: high
@@ -1395,7 +1413,8 @@ properties:
     location: Houston, TX
     why: One of Houston's oldest Hindu temples with active 2025-2026 programming and a multigenerational congregation.
     evidence_url: https://www.hwstemple.org/
-    contact_email: hws.temple@gmail.com
+    contact_email: null
+    general_inbox: hws.temple@gmail.com   # not used for outreach (not a named person)
     contact_url: https://www.hwstemple.org/
     priority_hint: P0
     confidence: high
@@ -1406,7 +1425,8 @@ properties:
     location: Atlanta, GA
     why: 501(c)(3) since 1979 with cultural, youth and school programs and 2026 Durga Puja events.
     evidence_url: https://www.baga.net/
-    contact_email: info@baga.net
+    contact_email: null
+    general_inbox: info@baga.net   # not used for outreach (not a named person)
     contact_url: https://www.baga.net/contact
     priority_hint: P1
     confidence: high
@@ -1450,7 +1470,8 @@ properties:
     location: Hicksville, NY
     why: South Asian wedding photography/videography studio active across NY/NJ/CT/PA.
     evidence_url: https://www.houseoftalentstudio.com/
-    contact_email: info@houseoftalentstudio.com
+    contact_email: null
+    general_inbox: info@houseoftalentstudio.com   # not used for outreach (not a named person)
     contact_url: https://www.houseoftalentstudio.com/inquire
     priority_hint: P2
     confidence: high
@@ -1472,7 +1493,8 @@ properties:
     location: Fords, NJ (Edison area)
     why: Long-established South Asian banquet venue near Edison's Little India.
     evidence_url: https://www.royalalbertspalace.com/contact-4
-    contact_email: royalalbertspalace@rap-management.com
+    contact_email: null
+    general_inbox: royalalbertspalace@rap-management.com   # not used for outreach (not a named person)
     contact_url: https://www.royalalbertspalace.com/contact-4
     priority_hint: P2
     confidence: high
@@ -1494,7 +1516,8 @@ properties:
     location: Jaipur, Rajasthan, India
     why: Heritage-style resort marketing directly to NRI destination weddings (mehendi, sangeet, reception spaces).
     evidence_url: https://www.lohagarhfortresort.in/the-best-luxury-resort-for-nri-weddings-in-india/
-    contact_email: sales@lohagarhfortresort.com
+    contact_email: null
+    general_inbox: sales@lohagarhfortresort.com   # not used for outreach (not a named person)
     contact_url: https://www.lohagarhfortresort.in/contact-us/
     priority_hint: P2
     confidence: high
@@ -1505,7 +1528,8 @@ properties:
     location: Goa, India
     why: Beachfront resort with a dedicated destination-wedding program.
     evidence_url: https://www.planethollywoodgoa.com/destination-wedding
-    contact_email: enquiries@planethollywoodgoa.com
+    contact_email: null
+    general_inbox: enquiries@planethollywoodgoa.com   # not used for outreach (not a named person)
     contact_url: https://www.planethollywoodgoa.com/contact-us
     priority_hint: P2
     confidence: high
@@ -1540,7 +1564,8 @@ properties:
     why: Runs its own 'Pellipandiri' matrimonial portal for members - existing appetite for matchmaking it could co-design
       or refer to.
     evidence_url: https://tana.org/services/matrimonial
-    contact_email: info@tana.org
+    contact_email: null
+    general_inbox: info@tana.org   # not used for outreach (not a named person)
     contact_url: https://tana.org
     priority_hint: P0
     confidence: high
@@ -1606,7 +1631,8 @@ properties:
     location: Santa Clara, CA
     why: TiE's national young-entrepreneurs program across US chapters - young South Asian professionals.
     evidence_url: https://tyeglobal.org/usa/
-    contact_email: tye@tie.org
+    contact_email: null
+    general_inbox: tye@tie.org   # not used for outreach (not a named person)
     contact_url: https://tyeglobal.org/contact/
     priority_hint: P2
     confidence: medium
@@ -1617,7 +1643,8 @@ properties:
     location: Urbana-Champaign, IL
     why: Active organisation for a large Indian graduate population running regular cultural events.
     evidence_url: https://indiangrads.web.illinois.edu/
-    contact_email: igsauiuc1@gmail.com
+    contact_email: null
+    general_inbox: igsauiuc1@gmail.com   # not used for outreach (not a named person)
     contact_url: https://indiangrads.web.illinois.edu/
     priority_hint: P2
     confidence: high
@@ -1628,7 +1655,8 @@ properties:
     location: College Station, TX
     why: Represents 800+ Indian graduate students and families with mentorship and social programming.
     evidence_url: https://www.igsatamu.com/
-    contact_email: igsatamuofficial@gmail.com
+    contact_email: null
+    general_inbox: igsatamuofficial@gmail.com   # not used for outreach (not a named person)
     contact_url: https://www.igsatamu.com/
     priority_hint: P2
     confidence: high
@@ -1640,7 +1668,8 @@ properties:
     why: Established South Asian-focused personalised matchmaking firm - AI-assisted introductions can complement high-touch
       human matchmaking.
     evidence_url: https://intersectionsmatch.com/south-asian-matchmaker/
-    contact_email: info@intersectionsmatch.com
+    contact_email: null
+    general_inbox: info@intersectionsmatch.com   # not used for outreach (not a named person)
     contact_url: https://intersectionsmatch.com/contact/
     priority_hint: P1
     confidence: high
@@ -1662,7 +1691,8 @@ properties:
     location: USA
     why: Established South Asian diaspora outlet with a collaboration inbox - launch storytelling and sponsored content.
     evidence_url: https://browngirlmagazine.com/contact/
-    contact_email: hello@browngirlmagazine.com
+    contact_email: null
+    general_inbox: hello@browngirlmagazine.com   # not used for outreach (not a named person)
     contact_url: https://browngirlmagazine.com/contact/
     priority_hint: P1
     confidence: high
@@ -1673,7 +1703,8 @@ properties:
     location: USA
     why: Multilingual diaspora digital newspaper with a media kit - broad reach beyond a single regional community.
     evidence_url: https://www.newindiaabroad.com/media-kit
-    contact_email: info@newindiaabroad.com
+    contact_email: null
+    general_inbox: info@newindiaabroad.com   # not used for outreach (not a named person)
     contact_url: https://www.newindiaabroad.com/media-kit
     priority_hint: P2
     confidence: high

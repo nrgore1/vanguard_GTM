@@ -163,6 +163,7 @@ class PartnerIn(BaseModel):
     owner_id: int | None = None
     linkedin_url: str | None = Field(default=None, max_length=300)
     x_handle: str | None = Field(default=None, max_length=100)
+    email_named: bool | None = None        # confirmed: contact_email is this person's own address
 
 
 class PartnerPatch(PartnerIn):
@@ -227,6 +228,7 @@ class ComposeIn(BaseModel):
     channel: Literal["email", "linkedin", "x"] = "email"
     linkedin_url: str | None = Field(default=None, max_length=300)
     x_handle: str | None = Field(default=None, max_length=100)
+    named_confirmed: bool = False
 
 
 class ChannelIn(BaseModel):
@@ -301,8 +303,17 @@ def _clean(model: BaseModel, fields: list[str]) -> dict:
 
 
 def _social(data: dict) -> dict:
-    """Normalise a LinkedIn profile link and an X handle; 422 if they aren't one."""
+    """Normalise a LinkedIn profile link and an X handle; 422 if they aren't one. A general-inbox email address
+    is refused, and a changed address needs confirming again as the person's own."""
+    from ..addresses import is_role
     from ..channels import norm_linkedin, norm_x
+    if data.get("contact_email"):
+        data["contact_email"] = str(data["contact_email"]).strip().lower()
+        if is_role(data["contact_email"]):
+            raise HTTPException(422, f"{data['contact_email']} is a general inbox (support@, info@ and the like), not a "
+                                     f"named person. Leave the email empty and reach them on LinkedIn or X, or find a named contact.")
+    if "email_named" in data:
+        data["email_named"] = 1 if data["email_named"] else 0
     try:
         if "linkedin_url" in data:
             data["linkedin_url"] = norm_linkedin(data["linkedin_url"])
@@ -587,6 +598,8 @@ def get_partner(pid: int, u: dict = Depends(current_user)):
     p["interactions"] = s.q("SELECT i.*, u.name AS by_name FROM partner_interactions i LEFT JOIN users u "
                             "ON u.id=i.created_by WHERE partner_id=? ORDER BY date DESC, id DESC", (pid,))
     p["outreach"] = s.q("SELECT * FROM outreach_messages WHERE partner_id=? ORDER BY step", (pid,))
+    from ..addresses import classify
+    p["email_status"] = classify(p["contact_email"], p["contact_name"], bool(p.get("email_named")))
     p["targets"] = s.q("SELECT id, name, stage, contact_email, agreement_status FROM partners WHERE parent_id=? "
                        "ORDER BY name", (pid,))
     p["segment_name"] = (s.one("SELECT name FROM partners WHERE id=?", (p["parent_id"],)) or {}).get("name") \
@@ -723,6 +736,9 @@ def patch_partner(pid: int, body: PartnerPatch, u: dict = Depends(current_user))
         data["stage"] = "signed"
     elif data.get("agreement_status") == "declined":
         data["stage"] = "declined"
+    old = s.one("SELECT contact_email FROM partners WHERE id=?", (pid,))
+    if "contact_email" in data and (data["contact_email"] or None) != (old["contact_email"] or None) and "email_named" not in data:
+        data["email_named"] = 0                     # a new address must be confirmed again
     s.update("partners", "id", pid, data | {"updated_at": now()})
     if data.get("email_consent") == "opted_out":      # never email them again
         row = s.one("SELECT contact_email FROM partners WHERE id=?", (pid,))
@@ -909,11 +925,18 @@ def compose_email(pid: int, body: ComposeIn, u: dict = Depends(current_user)):
     from ..outreach import compose
     try:
         return compose(store(), pid, body.subject, body.body, u["id"], body.contact_email, body.send_at,
-                       body.channel, body.linkedin_url, body.x_handle)
+                       body.channel, body.linkedin_url, body.x_handle, body.named_confirmed)
     except KeyError:
         raise HTTPException(404)
     except ValueError as e:
         raise HTTPException(422, str(e))
+
+
+@api.post("/partners/purge-general-inboxes")
+def purge_general_inboxes(a: dict = Depends(admin_user)):
+    """Remove general-inbox addresses (support@, info@ ...) from partners and cancel unsent emails to them."""
+    from ..addresses import purge
+    return purge(store(), a["id"])
 
 
 @api.post("/partners/{pid}/channel")

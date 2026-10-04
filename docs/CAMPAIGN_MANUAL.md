@@ -1,6 +1,6 @@
 # Vanguard-GTM — Campaigns & Outreach Manual
 
-Version 0.15.0 · updated 2026-10-02 · for everyone who runs partner campaigns at https://gtm.vireoka.com
+Version 0.15.1 · updated 2026-10-03 · for everyone who runs partner campaigns at https://gtm.vireoka.com
 See also the [User Guide](USER_GUIDE.md) for the rest of the app.
 
 This manual takes you through a campaign from start to finish:
@@ -147,6 +147,13 @@ file, with its priority (P0/P1/P2), why it fits, the named people, the best rout
 drafted emails. Running it again is safe: it refreshes and never duplicates.
 
 ### 2.2 Add contact emails, the only thing that blocks email
+**Only a named person's own address** (v0.15.1). The app never emails a general inbox (support@, info@,
+hello@, sales@, partnerships@, deals@ and the like): it refuses to save one, and anything queued to one is
+cancelled. An address built from the contact's name (andrew.brackin@, abrackin@, brackin@ for Andrew Brackin) is
+used as is. Any other address (a personal Gmail, a nickname) waits until you tick **This is <name>'s own
+address** on the partner's Edit form or in Write email. If an organisation only publishes a general inbox, reach
+the person on LinkedIn or X instead (§3.5b); the inbox stays visible under How to find.
+
 An email can only go to a partner that has a contact email. To add one:
 
 1. open the partner, then click **Edit**;

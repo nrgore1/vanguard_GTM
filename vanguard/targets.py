@@ -114,6 +114,11 @@ def import_targets(ws, path: Path | str | None = None, user_id: int | None = Non
             if email and not EMAIL.match(email):
                 report["errors"].append(f"{pid}/{name}: invalid contact_email '{email}' - ignored")
                 email = None
+            if email:                                   # only a named person's own address is used (v0.15.1)
+                from .addresses import classify
+                if classify(email, (t.get("contacts") or [{}])[0].get("name")) != "named":
+                    report.setdefault("general_inboxes_skipped", []).append(f"{name}: {email}")
+                    email = None
             if not email:
                 report["without_email"] += 1
             f = _fields(t, seg)

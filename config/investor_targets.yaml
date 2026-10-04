@@ -559,7 +559,7 @@ investors:
     leads_rounds: Occasionally (1 lead of 4 per Fundable)
     typical_check: $50K-500K (event)
     contact_route: Firm-published email below; LinkedIn
-    published_email: projects@funders.vc
+    general_inbox: projects@funders.vc   # firm inbox, not used for outreach
     fit: Fintech/B2B-AI at pre-seed/seed plus a crypto/DeFi and payments portfolio and a digital-assets partner
       on the team. Best thematic fit of this batch.
     concern: Europe/MENA geographic focus and small cheques; US bank/examiner-facing product and a pre-revenue stage
@@ -899,7 +899,7 @@ investors:
     leads_rounds: Writes first-institutional/pre-seed and seed checks; lead status not confirmed
     typical_check: $1M-3M pre-seed/seed (firm site)
     contact_route: Email published on firm site (deals@crystalventurepartners.com, per site content)
-    published_email: deals@crystalventurepartners.com
+    general_inbox: deals@crystalventurepartners.com   # firm inbox, not used for outreach
     fit: Check size ($1M-3M) fits a $3M raise better than anyone else here, and his 'business of risk' regulated-sector,
       AI-for-risk lens echoes LiqMint's risk/audit-evidence angle. Lists RegTech and Fintech as sectors.
     concern: Fund is explicitly insurance/insurtech-focused; stablecoin/tokenized-asset governance is outside the
@@ -3027,7 +3027,7 @@ investors:
     leads_rounds: Yes at its stage, but stage is Series A+
     typical_check: Venture growth initial up to $10M; targets Series A with $1M+ ARR (firm); event listing $1M-10M
     contact_route: info@flashpoint.capital as published on the firm homepage
-    published_email: info@flashpoint.capital
+    general_inbox: info@flashpoint.capital   # firm inbox, not used for outreach
     fit: Fintech/payments infrastructure is a stated priority sector and a US push exists, but fit is weak for a
       pre-revenue seed.
     concern: Firm now wants $1M+ ARR Series A companies and European/Israeli/MENA-origin founders; a pre-revenue

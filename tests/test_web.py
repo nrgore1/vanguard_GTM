@@ -336,7 +336,7 @@ def _recommend(env, pid="jodibana"):
     return r.json()
 
 
-def _named(env, seg_name_part="wedding planners", name="Rang Mahal Weddings NJ", email="owner@rangmahal.example"):
+def _named(env, seg_name_part="wedding planners", name="Rang Mahal Weddings NJ", email="meera@rangmahal.example"):
     c = env["c"]
     seg = next(p for p in c.get("/api/partners?property_id=jodibana", headers=env["U"]).json()
                if seg_name_part in p["name"].lower() and p["is_segment"])
@@ -390,12 +390,12 @@ def test_web_17_admin_approval_gates_every_send(env, tmp_path, monkeypatch):
     assert c.post("/api/outreach/send-due", headers=A).json()["sent"] == []          # nothing approved yet
     assert c.post("/api/outreach/approve", json={"ids": [m["id"] for m in msgs]}, headers=A).json()["approved"] == [m["id"] for m in msgs]
     out = c.post("/api/outreach/send-due", headers=A).json()
-    assert [(m["step"], m["to"]) for m in out["sent"]] == [(1, "owner@rangmahal.example")] and out["mode"] == "outbox"
+    assert [(m["step"], m["to"]) for m in out["sent"]] == [(1, "meera@rangmahal.example")] and out["mode"] == "outbox"
     assert any(s["step"] == 2 and s["reason"].startswith("due ") for s in out["skipped"])
     eml = next((tmp_path / "out" / "outbox").glob("*.eml"))
     m = _email.message_from_bytes(eml.read_bytes(), policy=_email.policy.default)
     body = m.get_body().get_content()
-    assert m["To"] == "owner@rangmahal.example" and "Rang Mahal Weddings NJ" in m["Subject"]
+    assert m["To"] == "meera@rangmahal.example" and "Rang Mahal Weddings NJ" in m["Subject"]
     assert body.startswith("Hi Meera,") and "123 Example Ave" in body and "unsubscribe" in body.lower()
     assert "{{" not in body and m["List-Unsubscribe"] == "<mailto:partners@vireoka.com?subject=unsubscribe>"
     p = c.get(f"/api/partners/{pid}", headers=A).json()
@@ -431,8 +431,8 @@ def test_web_19_replies_stop_sequence_and_move_stage(env, tmp_path, monkeypatch)
     c, A, s = env["c"], env["A"], env["s"]
     _recommend(env)
     _, pid = _named(env)
-    _, pid2 = _named(env, "photographers", "Lens & Lehenga Studio", "hello@lenslehenga.example")
-    _, pid3 = _named(env, "banquet", "Royal Albert's Palace", "events@rap.example")
+    _, pid2 = _named(env, "photographers", "Lens & Lehenga Studio", "shah@lenslehenga.example")
+    _, pid3 = _named(env, "banquet", "Royal Albert's Palace", "mshah@rap.example")
     ids = [m["id"] for m in c.get("/api/outreach?status=draft", headers=A).json() if m["partner_id"] in (pid, pid2, pid3)]
     c.post("/api/outreach/approve", json={"ids": ids}, headers=A)
     sent = c.post("/api/outreach/send-due", headers=A).json()["sent"]
@@ -446,9 +446,9 @@ def test_web_19_replies_stop_sequence_and_move_stage(env, tmp_path, monkeypatch)
             e["In-Reply-To"] = reply_to
         return _email.message_from_bytes(bytes(e), policy=_email.policy.default)
 
-    inbox = [mk("Meera Shah <owner@rangmahal.example>", "Sounds good - let's talk Thursday.\n\nOn Mon, X wrote:\n> old", mid(pid), "<r1@x>"),
-             mk("Meera Shah <owner@rangmahal.example>", "Sounds good", mid(pid), "<r1@x>"),              # duplicate
-             mk("hello@lenslehenga.example", "Please unsubscribe me.", None, "<r2@x>"),                     # matched by address
+    inbox = [mk("Meera Shah <meera@rangmahal.example>", "Sounds good - let's talk Thursday.\n\nOn Mon, X wrote:\n> old", mid(pid), "<r1@x>"),
+             mk("Meera Shah <meera@rangmahal.example>", "Sounds good", mid(pid), "<r1@x>"),              # duplicate
+             mk("shah@lenslehenga.example", "Please unsubscribe me.", None, "<r2@x>"),                     # matched by address
              mk("MAILER-DAEMON@mx.example", f"Delivery failed for {mid(pid3)}", None, "<b1@x>"),
              mk("stranger@else.example", "hi", None, "<r3@x>")]
     from vanguard.outreach import sync_replies
@@ -459,7 +459,7 @@ def test_web_19_replies_stop_sequence_and_move_stage(env, tmp_path, monkeypatch)
     assert "old" not in p["interactions"][0]["summary"] and p["interactions"][0]["outcome"] == "positive"
     assert [m["status"] for m in p["outreach"]] == ["replied", "cancelled", "cancelled"]
     supp = {r["email"]: r["reason"] for r in s.q("SELECT * FROM email_suppression")}
-    assert supp == {"hello@lenslehenga.example": "opt-out", "events@rap.example": "bounce"}
+    assert supp == {"shah@lenslehenga.example": "opt-out", "mshah@rap.example": "bounce"}
     assert c.get(f"/api/partners/{pid2}", headers=A).json()["next_step"] == "Opted out - do not contact"
     stats = c.get("/api/outreach/stats", headers=env["U"]).json()
     assert stats["partners_contacted"] == 3 and stats["partners_replied"] == 2 and stats["suppressed"] == 2
@@ -578,7 +578,7 @@ def _approved_pair(env):
     c, A = env["c"], env["A"]
     _recommend(env)
     _, pid = _named(env)
-    _, pid2 = _named(env, "photographers", "Lens & Lehenga Studio", "hello@lenslehenga.example")
+    _, pid2 = _named(env, "photographers", "Lens & Lehenga Studio", "shah@lenslehenga.example")
     ids = [m["id"] for m in c.get("/api/outreach?status=draft", headers=A).json() if m["partner_id"] in (pid, pid2)]
     assert len(c.post("/api/outreach/approve", json={"ids": ids}, headers=A).json()["approved"]) == 6
     return pid, pid2
@@ -602,7 +602,7 @@ def test_web_23_postmark_streams_consent_routing_and_payload(env, pm):
     m1 = s.one("SELECT * FROM outreach_messages WHERE partner_id=? AND step=1", (pid,))
     assert m1["transport"] == "postmark" and m1["pm_message_id"] == "pm-1" and m1["status"] == "sent"
     p = pm.emails("partners")[0]
-    assert p["To"] == "owner@rangmahal.example" and p["From"] == "Narendra Gore <partners@vireoka.com>"
+    assert p["To"] == "meera@rangmahal.example" and p["From"] == "Narendra Gore <partners@vireoka.com>"
     assert p["Tag"] == "jodibana" and p["Metadata"]["outreach_id"] == str(m1["id"]) and p["Metadata"]["partner_id"] == str(pid)
     assert p["ReplyTo"] == f"reply+o{m1['id']}@inbound.vireoka.example"
     assert p["TrackOpens"] is False and p["TrackLinks"] == "None" and "123 Example Ave" in p["TextBody"]
@@ -619,7 +619,7 @@ def test_web_23_postmark_streams_consent_routing_and_payload(env, pm):
             self.sent.append(e["To"])
     cold = Smtp()
     res = send_due(s, EmailConfig.from_env(), cold_mailer=cold)
-    assert [(x["to"], x["transport"]) for x in res["sent"]] == [("hello@lenslehenga.example", "smtp")] and len(pm.emails()) == 1
+    assert [(x["to"], x["transport"]) for x in res["sent"]] == [("shah@lenslehenga.example", "smtp")] and len(pm.emails()) == 1
     # monthly cap (counts outreach + notifications on Postmark this month)
     from datetime import datetime, timedelta, timezone
     cfg = EmailConfig.from_env()
@@ -627,12 +627,12 @@ def test_web_23_postmark_streams_consent_routing_and_payload(env, pm):
     res = send_due(s, cfg, at=datetime.now(timezone.utc) + timedelta(days=5))
     assert any("monthly cap" in x["reason"] for x in res["skipped"] if x["step"] == 2 and x["partner"] == "Rang Mahal Weddings NJ")
     # allow_cold: an explicit opt-in to send first touches through Postmark
-    _, pid3 = _named(env, "banquet", "Royal Albert's Palace", "events@rap.example")
+    _, pid3 = _named(env, "banquet", "Royal Albert's Palace", "mshah@rap.example")
     c.post("/api/outreach/approve", json={"ids": [m["id"] for m in c.get(f"/api/outreach?partner_id={pid3}", headers=A).json()]}, headers=A)
     cfg = EmailConfig.from_env()
     cfg.postmark_allow_cold = True
     res = send_due(s, cfg)
-    assert ("events@rap.example", "postmark") in [(x["to"], x["transport"]) for x in res["sent"]]
+    assert ("mshah@rap.example", "postmark") in [(x["to"], x["transport"]) for x in res["sent"]]
     st = c.get("/api/outreach/stats", headers=env["U"]).json()["email"]
     assert st["mode"] == "postmark" and st["live"] and st["postmark"]["stream_outreach"] == "partners"
     assert st["postmark"]["used_this_month"] >= 2 and st["postmark"]["monthly_cap"] == 100
@@ -660,7 +660,7 @@ def test_web_24_postmark_webhooks(env, pm, monkeypatch):
     row = s.one("SELECT delivered_at, opened_at FROM outreach_messages WHERE id=?", (m1["id"],))
     assert row == {"delivered_at": "2026-09-27T10:00:00Z", "opened_at": "2026-09-27T11:00:00Z"}
     # inbound reply to partner 1, matched by the +o<id> mailbox hash
-    inbound = {"FromFull": {"Email": "owner@rangmahal.example", "Name": "Meera Shah"}, "MailboxHash": f"o{m1['id']}",
+    inbound = {"FromFull": {"Email": "meera@rangmahal.example", "Name": "Meera Shah"}, "MailboxHash": f"o{m1['id']}",
                "Subject": "Re: partnership", "MessageID": "in-1", "TextBody": "Sounds good, let's talk Thursday.\n> old",
                "StrippedTextReply": "Sounds good, let's talk Thursday."}
     r = c.post("/hooks/postmark", json=inbound, headers=HOOK).json()
@@ -674,24 +674,24 @@ def test_web_24_postmark_webhooks(env, pm, monkeypatch):
     assert s.one("SELECT kind, transport FROM notification_log") == {"kind": "reply", "transport": "postmark"}
     # spam complaint on partner 2: suppress + stop + opted_out
     r = c.post("/hooks/postmark", json={"RecordType": "SpamComplaint", "MessageID": m2["pm_message_id"],
-                                        "Email": "hello@lenslehenga.example", "Metadata": {"outreach_id": str(m2["id"])}}, headers=HOOK)
+                                        "Email": "shah@lenslehenga.example", "Metadata": {"outreach_id": str(m2["id"])}}, headers=HOOK)
     assert r.json()["matched"]
     p2 = c.get(f"/api/partners/{pid2}", headers=A).json()
     assert p2["email_consent"] == "opted_out" and {m["status"] for m in p2["outreach"][1:]} == {"cancelled"}
     # hard bounce vs soft bounce
-    _, pid3 = _named(env, "banquet", "Royal Albert's Palace", "events@rap.example")
+    _, pid3 = _named(env, "banquet", "Royal Albert's Palace", "mshah@rap.example")
     c.patch(f"/api/partners/{pid3}", json={"email_consent": "opted_in"}, headers=A)
     c.post("/api/outreach/approve", json={"ids": [m["id"] for m in c.get(f"/api/outreach?partner_id={pid3}", headers=A).json()]}, headers=A)
     c.post("/api/outreach/send-due", headers=A)
     m3 = s.one("SELECT * FROM outreach_messages WHERE partner_id=? AND step=1", (pid3,))
     soft = c.post("/hooks/postmark", json={"RecordType": "Bounce", "Type": "SoftBounce", "MessageID": m3["pm_message_id"],
-                                           "Email": "events@rap.example"}, headers=HOOK).json()
+                                           "Email": "mshah@rap.example"}, headers=HOOK).json()
     assert soft["hard"] is False and s.one("SELECT status FROM outreach_messages WHERE id=?", (m3["id"],))["status"] == "sent"
     c.post("/hooks/postmark", json={"RecordType": "Bounce", "Type": "HardBounce", "MessageID": m3["pm_message_id"],
-                                    "Email": "events@rap.example", "Description": "mailbox does not exist"}, headers=HOOK)
+                                    "Email": "mshah@rap.example", "Description": "mailbox does not exist"}, headers=HOOK)
     assert s.one("SELECT status FROM outreach_messages WHERE id=?", (m3["id"],))["status"] == "bounced"
     supp = {r["email"]: r["reason"] for r in s.q("SELECT * FROM email_suppression")}
-    assert supp == {"hello@lenslehenga.example": "spam-complaint", "events@rap.example": "bounce"}
+    assert supp == {"shah@lenslehenga.example": "spam-complaint", "mshah@rap.example": "bounce"}
     # subscription change (e.g. a manual suppression in Postmark, then reactivation)
     c.post("/hooks/postmark", json={"RecordType": "SubscriptionChange", "Recipient": "x@y.example", "SuppressSending": True}, headers=HOOK)
     assert s.one("SELECT reason FROM email_suppression WHERE email='x@y.example'")["reason"] == "postmark-suppression"
@@ -725,10 +725,10 @@ def test_web_25_postmark_admin_suppression_sync_streams_digest(env, pm, monkeypa
     r = c.post("/api/outreach/postmark-sync", headers=A).json()
     assert r == {"stream": "partners", "pulled": 1, "pushed": 1, "remote_total": 1}
     pushed = [b for m, p, b, _ in pm.calls if m == "POST" and p == "/message-streams/partners/suppressions"][0]
-    assert pushed == {"Suppressions": [{"EmailAddress": "owner@rangmahal.example"}]}
+    assert pushed == {"Suppressions": [{"EmailAddress": "meera@rangmahal.example"}]}
     assert s.one("SELECT reason FROM email_suppression WHERE email='bounced@remote.example'")["reason"] == "postmark:HardBounce"
     # digest to admins on the notify stream
-    _named(env, "photographers", "Lens & Lehenga Studio", "hello@lenslehenga.example")
+    _named(env, "photographers", "Lens & Lehenga Studio", "shah@lenslehenga.example")
     d = c.post("/api/outreach/digest", headers=A).json()
     assert d == {"sent": 1, "transport": "postmark"}
     mail = pm.emails("outbound")[-1]
@@ -767,11 +767,11 @@ def test_web_26_import_researched_partners(env):
     assert [m["status"] for m in msgs] == ["draft"] * 3 and "{{company}}" in msgs[0]["subject"] + msgs[0]["body"]
     assert s.one("SELECT COUNT(*) AS n FROM outreach_messages WHERE status!='draft'")["n"] == 0
     # re-run: idempotent, and a hand-entered email is never overwritten
-    c.patch(f"/api/partners/{iam['id']}", json={"contact_email": "partnerships@iamn.example"}, headers=A)
+    c.patch(f"/api/partners/{iam['id']}", json={"contact_email": "priya@iamn.example", "email_named": True}, headers=A)
     r2 = c.post("/api/partners/import-research", headers=A).json()
     assert all(p["created"] == 0 for p in r2["properties"].values())
     assert s.one("SELECT COUNT(*) AS n FROM partners WHERE source='research'")["n"] == total
-    assert s.one("SELECT contact_email FROM partners WHERE id=?", (iam["id"],))["contact_email"] == "partnerships@iamn.example"
+    assert s.one("SELECT contact_email FROM partners WHERE id=?", (iam["id"],))["contact_email"] == "priya@iamn.example"
     listed = c.get("/api/partners?property_id=jodibana", headers=env["U"]).json()
     assert any(p["priority"] == "P0" and p["source"] == "research" for p in listed)
 
@@ -1093,7 +1093,7 @@ def test_web_35_one_off_email(env, monkeypatch):
     assert "lint" in c.post("/api/outreach/approve", json={"ids": [bad["id"]]}, headers=A).json()["refused"][0]["reason"]
     # an unrelated approved message stays queued when only this one is sent
     other = c.post("/api/partners", json={"property_id": "vireoka", "name": "Other Fund", "kind": "investor",
-                                          "contact_email": "o@example.com"}, headers=U).json()["id"]
+                                          "contact_name": "Olga Fern", "contact_email": "olga@example.com"}, headers=U).json()["id"]
     om = c.post(f"/api/partners/{other}/email", json={"subject": "Hello there", "body": ANDREW}, headers=U).json()
     assert c.post("/api/outreach/approve", json={"ids": [m["id"]]}, headers=U).status_code == 403
     assert c.post("/api/outreach/approve", json={"ids": [m["id"], om["id"]]}, headers=A).json()["approved"] == [m["id"], om["id"]]
@@ -1371,8 +1371,61 @@ def test_web_40_linkedin_and_x_sequences(env, monkeypatch):
                for i in c.get(f"/api/partners/{pid}", headers=U).json()["interactions"])
     # an email can't be marked sent by hand; a one-off on LinkedIn with no profile is refused
     other = c.post("/api/partners", json={"property_id": "vireoka", "name": "No Profile Fund", "kind": "investor",
-                                          "contact_email": "n@example.com"}, headers=U).json()["id"]
+                                          "contact_name": "Nina Park", "contact_email": "nina@example.com"}, headers=U).json()["id"]
     e = c.post(f"/api/partners/{other}/email", json={"subject": "Hello there", "body": ANDREW}, headers=U).json()
     c.post("/api/outreach/approve", json={"ids": [e["id"]]}, headers=A)
     assert "Send due now" in c.post(f"/api/outreach/{e['id']}/mark-sent", headers=U).json()["detail"]
     assert c.post(f"/api/partners/{other}/email", json={"subject": "Hi", "body": ANDREW, "channel": "linkedin"}, headers=U).status_code == 422
+
+
+def test_web_41_only_named_people_are_emailed(env, monkeypatch):
+    """WEB-41: general inboxes (support@, info@, partnerships@, deals@ ...) are never emailed: refused when entered,
+    skipped by the research imports, and an old one on file is cancelled at send time and removed by the cleanup
+    (kept as a note); an address built from the contact's name is used; any other address is held until someone
+    confirms it is that person's own, then sends."""
+    from vanguard.addresses import classify
+    monkeypatch.setenv("VANGUARD_OUTPUT", str(env["tmp"] / "out"))
+    c, A, U, s = env["c"], env["A"], env["U"], env["s"]
+    assert [classify(a, n) for a, n in [("support@ondo.finance", "Nathan Allman"), ("partnerships@anchorage.com", None),
+                                        ("info.us@x.com", None), ("deals@crystal.vc", "Jonathan Crystal"),
+                                        ("brackin@gradient.com", "Andrew Brackin"), ("naren@vireoka.com", "Narendra Gore"),
+                                        ("jsmith@x.com", "John Smith"), ("hws.temple@gmail.com", "Priya Rao")]] == \
+        ["role", "role", "role", "role", "named", "named", "named", "unverified"]
+    assert c.post("/api/partners", json={"property_id": "liqmint-institutional", "name": "Ondo", "contact_email": "support@ondo.finance"},
+                  headers=U).status_code == 422
+    # imports skip general inboxes (the research files keep them only as general_inbox notes)
+    r = c.post("/api/partners/import-research", headers=A).json()
+    assert not s.q("SELECT contact_email FROM partners WHERE contact_email LIKE 'info@%' OR contact_email LIKE 'support@%' "
+                   "OR contact_email LIKE 'partnerships@%' OR contact_email LIKE 'deals@%' OR contact_email LIKE 'projects@%'")
+    # an old general inbox on file (data from before v0.15.1) with an approved email: cancelled, not sent
+    anc = s.one("SELECT id FROM partners WHERE name='Anchorage Digital'")["id"]
+    s.update("partners", "id", anc, {"contact_email": "partnerships@anchorage.com"})
+    mid = s.one("SELECT id FROM outreach_messages WHERE partner_id=? AND step=1", (anc,))["id"]
+    c.post("/api/outreach/approve", json={"ids": [mid]}, headers=A)
+    out = c.post("/api/outreach/send-due", json={"ids": [mid]}, headers=A).json()
+    assert out["sent"] == [] and out["skipped"][0]["reason"].startswith("general inbox (partnerships@anchorage.com)")
+    assert s.one("SELECT status FROM outreach_messages WHERE id=?", (mid,))["status"] == "cancelled"
+    assert c.get(f"/api/partners/{anc}", headers=U).json()["email_status"] == "role"
+    # an address that isn't built from the contact's name: held until confirmed
+    pid = c.post("/api/partners", json={"property_id": "jodibana", "name": "Hindu Temple", "kind": "distribution",
+                                        "contact_name": "Priya Rao", "contact_email": "hws.temple@gmail.com"}, headers=U).json()["id"]
+    assert c.post(f"/api/partners/{pid}/email", json={"subject": "Hello there", "body": ANDREW}, headers=U).status_code == 422
+    m = c.post(f"/api/partners/{pid}/email", json={"subject": "Hello there", "body": ANDREW, "named_confirmed": True}, headers=U).json()
+    c.patch(f"/api/partners/{pid}", json={"email_named": False}, headers=U)
+    c.post("/api/outreach/approve", json={"ids": [m["id"]]}, headers=A)
+    held = c.post("/api/outreach/send-due", json={"ids": [m["id"]]}, headers=A).json()
+    assert held["sent"] == [] and "isn't confirmed as Priya Rao's own address" in held["skipped"][0]["reason"]
+    c.patch(f"/api/partners/{pid}", json={"email_named": True}, headers=U)
+    assert [x["to"] for x in c.post("/api/outreach/send-due", json={"ids": [m["id"]]}, headers=A).json()["sent"]] == ["hws.temple@gmail.com"]
+    c.patch(f"/api/partners/{pid}", json={"contact_email": "priya.r@gmail.com"}, headers=U)       # a new address: confirm again
+    assert c.get(f"/api/partners/{pid}", headers=U).json()["email_status"] == "named"
+    c.patch(f"/api/partners/{pid}", json={"contact_email": "templeoffice@gmail.com"}, headers=U)
+    assert c.get(f"/api/partners/{pid}", headers=U).json()["email_status"] == "unverified"
+    # the cleanup removes general inboxes and imported unconfirmed ones, keeps typed-in ones (held), and notes them
+    s.update("partners", "id", anc, {"contact_email": "partnerships@anchorage.com"})
+    r = c.post("/api/partners/purge-general-inboxes", headers=A).json()
+    assert [x["address"] for x in r["removed"]] == ["partnerships@anchorage.com"]
+    assert [x["address"] for x in r["unverified"]] == ["templeoffice@gmail.com"]
+    row = s.one("SELECT contact_email, how_to_find FROM partners WHERE id=?", (anc,))
+    assert row["contact_email"] is None and "General inbox (not used for outreach): partnerships@anchorage.com" in row["how_to_find"]
+    assert c.post("/api/partners/purge-general-inboxes", headers=U).status_code == 403

@@ -23,6 +23,12 @@ TYPE_LABEL = {"VC FUND": "VC fund", "ANGEL": "Angel", "FAMILY OFFICE": "Family o
               "ACCELERATOR": "Accelerator", "VENTURE STUDIO": "Venture studio", "FUND OF FUNDS": "Fund of funds"}
 
 
+def _named(addr: str | None, name: str) -> bool:
+    """A firm's published address is used only when it is this person's own (deals@, projects@ are not)."""
+    from .addresses import classify
+    return bool(addr) and classify(addr, name) == "named"
+
+
 def load(path: Path | str | None = None) -> dict:
     p = Path(path) if path else DEFAULT_PATH
     data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
@@ -106,13 +112,13 @@ def import_investors(ws, path: Path | str | None = None, user_id: int | None = N
         if row:
             if not row["contact_name"]:
                 fields["contact_name"] = name
-            if r.get("published_email") and not row["contact_email"]:
+            if _named(r.get("published_email"), name) and not row["contact_email"]:
                 fields["contact_email"] = r["published_email"].strip().lower()
             ws.update("partners", "id", row["id"], fields)
             report["updated"] += 1
         else:
             fields |= {"property_id": pid, "name": name, "stage": "identified", "contact_name": name,
-                       "contact_email": (r.get("published_email") or "").strip().lower() or None,
+                       "contact_email": r["published_email"].strip().lower() if _named(r.get("published_email"), name) else None,
                        "next_step": ("Find a warm intro (LinkedIn, Known column), then a short plain-language note"
                                      if e.get("priority") == "P0" else None),
                        "owner_id": user_id, "created_by": user_id, "created_at": ts}
