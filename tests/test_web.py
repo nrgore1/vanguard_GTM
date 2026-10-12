@@ -902,7 +902,8 @@ def test_web_30_campaign_outreach_link(env):
     assert (t["targets"], t["emails_sent"], t["social_touches"], t["touched"], t["replies"], t["meetings"]) == (2, 1, 2, 2, 1, 1)
     assert t["in_conversation"] == 1 and d["outreach"]["queue"]["missing_email"] == 1
     row = next(p for p in d["outreach"]["partners"] if p["id"] == prot)
-    assert row["replied"] and row["emails_sent"] == 1 and row["last_touch"] == "2026-10-08"
+    # the email goes out today, so the last touch is the later of today and the 2026-10-08 meeting
+    assert row["replied"] and row["emails_sent"] == 1 and row["last_touch"] == max(date.today().isoformat(), "2026-10-08")
     lst = {x["id"]: x for x in c.get("/api/campaigns?property_id=liqmint-institutional", headers=U).json()}
     assert (lst[cid]["sent"], lst[cid]["replies"], lst[cid]["meetings"]) == (11, 2, 1)
     assert lst[cid]["outreach_summary"]["targets"] == 2 and lst[cid2]["outreach_summary"]["targets"] == len(kids) - 1
