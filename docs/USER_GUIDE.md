@@ -41,7 +41,11 @@ password. Ask an admin to reset it if you forget it. Eight wrong attempts lock t
   - its run-rate against target (the last 30 days of logged revenue × 12);
   - the funnel (sent → replies → meetings → conversions);
   - the partner pipeline by stage;
-  - campaign and task counts.
+  - campaign and task counts;
+  - for WeddingOS, JodiUSA, JodiBana and LiqMint, a **Measured by Growth** block: confirmed
+    sign-ups, referral conversions, emails sent and hard-bounce rate over the last 30 days, taken
+    from growth.jodibana.com. Don't log these by hand; log only revenue, meetings and other
+    channels.
 
   Admins see a pencil icon for editing the target.
 - **My open tasks** and **Recent partner activity** sit at the bottom.

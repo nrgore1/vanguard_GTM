@@ -455,7 +455,7 @@ def test_e2e_20_prompt_all_import_all(env, tmp_path):
     d = tmp_path / "prompts"
     assert "wrote 8 prompts" in cli(env, "prompt", "all", "--out", str(d)).stdout
     assert len(list(d.glob("*.prompt.txt"))) == 8
-    assert "weddingos.jodibana.com" in (d / "weddingos.prompt.txt").read_text(encoding="utf-8")
+    assert "www.weddingos.pro" in (d / "weddingos.prompt.txt").read_text(encoding="utf-8")
     for p in load_properties():
         if p.id == "jodibana":
             continue                                             # reply not back yet

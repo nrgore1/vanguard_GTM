@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.16.0 — 2026-10-12
+
+### Added: Growth's measured results on the dashboard
+- Property cards for WeddingOS, JodiUSA, JodiBana and LiqMint show **Measured by Growth**: confirmed
+  sign-ups, referral conversions, emails sent and the hard-bounce rate for the last 30 days, read from
+  the Growth Command Center (growth.jodibana.com).
+- The numbers are read live and never stored in Vanguard, so there is one source and nothing to
+  type or double-count. Only counts cross; no personal data.
+- Turn it on with `VANGUARD_GROWTH_FEED_URL` and `VANGUARD_GROWTH_FEED_TOKEN` (Programmer's Manual §6.9b).
+- A card warns when the registry's site differs from Growth's. The WeddingOS registry url is now
+  www.weddingos.pro.
+- Design §17b sets which system owns which job and data.
+
+
 ## 0.15.1 — 2026-10-03
 
 ### Fixed: emails go only to named people

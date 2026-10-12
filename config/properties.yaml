@@ -164,7 +164,7 @@ properties:
   # vireoka-dev/oratoplus-monorepo/Oratoplus.docx (a pasted chat transcript).
   - id: weddingos
     task_prefix: WOS
-    url: https://weddingos.jodibana.com
+    url: https://www.weddingos.pro
     name: WeddingOS
     track: B
     motion: product_led_growth
@@ -174,8 +174,7 @@ properties:
       Wedding operating system for couples and vendors - planning, vendor
       coordination, guest management - built for multi-event South Asian
       weddings, and the wedding-commerce end of the Jodibana relationship-to-
-      marriage ecosystem. Live at weddingos.jodibana.com; weddingos.pro is the
-      planned standalone domain.
+      marriage ecosystem. Live at www.weddingos.pro.
     pricing_facts:
       - "Draft: wedding-commerce affiliate revenue (outfits, jewelry, decor, honeymoon) at 5-20% per sale"
     icp_seeds:

@@ -1,6 +1,6 @@
 # Vanguard-GTM — Programmer's Manual
 
-Version 0.15.1 · updated 2026-10-03 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
+Version 0.16.0 · updated 2026-10-12 · see also [Design](DESIGN.md), [Test Cases](TEST_CASES.md), [User Guide](USER_GUIDE.md),
 [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md)
 
 > **Rule for every change:** update this manual, `DESIGN.md` (including its §18 change log) and
@@ -124,6 +124,10 @@ vanguard-gtm/
 | `VANGUARD_POSTMARK_WEBHOOK_USER` / `VANGUARD_POSTMARK_WEBHOOK_PASSWORD` | — | Basic Auth for `POST /hooks/postmark`. Without both, the webhook answers 503. |
 | `VANGUARD_NOTIFY_REPLIES` | `1` | `0` stops the email alert to admins and the partner owner when a partner replies |
 | `VANGUARD_OUTREACH_EVERY_MIN` | `0` (off) | When above 0, `serve` sends due approved messages and checks replies on this interval |
+| `VANGUARD_GROWTH_FEED_URL` | — (off) | The Growth Command Center's results feed, e.g. `https://growth.jodibana.com/api/v1/feeds/results` (or `http://growth-production-console:8080/api/v1/feeds/results` on the shared Docker network). Must be https, except to a host name without dots or localhost (DESIGN §17b). |
+| `VANGUARD_GROWTH_FEED_TOKEN` | — | The value of `GROWTH_RESULTS_FEED_TOKEN` on the Growth server. Both URL and token are needed to turn the feed on. |
+| `VANGUARD_GROWTH_FEED_DAYS` | `30` | Window shown on the dashboard, 1-90 days |
+| `VANGUARD_GROWTH_FEED_CACHE_SEC` | `300` | How long a feed answer is reused, in memory only |
 | `TRAEFIK_NETWORK` | `edge` | Docker network of the Traefik edge (compose only) |
 
 ### 3.2 `config/properties.yaml`
@@ -285,7 +289,7 @@ Sign in with `POST /api/auth/login {email, password}`, which returns `{token, us
 |---|---|
 | Session | `POST /auth/login`, `GET /me` |
 | Users | `GET /users` (names only for general users) · admin: `POST /users`, `PATCH /users/{id}` (name, role, active, password), `DELETE /users/{id}` |
-| Portfolio | `GET /properties`, `GET /dashboard` · admin: `PUT /targets/{property}` |
+| Portfolio | `GET /properties`, `GET /dashboard` (each property carries `measured`: Growth's counts for that brand or null; top-level `growth_feed` reports configured/ok/error) · admin: `PUT /targets/{property}` |
 | Campaigns | `GET /campaigns?property_id&status` (sent/replies/meetings include outreach for attached partners; `outreach_summary` per row), `POST /campaigns`, `GET/PATCH /campaigns/{id}` (`GET` adds `outreach`: partners, totals, queue), `DELETE /campaigns/{id}` (creator or admin; partners leave the campaign), `POST /campaigns/{id}/results`, `DELETE /results/{id}` (creator or admin), `POST /campaigns/{id}/partners {partner_ids}` (returns attached, moved, refused), `DELETE /campaigns/{id}/partners/{pid}` |
 | Introductions | `POST /linkedin/export {zip_b64}` (the full LinkedIn archive; 400 if not a zip with Connections.csv), `POST /intros/suggest {property_ids?}`, `GET /intros?status&partner_id&kind` (rows carry `mutuals_url`), `POST /intros/{id}/draft`, `PATCH /intros/{id} {subject?, body?}` (back to draft, re-linted), `POST /intros/{id}/sent-linkedin` (approved only), `POST /intros/{id}/outcome {outcome: accepted\|introduced\|declined\|cancelled, note?}` · admin: `POST /intros/approve {ids}`, `POST /intros/send`. `GET /partners/{id}` adds `intros` and `mutuals_url`. |
 | LinkedIn | `POST /linkedin/connections {csv}` (the user's own Connections.csv text; 400 if it isn't the export), `GET /linkedin/connections` (rows per user, partners with connections), `DELETE /linkedin/connections` (delete your own). `GET /partners` adds `connections` (count) and `campaign_name`; `GET /partners/{id}` adds `connections` (people) and `campaign_name`. |
@@ -408,6 +412,15 @@ See setup guide Part 8. In short:
 Keep SMTP set too if you want cold first touches to go from your own mailbox. Code lives in
 `vanguard/postmark.py`. Tests use `FakePostmark` via the `vanguard.postmark.TRANSPORT` hook
 (an `httpx.MockTransport`), so they never call the real API.
+
+### 6.9b Show Growth's measured results
+1. On the Growth server, set `GROWTH_RESULTS_FEED_TOKEN` (64 hex characters) and redeploy Growth.
+2. In Vanguard's `.env`, set `VANGUARD_GROWTH_FEED_URL` and `VANGUARD_GROWTH_FEED_TOKEN` (the same
+   value), then `docker compose up -d`.
+3. The dashboard's property cards for weddingos, jodiusa, jodibana and liqmint gain a **Measured by
+   Growth** block. A property is matched to the Growth brand with the same slug.
+
+Nothing from the feed is stored; see DESIGN §17b for the ownership rules.
 
 ### 6.10 Manage users
 - **First run:** `vanguard seed-users`.

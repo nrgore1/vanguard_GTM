@@ -119,11 +119,22 @@ export interface PropertyDash {
   campaigns: { total: number; active: number }; partners: Record<string, number>;
   tasks: { total: number; done: number }; playbook: { lint_status: string; approved_by: string | null } | null;
   agreements: Record<AgreementStatus, number>; outreach: { drafts: number; approved: number; sent: number; replied: number };
+  measured: Measured | null;
 }
+/** Counts measured by the Growth Command Center, read live (never stored in Vanguard). */
+export interface GrowthCounts {
+  confirmed_signups: number; referral_conversions: number; emails_sent: number; hard_bounces: number;
+  complaints: number; unsubscribes: number;
+}
+export interface Measured {
+  source: "growth"; days: number; totals: GrowthCounts & { hard_bounce_rate: number | null; complaint_rate: number | null };
+  daily: (GrowthCounts & { date: string })[]; drift: string[];
+}
+export interface GrowthFeedStatus { configured: boolean; ok: boolean; error: string | null; days: number; generated_at: string | null }
 export interface Dashboard {
   properties: PropertyDash[]; weekly: { week: string; start: string; revenue_usd: number; conversions: number;
     meetings: number; signups: number }[];
-  latest_run: string | null; recent_interactions: Interaction[];
+  latest_run: string | null; recent_interactions: Interaction[]; growth_feed: GrowthFeedStatus;
   my_open_tasks: { id: number; property_id: string; task_id: string; status: string; priority: string; description: string }[];
 }
 export interface Run {
