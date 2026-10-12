@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Target, TrendingUp, Megaphone, Handshake, CheckCircle2, Pencil, ArrowUpRight, Table2, BarChart3, Send, FileSignature } from "lucide-react";
-import { api, type PropertyDash } from "../lib/api";
+import { Target, TrendingUp, Megaphone, Handshake, CheckCircle2, Pencil, ArrowUpRight, Table2, BarChart3, Send, FileSignature, Activity } from "lucide-react";
+import { api, type Measured, type PropertyDash } from "../lib/api";
 import { useAuth, useLoad } from "../lib/auth";
 import { num, pct, relTime, shortDate, TRACKS, usd, label } from "../lib/format";
 import { Badge, Button, Card, CardHeader, ErrorNote, Field, Input, Modal, PageHeader, Progress, Spinner, Stat, statusTone, useToast } from "../components/ui";
@@ -47,6 +47,26 @@ function WeeklyChart({ data, dataKey, title, fmt }: { data: Record<string, numbe
         )}
       </div>
     </Card>
+  );
+}
+
+function MeasuredBlock({ m }: { m: Measured }) {
+  const t = m.totals;
+  const rate = t.hard_bounce_rate === null ? "–" : `${(t.hard_bounce_rate * 100).toFixed(1)}%`;
+  return (
+    <div className="mt-4 rounded-lg border border-line px-3 py-2.5 text-xs" aria-label="Measured by Growth">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="inline-flex items-center gap-1.5 text-muted"><Activity size={13} className="text-vireo" />Measured by Growth</span>
+        <span className="text-faint">last {m.days} days</span>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+        <dt className="text-muted">Confirmed sign-ups</dt><dd className="num text-right text-ink">{num(t.confirmed_signups)}</dd>
+        <dt className="text-muted">Referral conversions</dt><dd className="num text-right text-ink">{num(t.referral_conversions)}</dd>
+        <dt className="text-muted">Emails sent</dt><dd className="num text-right text-ink">{num(t.emails_sent)}</dd>
+        <dt className="text-muted">Hard-bounce rate</dt><dd className="num text-right text-ink">{rate}</dd>
+      </dl>
+      {m.drift.map((d) => <p key={d} className="mt-1.5 text-[11px] text-amber">{d}</p>)}
+    </div>
   );
 }
 
@@ -98,6 +118,8 @@ function PropertyCard({ p, onEdit, isAdmin }: { p: PropertyDash; onEdit: () => v
           {STAGE_ORDER.map((s, i) => <span key={s} className="inline-flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-[2px]" style={{ background: "var(--vireo)", opacity: Number(STAGE_SHADE[i]) }} />{label(s)} {p.partners[s] ?? 0}</span>)}
         </div>
       </div>
+
+      {p.measured && <MeasuredBlock m={p.measured} />}
 
       <div className="mt-4 flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-xs">
         <span className="inline-flex items-center gap-1.5 text-muted"><FileSignature size={13} className="text-vireo" />Agreements</span>
@@ -165,7 +187,10 @@ export default function Dashboard() {
 
       <div className="mb-3 mt-8 flex items-end justify-between">
         <h2 className="font-serif text-xl font-semibold">Properties</h2>
-        <span className="text-right text-xs text-muted">ARR run-rate = last 30 days of logged revenue × 12<br />{data.latest_run ? <>Plan from run <span className="font-mono">{data.latest_run}</span></> : "No agent run yet"}</span>
+        <span className="text-right text-xs text-muted">ARR run-rate = last 30 days of logged revenue × 12<br />
+          {data.growth_feed?.configured && (data.growth_feed.ok
+            ? <>Sign-ups, referrals and email counts are measured by Growth: don't log them by hand<br /></>
+            : <span className="text-amber">Growth results unavailable: {data.growth_feed.error}<br /></span>)}{data.latest_run ? <>Plan from run <span className="font-mono">{data.latest_run}</span></> : "No agent run yet"}</span>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {P.map((p) => <PropertyCard key={p.property_id} p={p} isAdmin={isAdmin} onEdit={() => openEdit(p)} />)}

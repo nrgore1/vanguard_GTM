@@ -1429,3 +1429,83 @@ def test_web_41_only_named_people_are_emailed(env, monkeypatch):
     row = s.one("SELECT contact_email, how_to_find FROM partners WHERE id=?", (anc,))
     assert row["contact_email"] is None and "General inbox (not used for outreach): partnerships@anchorage.com" in row["how_to_find"]
     assert c.post("/api/partners/purge-general-inboxes", headers=U).status_code == 403
+
+
+def test_web_42_growth_results_feed_on_the_dashboard(env, monkeypatch):
+    """WEB-42: with the Growth feed configured, each property that is a Growth brand shows Growth's measured counts,
+    read live and cached in memory, never written to Vanguard's database; unknown fields (such as an address) are
+    dropped; a registry url that differs from Growth's site is flagged; an http feed URL, a refused token and an
+    unreachable server are reported without breaking the dashboard; unconfigured, nothing is fetched."""
+    import httpx
+    from vanguard import growth_feed
+
+    c, U, s = env["c"], env["U"], env["s"]
+    calls = []
+
+    def day(n):
+        return {"date": "2026-10-12", "confirmed_signups": n, "referral_conversions": 1, "emails_sent": 40,
+                "hard_bounces": 1, "complaints": 0, "unsubscribes": 2, "email": "leak@example.com"}
+
+    body = {"generated_at": "2026-10-12T10:00:00Z", "timezone": "UTC", "days": 30, "brands": [
+        {"slug": "weddingos", "name": "WeddingOS", "privacy_tier": "standard", "site_url": "https://www.weddingos.pro",
+         "markets": ["US", "CA", "GB"], "subscribers": ["a@example.com"],
+         "totals": {"confirmed_signups": 5, "referral_conversions": 1, "emails_sent": 40, "hard_bounces": 1,
+                    "complaints": 0, "unsubscribes": 2, "hard_bounce_rate": 0.025, "complaint_rate": 0.0},
+         "daily": [day(5)]},
+        {"slug": "jodiusa", "name": "JodiUSA", "privacy_tier": "sensitive", "site_url": "https://www.jodiusa.com",
+         "markets": ["US", "CA", "GB", "IN"], "totals": {"confirmed_signups": 2}, "daily": [day(2)]},
+        {"slug": "not-in-vanguard", "name": "Other", "totals": {}, "daily": []}]}
+    answer = {"status": 200, "json": body}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if answer["status"] == "down":
+            raise httpx.ConnectError("refused")
+        return httpx.Response(answer["status"], json=answer["json"])
+
+    monkeypatch.setattr(growth_feed, "TRANSPORT", httpx.MockTransport(handler))
+    growth_feed.reset_cache()
+
+    # off by default: nothing fetched, nothing shown
+    d = c.get("/api/dashboard", headers=U).json()
+    assert d["growth_feed"]["configured"] is False and calls == []
+    assert all(p["measured"] is None for p in d["properties"])
+
+    monkeypatch.setenv("VANGUARD_GROWTH_FEED_URL", "https://growth.example/api/v1/feeds/results")
+    monkeypatch.setenv("VANGUARD_GROWTH_FEED_TOKEN", "t" * 64)
+    tables = {t: s.one(f"SELECT COUNT(*) AS n FROM {t}")["n"] for t in ("campaign_results", "campaigns", "partners")}
+    d = c.get("/api/dashboard", headers=U).json()
+    assert d["growth_feed"] == {"configured": True, "ok": True, "error": None, "days": 30,
+                                "generated_at": "2026-10-12T10:00:00Z"}
+    assert calls[0].headers["authorization"] == "Bearer " + "t" * 64 and calls[0].url.params["days"] == "30"
+    props = {p["property_id"]: p for p in d["properties"]}
+    wos = props["weddingos"]["measured"]
+    assert wos["source"] == "growth" and wos["totals"]["confirmed_signups"] == 5
+    assert wos["totals"]["hard_bounce_rate"] == 0.025 and wos["daily"][0]["unsubscribes"] == 2
+    assert wos["drift"] == []                                                       # registry matches Growth
+    assert props["jodiusa"]["measured"]["totals"]["referral_conversions"] == 0   # missing counts read as 0
+    assert props["jodiusa"]["measured"]["drift"] == []
+    assert props["oratoplus"]["measured"] is None and props["liqmint-institutional"]["measured"] is None
+    assert "@" not in json.dumps([p["measured"] for p in d["properties"]])          # unknown fields dropped
+    # nothing from the feed is stored: the same rows as before, and a second view reuses the cached answer
+    assert tables == {t: s.one(f"SELECT COUNT(*) AS n FROM {t}")["n"] for t in tables}
+    c.get("/api/dashboard", headers=U)
+    assert len(calls) == 1
+    # a drifted registry url is flagged
+    assert growth_feed.drift("https://weddingos.jodibana.com", {"site_url": "https://www.weddingos.pro"}) == \
+        ["registry url https://weddingos.jodibana.com differs from Growth site https://www.weddingos.pro"]
+    assert growth_feed.drift("https://jodiusa.com", {"site_url": "https://www.jodiusa.com"}) == []
+
+    # failures are reported, the dashboard still works
+    monkeypatch.setenv("VANGUARD_GROWTH_FEED_CACHE_SEC", "0")
+    answer["status"] = 401
+    d = c.get("/api/dashboard", headers=U).json()
+    assert d["growth_feed"]["ok"] is False and d["growth_feed"]["error"] == "Growth feed answered 401 token refused"
+    assert all(p["measured"] is None for p in d["properties"])
+    answer["status"] = "down"
+    assert c.get("/api/dashboard", headers=U).json()["growth_feed"]["error"] == "Growth feed unavailable (ConnectError)"
+    monkeypatch.setenv("VANGUARD_GROWTH_FEED_URL", "http://growth.example/api/v1/feeds/results")
+    n = len(calls)
+    assert "must be https" in c.get("/api/dashboard", headers=U).json()["growth_feed"]["error"] and len(calls) == n
+    assert growth_feed.url_problem("http://growth-production-console:8080/api/v1/feeds/results") is None
+    growth_feed.reset_cache()

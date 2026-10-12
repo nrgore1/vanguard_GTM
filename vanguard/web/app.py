@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from .. import __version__
+from .. import __version__, growth_feed
 from ..registry import get_properties, load_properties
 from ..store import now
 from .db import (CAMPAIGN_FIELDS, INTERACTION_FIELDS, PARTNER_FIELDS, RESULT_FIELDS, WebStore)
@@ -410,8 +410,16 @@ def dashboard(u: dict = Depends(current_user)):
     s = store()
     d = s.dashboard([p.id for p in load_properties()], s.latest_run_id())
     names = {p.id: (p.name, p.track) for p in load_properties()}
+    urls = {p.id: p.url for p in load_properties()}
+    # Measured by Growth, read live and never stored here (vanguard/growth_feed.py).
+    feed = growth_feed.fetch()
     for row in d["properties"]:
         row["name"], row["track"] = names[row["property_id"]]
+        brand = feed["brands"].get(row["property_id"])
+        row["measured"] = None if brand is None else {
+            "source": "growth", "days": feed["days"], "totals": brand["totals"], "daily": brand["daily"],
+            "drift": growth_feed.drift(urls[row["property_id"]], brand)}
+    d["growth_feed"] = {k: feed[k] for k in ("configured", "ok", "error", "days", "generated_at")}
     d["recent_interactions"] = s.q(
         "SELECT i.*, p.name AS partner_name, p.property_id, u.name AS by_name FROM partner_interactions i "
         "JOIN partners p ON p.id=i.partner_id LEFT JOIN users u ON u.id=i.created_by "

@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **System** | Vanguard-GTM, the go-to-market orchestration agent for the Vireoka portfolio |
-| **Version** | 0.15.1 |
+| **Version** | 0.16.0 |
 | **Owner** | Narendra Gore, Vireoka LLC |
-| **Last updated** | 2026-10-02 |
+| **Last updated** | 2026-10-12 |
 | **Companion docs** | [Programmer's Manual](PROGRAMMERS_MANUAL.md) · [Test Cases](TEST_CASES.md) · [Setup: Notion & keys](SETUP_NOTION_AND_KEYS.md) · [User Guide](USER_GUIDE.md) · [Changelog](../CHANGELOG.md) |
 
 > **Keeping this current.** Every change to behaviour, configuration, the CLI, the API or the
@@ -140,7 +140,7 @@ the original Vanguard-GTM prompt, several of which were wrong. For example, LiqM
 | vireoka.com | confirmed | `vireoka_final_website/DECISION_LEDGER.md` | Positioned as "Cognitive Governance". Approved vocabulary is set. Internal names are banned from public copy. |
 | oratoplus.com | confirmed | `oratoplus-monorepo/docs/03-prd.md`, `11-gtm-marketing-plan.md`, `21-design-document.md` | "A gym for your voice". Adds hostile Q&A and the pause timeline. Tiers are Free/Growth/Enterprise. PRD KPIs are kept internal. |
 | atmakosh.com | confirmed | `atmakosh-platform/README.md`, `docs/DESIGN.md`, `docs/STRIPE_BILLING_PLAN.md` | Governance-as-a-service for AI agents: an eight-worldview council, a deny-wins verdict, hash-chained audit. Tiers are Free/Starter/Pro/Enterprise. |
-| weddingos.jodibana.com (planned: weddingos.pro), jodibana.com, jodiusa.com | needs_review | No product repos under vireoka-dev. Drafted from the matchmaking analysis in `oratoplus-monorepo/Oratoplus.docx` | Invite-only AI matchmaking plus wedding commerce. Draft pricing only. |
+| www.weddingos.pro, jodibana.com, jodiusa.com | needs_review | No product repos under vireoka-dev. Drafted from the matchmaking analysis in `oratoplus-monorepo/Oratoplus.docx` | Invite-only AI matchmaking plus wedding commerce. Draft pricing only. |
 
 Fields: `id`, `task_prefix` (unique, 2–5 capital letters), `url`, `name`, `track`, `motion`,
 `lint_profile`, `positioning_status`, `positioning`, `not_this`, `capability_facts`,
@@ -1068,10 +1068,53 @@ readings; only admins pass or fail gates).
 
 ---
 
+## 17b. Growth Command Center (v0.16.0)
+
+The Growth Command Center (`growth.jodibana.com`, repo `nrgore1/weddingos`) runs the opted-in
+audiences of weddingos, jodiusa, jodibana and liqmint. The two systems do separate jobs and never
+hold the same data.
+
+| Job or data | Owned by | The other system |
+|---|---|---|
+| GTM strategy: ICP, positioning, playbooks, 30-day tasks | Vanguard | — |
+| B2B partners, investors and introducers; their pipeline and one-to-one outreach | Vanguard | never stores them; they are not subscribers |
+| Opted-in consumers: sign-ups, consent ledger, newsletters, journeys, privacy requests | Growth | never stores them; JodiUSA and JodiBana are sensitive-tier and stay encrypted in Growth |
+| Measured consumer results: confirmed sign-ups, referral conversions, sends, bounces, complaints, unsubscribes | Growth | reads them live from the feed (below) |
+| Revenue, meetings, other channels (Smartlead, LinkedIn, events) | Vanguard (logged results) | — |
+| Brand facts: site domain, markets, privacy tier | Growth (approved settings) | `properties.yaml` keeps a url for prompts; the dashboard flags it when it differs |
+| Email reputation | each its own Postmark server or stream | Vanguard uses a server token created for it (§12) and a `partners` stream (§16.1) |
+
+**Results feed** (`vanguard/growth_feed.py`). `GET <VANGUARD_GROWTH_FEED_URL>?days=N` with
+`Authorization: Bearer <VANGUARD_GROWTH_FEED_TOKEN>` returns per brand: name, privacy tier, site
+url, markets, window totals (the six counts, hard-bounce and complaint rates) and one row per UTC
+day. Growth counts only events on its own messages, so another app on a shared Postmark server
+can't move the figures.
+
+- **No copy.** The answer is cached in process memory for `VANGUARD_GROWTH_FEED_CACHE_SEC` and
+  never written to the database, so there is nothing to reconcile or double-count. Sign-ups and
+  email counts for these brands are not logged by hand: the dashboard says so.
+- **No personal data.** `_clean` keeps only the documented count and brand fields; anything else
+  in a response is dropped.
+- **Fails soft.** An unset feed shows nothing; a refused token, a missing endpoint or an
+  unreachable server is reported in `growth_feed.error` and the rest of the dashboard works.
+- **Transport.** https only, except to a host on the private Docker network (no dots) or
+  localhost. No redirects are followed, so the token is only sent to the configured URL.
+- **Drift.** When a property's registry url is on a different domain from Growth's site url, the
+  card says so (`measured.drift`).
+
+Planned next, in this order, under the same rules: signed partners get a Growth referral code and
+their confirmed sign-ups appear against the partner (counts only); approved playbooks become
+Growth drafts that still pass Growth's approval and consent checks; LiqMint claim rules shared by
+both lint layers; opt-outs synced per brand in both directions (the one personal-data exchange,
+as blind suppression records).
+
+---
+
 ## 18. Change log
 
 | Version | Date | Change |
 |---|---|---|
+| 0.16.0 | 2026-10-12 | **Growth results on the dashboard** (§17b): `vanguard/growth_feed.py` reads the Growth Command Center's per-brand daily counts (confirmed sign-ups, referral conversions, emails sent, hard bounces, complaints, unsubscribes) with a bearer token, keeps only those fields, caches them in memory and never stores them; property cards show a Measured by Growth block and registry drift; `measured` and `growth_feed` on `GET /dashboard`; `VANGUARD_GROWTH_FEED_URL`, `_TOKEN`, `_DAYS`, `_CACHE_SEC`. Ownership table between the two systems. WeddingOS registry url is now www.weddingos.pro. Test WEB-42. |
 | 0.15.1 | 2026-10-03 | **Only named people are emailed** (§15.18): general inboxes (support@, info@, partnerships@ ...) are never emailed - refused, skipped by imports, cancelled at send and cleared on start; other addresses must be built from the contact's name or confirmed as their own; `email_named`, `email_status`, `POST /partners/purge-general-inboxes`, `vanguard outreach purge-general`; 34 published inboxes in the research files moved to `general_inbox` notes. Test WEB-41. |
 | 0.15.0 | 2026-10-03 | **LinkedIn and X sequences** (§15.17): LinkedIn profile and X handle on partners; a partner's 3-step sequence (or a one-off) can run on email, LinkedIn or X; LinkedIn/X steps are approved and timed like email, then sent by hand from Outreach → By hand (copy, open profile, I sent it), which logs the touch and starts the next delay; 200-character connection-note warning; `POST /partners/{id}/channel`, `GET /outreach/by-hand`, `POST /outreach/{id}/mark-sent`. Tests WEB-40, UI-20. |
 | 0.14.0 | 2026-10-02 | **Scheduled sending** (§15.16): `send_at` on outreach messages; Write email takes a date and time; Outreach schedules selected emails at once or spread N per day, minutes apart, weekdays only; the editor sets or clears a single schedule; `POST /outreach/schedule`; `send_due` holds until the time; status reports whether automatic sending is on. Tests WEB-39, UI-19. |
